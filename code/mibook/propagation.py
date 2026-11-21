@@ -76,12 +76,18 @@ def effective_contact_damping(sys, P, omegas, sigma_T2: float | None = None,
         h = (P @ Rw @ sys.B_F).reshape(m)
         G = P @ Rw @ Bxi
         M = 2.0 * sigma_T2 * (G @ Dint @ G.conj().T)
-        Mp = np.linalg.pinv(M, rcond=1e-12, hermitian=True)
-        resid = h - M @ (Mp @ h)
-        if np.linalg.norm(resid) > 1e-9 * max(np.linalg.norm(h), 1e-300):
+        # Internal noise far below the contact damper's own noise at the part (12 orders)
+        # changes b_eff by less than 1e-12 b_c and is set to zero, so round-off in a nearly
+        # noise-free direction cannot decide the answer.
+        lam, V = np.linalg.eigh(0.5 * (M + M.conj().T))
+        floor = 1e-12 * max(2.0 * sigma_T2 * b_contact * float(np.real(h.conj() @ h)),
+                            float(np.max(np.abs(lam))), 1e-300)
+        keep = lam > floor
+        c = V.conj().T @ h
+        if np.linalg.norm(c[~keep]) > 1e-9 * max(np.linalg.norm(h), 1e-300):
             out.append(b_contact)
             continue
-        q = float(np.real(h.conj() @ Mp @ h))
+        q = float(np.sum(np.abs(c[keep]) ** 2 / lam[keep]))
         out.append(b_contact + (np.inf if q <= 0 else 1.0 / (2.0 * sigma_T2 * q)))
     return np.array(out)
 
