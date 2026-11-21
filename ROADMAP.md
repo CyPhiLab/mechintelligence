@@ -24,7 +24,9 @@ the findings recorded here.
   inflated claims, no em dashes in prose, plain verbs.
 - **Releases.** Dated tags (`v0.1`, `v0.2`, ...) with a changelog entry. Before a result
   goes to a venue, check that venue's preprint policy.
-- **Branches.** To be decided once the scaffold is published (see the decisions log).
+- **Branches.** Book content goes straight to `main`, which deploys the site. Changes to
+  other repositories, such as the lab website, go through pull requests. This is a
+  default and can change.
 
 ## Threads
 
@@ -129,14 +131,16 @@ written up.
   are checked; important results go to venues later. The book is not planned in advance.
 - **2026-11-21.** Quarto for authoring (one source for the website and the PDF; numbered
   theorems with cross-references; figures from code).
-- **2026-11-21.** A dedicated repository, `zpatty/mechanical-intelligence`. It depends on
-  the analysis library in `zpatty/quadruped-mech-info`, pinned to commit `2b25bca`, so the
-  book's numbers stay reproducible.
+- **2026-11-21.** A dedicated repository, `CyPhiLab/mechintelligence`, owned by the lab.
+  It depends on the analysis library in `zpatty/quadruped-mech-info`, pinned to commit
+  `2b25bca`, so the book's numbers stay reproducible.
+- **2026-11-21.** The book is served at `mechintelligence.cyphilab.com` and linked from
+  the lab website's navigation bar (CyPhiLab/CyPhiLab.github.io pull request 3).
 - **2026-11-21.** Two-tier publishing: dated research notes, and chapters that absorb them
   once stable.
 - **2026-11-21.** All prose goes through the humanizer skill.
-- **2026-11-21.** Open: the branch workflow for changes after the initial scaffold
-  (feature branches with pull requests, or direct pushes to `main`).
+- **2026-11-21.** Branch workflow: direct pushes to `main` for book content; pull
+  requests for other repositories.
 
 ## Paper candidates
 

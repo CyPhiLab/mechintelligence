@@ -43,7 +43,7 @@ its source was read in full or only through abstracts and citing works
 
 ## Reproducing the book
 
-The repository is [github.com/zpatty/mechanical-intelligence](https://github.com/zpatty/mechanical-intelligence).
+The repository is [github.com/CyPhiLab/mechintelligence](https://github.com/CyPhiLab/mechintelligence).
 With [uv](https://docs.astral.sh/uv/) installed:
 
 ```bash
@@ -61,7 +61,7 @@ a fixed commit.
 Cite the version you read, since pages change between releases:
 
 > Patterson, Z. J. *Mechanical Intelligence: A live textbook on information in
-> mechanisms.* Version 0.1, 2026. <https://zpatty.github.io/mechanical-intelligence/>
+> mechanisms.* Version 0.1, 2026. <https://mechintelligence.cyphilab.com/>
 
 ## Acknowledgments
 

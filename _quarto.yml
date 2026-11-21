@@ -8,8 +8,8 @@ book:
   author: "Zach J. Patterson"
   date: last-modified
   date-format: "D MMMM YYYY"
-  site-url: https://zpatty.github.io/mechanical-intelligence/
-  repo-url: https://github.com/zpatty/mechanical-intelligence
+  site-url: https://mechintelligence.cyphilab.com/
+  repo-url: https://github.com/CyPhiLab/mechintelligence
   repo-actions: [issue, source]
   downloads: [pdf]
   search: true
