@@ -1,0 +1,36 @@
+# Status of the literature claims {#sec-sources}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** stable · **Updated:** 2026-11-21
+:::
+
+Each citation in the book is marked by how it was checked. *Full text* means the primary
+source was read, and only these citations carry equation or section numbers. *Secondary*
+means the claim rests on abstracts or citing works and should be confirmed against the
+source. No mathematical statement in the book depends on a citation; each is proved in the
+text. This table is updated as sources are read in full (thread T10 of the
+[roadmap](../ROADMAP.md)).
+
+| Source | Access | What is used |
+|:--|:--|:--|
+| @jaynes1957information | full text | Eqs. (2-4) and (2-10); Sec. 3 (Boltzmann distribution); footnote 6 (discrete case only) |
+| @kessy2018optimal | full text | Eq. (4), rotational freedom; Eq. (8), ZCA; Eqs. (13) and (14), optimality |
+| @diggavi2001worst | full text | Lemma II.2 (Ihara): Gaussian noise is worst at fixed covariance |
+| @vanderschaft2014port | full text | Eq. (4.10), input-state-output port-Hamiltonian form |
+| @buithanh2013computational | full text | Sec. 3.3, mass-weighted inner product |
+| @cotter2013mcmc | full text | robustness under mesh refinement (abstract and Sec. 1) |
+| @kubo1966fluctuation | secondary | the FDT links noise intensity to dissipation; equipartition |
+| @moore1981principal | secondary | Gramians, coordinate dependence, balancing |
+| @li2007connection | secondary | the EfI and MKE connection, via iteration and re-orthonormalization |
+| @lee2020geometric | secondary | affine-invariant metric on inertial parameters (parameter space, not state space) |
+| @zahedi2013quantifying | secondary | discrete $\mathrm{MC}_W=I(W';W\mid A)$ on empirical distributions |
+| @patterson2026quantifying | own work | the leg models, settings and quadruped experiments that the book starts from |
+| @wensing2017proprioceptive | secondary | model parameters, as reproduced in @patterson2026quantifying [Sec. III] |
+| @cover2006elements | secondary | Ch. 12, maximum entropy; colored-noise channels |
+| @kammer1991sensor; @papadimitriou2004optimal | secondary | EfI as D-optimal design; entropy-based sensor placement |
+| @willems1972dissipative; @stuart2010inverse | secondary | storage functions; the function-space viewpoint |
+| @dupont1973l2; @baker1976error; @geveci1984convergence | secondary | semi-discrete finite-element convergence (an assumption of @thm-mesh) |
+| @landauer1961irreversibility; @bennett1982thermodynamics | secondary | reversibility of conservative dynamics; dissipation as erasure |
+| @callen1951irreversibility | secondary | quantum FDT, $\frac{\hbar\omega}{2}\coth\frac{\hbar\omega}{2k_BT}$ |
+| @nyquist1928thermal | secondary | thermal noise set by dissipation |
+| @duncan1970calculation | secondary | mutual information for signals in white Gaussian noise |

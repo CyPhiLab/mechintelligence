@@ -1,0 +1,61 @@
+# Open problems {#sec-open-problems}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** draft · **Updated:** 2026-11-21 · **Checked by:** `tests/test_energy_whitening.py`
+:::
+
+This chapter collects what the energy metric settles, what it leaves open, and where the
+current analysis is limited. The [research roadmap](../ROADMAP.md) turns these into
+threads with concrete next steps, and research notes record progress on them.
+
+## What energy whitening does and does not capture {#sec-capture}
+
+1. *Retention is settled.* For the question "how much does the body itself hold about
+    the world," energy is the unique admissible resolution (@thm-unique). Every
+    information quantity built on it is coordinate-free, composes across components,
+    converges in constraint and refinement limits, and changes only through work and
+    dissipation (@prp-work).
+2. *Routing is what morphology does.* In a thermodynamically consistent body the total
+    is capped by the dissipation at the contact (@prp-contact). Designs differ in how much
+    of that total reaches the coordinates a controller can read, at a latency it can use.
+    The efficiency in @tbl-langevin is a candidate scalar measure of mechanical
+    intelligence in this sense, and the temporal and frequency decompositions of Part I
+    apply to it unchanged.
+3. *Relevance is not captured.* Neither retention nor routing asks whether the
+    information is about what the task needs. The conditional information $I(W;X\mid A)$
+    of @patterson2026quantifying measures relevance to the action, and task-specific
+    variables, such as the force component that matters for balance, would sharpen it.
+4. *Nonlinear and multistable bodies.* The framework extends directly: the noise law
+    becomes the Gibbs law $\exp(-V/T)$ on a non-quadratic potential. A mechanical memory
+    then stores a reliable bit when its energy barrier is large compared with the noise
+    energy, the classical criterion behind Landauer's bound
+    [@landauer1961irreversibility]. This connects the analysis to mechanical
+    metamaterials and latching mechanisms, though none of it is tested yet.
+5. *Validation must be predictive.* A definition is checked by its consequences. The
+    consistency checks pass: invariance, the limits, and agreement with the bandwidth
+    argument of @wensing2017proprioceptive. The empirical test is whether retention,
+    routing or relevance best predicts closed-loop performance across designs; Table I
+    of @patterson2026quantifying gives a first hint.
+
+## Limitations {#sec-limits}
+
+1. *Body versus sensor.* The energy noise model quantifies what the body retains. Real
+    encoders have per-coordinate noise, and an encoder readout answers a different
+    question. The two should be reported as distinct quantities; @sec-langevin shows how
+    to combine them consistently.
+2. *The environment lives in the metric.* $K$ includes the ground spring, so $\Em$
+    differs between stance and flight, and the ground stiffness can flip the sign of the
+    SEA-rigid comparison (the analysis library shows this in
+    `test_the_ground_decides_whether_series_compliance_helps_or_hurts`). That is
+    physically right, since the ground does store energy, but any result should say so.
+3. *Dissipation is not stored energy.* $D$ is absent from $\Em$, as it should be.
+    Materials with internal variables, such as viscoelastic Maxwell elements, add states
+    whose stored energy has to be defined first.
+4. *Nonlinearity and contact.* $H(q)$ varies, contact switches $K$, and gravity
+    preloads the stiffness. @rem-scope outlines a trajectory-wise extension. Hybrid
+    contact needs a metric per contact mode and a rule at impacts.
+5. *The noise scale.* $\sigma$ is a resolution, not a temperature. Comparisons do not
+    depend on it only when the designs excite the same number of modes
+    (@prp-snr(c)), so ranks should be reported alongside bits.
+6. *Two metrics, two questions.* $I(W;X)$ measures transmission and $\mathrm{MC}_W$
+    measures retention (@prp-mcw), so the two should not be expected to agree.

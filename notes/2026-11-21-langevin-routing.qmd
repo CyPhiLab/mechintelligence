@@ -1,0 +1,37 @@
+# 2026-11-21: Energy is the right noise model, and morphology routes information {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** promoted to @sec-right and @sec-langevin · **Checked by:** `tests/test_energy_whitening.py`
+:::
+
+**Question.** Is the energy metric the best way to model a body's resolution for
+measuring mechanical intelligence, or only a reasonable one?
+
+**Findings.**
+
+1. Maximum entropy fixes the shape of the noise once energy is chosen as the constrained
+   quantity, but it does not choose energy. Constraining mean action instead gives the
+   quantum zero-point shape.
+2. Energy is the only noise metric that is coordinate-free, assembled element by element,
+   free of outside scales, symmetric in time and invariant under free motion
+   (@thm-unique).
+3. Invariance under free motion is equivalent to "free motion never creates
+   information" (@prp-work). Under per-coordinate noise, free motion raised the stored
+   information from 2 to 3.58 bits with no input at all.
+4. Of the alternatives, only action weighting passes both the stiff-spring limit and the
+   mesh-refinement limit. Locality and the classical regime exclude it. The
+   frequency-weighted family converges in the stiff limit exactly when $p<2$, as
+   predicted (@tbl-rules).
+5. Whitening by the data gives every body the same bits (@prp-datadriven).
+6. In a Langevin body, with noise injected through the dampers, every design gives the
+   same 37.742 bits when the full state is observed. The limit is set by the damping at
+   the contact, $JD^+J^\top=1/b_i$ (@prp-contact). Through the motor encoder, the rigid
+   transmission captures 99.9% of that limit, and the SEA climbs from 6% to 99.5% with
+   stiffness (@tbl-langevin).
+7. Readout-only noise lets a resonant SEA beat the rigid leg through the encoder by up to
+   5.9 bits. Under the fluctuation-dissipation theorem the resonance amplifies the
+   thermal noise by the same factor, so that advantage is an artifact.
+
+**Open from this note.** The constant 1/2 in @prp-contact is confirmed numerically but
+proved only in continuous time (roadmap thread T3). The routing efficiency in point 6
+needs a definition and properties of its own (thread T2).

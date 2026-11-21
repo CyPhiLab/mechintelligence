@@ -1,0 +1,181 @@
+# Continua, gears and floating bases {#sec-related}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** stable · **Updated:** 2026-11-21 · **Checked by:** `tests/test_energy_whitening.py`
+:::
+
+## Continuum and soft bodies: independence from the mesh
+
+Soft robots and compliant links are modelled by finite elements, where the number of
+coordinates is a numerical choice. A sound information measure must converge as the mesh
+is refined.
+
+::: {#thm-mesh name="Mesh independence"}
+Let a linear elastic body be semi-discretized by conforming finite elements, with
+consistent mass $H_N$ and stiffness $K_N$, and let $u_N(t)$ be the finite-element field. Then the
+energy-whitened Gram is
+$$
+  G_N^{ij}=\gamma\sum_k\Big[a\big(u^i_{N,k},u^j_{N,k}\big)+m\big(\dot u^i_{N,k},\dot u^j_{N,k}\big)\Big],
+$$
+where $a(\cdot,\cdot)$ is the continuum strain-energy bilinear form and $m(\cdot,\cdot)$ the
+continuum kinetic-energy (mass) form. Suppose the finite-element solutions converge in the
+energy norm at each sample time. This is classical for semi-discrete approximations of
+damped second-order hyperbolic problems with sufficiently regular data
+[@dupont1973l2; @baker1976error; @geveci1984convergence]; we *assume* it here. Then
+$G_N\to G_\infty$ and the bits converge.
+
+By contrast, per-node isotropic noise has Gram entries
+$\approx\frac{N}{L}\times(L^2\text{ inner product})$. It grows linearly in $N$, so by
+@prp-snr(b) the bits grow like $\frac r2\log_2N$: about $\frac r2$ bits per mesh
+doubling.
+:::
+
+::: {.proof}
+*The identity.* With $u_N=\sum_iU_i\psi_i$ in the nodal basis, the finite-element
+matrices are defined by $U^\top K_NU'=a(u_N,u_N')$ and $\dot U^\top H_N\dot U'=m(\dot
+u_N,\dot u_N')$. Substituting into @eq-gram with $C^\top C=\Em_N$ gives the
+displayed identity. The nodes have disappeared: the Gram is a sum of *continuum*
+energy inner products of the finite-element fields.
+
+*Convergence.* Each entry is a finite sum (over finitely many $k$) of inner products,
+which are continuous in the energy norm. So energy-norm convergence of each field implies
+convergence of each entry. Then apply continuity of $\log\det(I+\cdot)$.
+
+*The per-node estimate.* For a uniform mesh of spacing $h=L/N$ and smooth fields,
+$\sum_iU_iU_i'\approx h^{-1}\int uu'\,dx$, a Riemann sum.
+:::
+
+::: {#rem-auto-3 name="Cylindrical noise is harmless here"}
+In the continuum limit, isotropic noise in energy coordinates is white noise on the energy
+Hilbert space. That is a cylindrical measure, not a countably additive one. It does no
+harm here: the signal $\{Mw\}$ spans at most $d$ dimensions, and @lem-gauss shows
+that the information depends only on the $d\times d$ matrix $M^\top M$. This is the
+noise-side counterpart of the requirement, stressed in function-space Bayesian inversion,
+that priors and inner products be defined so as to survive refinement:
+
+- MCMC proposals that are robust under mesh refinement
+    [@cotter2013mcmc];
+- finite-element inner products weighted by the mass matrix
+    [@buithanh2013computational, Sec. 3.3];
+- see also @stuart2010inverse.
+
+:::
+
+::: {.callout-note appearance="simple" title="Numerical check"}
+A fixed-free axial rod (length 0.2 m, $EA=10^3$ N, $\rho A=0.1$ kg/m, so the
+first mode is at 125 Hz) with consistent mass, stiffness-proportional damping and a tip
+force ($B_w=400$ Hz, $d=68$), for $N=2,\dots,128$ elements (@fig-rod,
+`check_rod`):
+
+- energy-whitened bits converge, $297.93\to302.109$, changing by $0.004$ between
+    $N=64$ and $128$;
+- per-node isotropic bits grow by $33.2$ bits per doubling, against
+    $\frac r2=34$ predicted;
+- a fixed tip sensor (a physical point sensor) also converges, which shows that the
+    problem is noise *per coordinate*, not discretization.
+
+:::
+
+```{python}
+#| label: fig-rod
+#| fig-cap: |
+#|   Mesh refinement of a finite-element rod. Energy whitening gives a mesh-independent
+#|   answer. Per-node noise is the duplicate-readout artifact of @prp-dup at scale: every
+#|   refinement adds "free second looks."
+from mibook import figures
+figures.fig_rod();
+```
+
+## Gear ratios and transmission design
+
+Relabelling a motor angle on the input side of a gear as an angle on the output side is a
+reparametrization: $T=\diag(1,1/N)$ in the SEA layout. By @thm-invariance,
+energy-whitened bits do not move. Per-coordinate bits jump from 81.37 to 130.91 bits
+(@fig-invariance).
+
+*Changing* the gear ratio is a different matter: it changes the reflected inertia
+$N^2I_{\rm rot}$, which is a physical change in $H$. That change enters $\Em$, and it
+correctly changes the bits. The energy metric separates bookkeeping from design, which is
+what a sweep over rotor inertia (such as Table I of @patterson2026quantifying) needs.
+
+## Floating bases: when a singular metric loses nothing {#sec-floating}
+
+For an unclamped leg or a free-flying quadruped, $K$ is singular: rigid-body
+*positions* store no energy, while $H\succ0$ still weighs velocities. The
+whitened readout $\Em^{1/2}$, with eigenvalues clipped at zero by `sym_sqrt`, is
+blind to zero-energy positions. Does that lose information?
+
+::: {#prp-floating name="No loss when force and ground share the Jacobian"}
+Suppose:
+
+(i) $K\succeq k_iJ^\top J$ with $k_i>0$, where $J$ is the Jacobian through which the
+    unknown force acts;
+(ii) $D\phi=0$ for every $\phi\in\ker K$. Physically, internal and ground dampers act
+    only on relative or foot motion.
+
+Then, from rest, the trajectory never enters $\ker K$. More precisely, $\phi^\top Hq(t)=0$
+for all $\phi\in\ker K$ and all $t$. On the subspace where the motion lives, $\Em$ is
+positive definite, so nothing is lost.
+:::
+
+::: {.proof}
+*Step 1: zero-energy modes are not forced.* For $\phi\in\ker K$,
+$0=\phi^\top K\phi\ge k_i(J\phi)^2$, so $J\phi=0$.
+
+*Step 2: their coordinates stay at zero.* Let $\eta=\phi^\top Hq$. Multiply
+@eq-eom on the left by $\phi^\top$:
+$$
+  \ddot\eta=(J\phi)^\top f-(D\phi)^\top\dot q-(K\phi)^\top q=0 .
+$$
+With $\eta(0)=\dot\eta(0)=0$, we get $\eta\equiv0$.
+
+*Step 3: $\Em$ is definite on the motion.* By Step 2, $q(t)$ lies in the
+$H$-orthogonal complement of $\ker K$. Any nonzero $q$ in that complement is not in
+$\ker K$, so $q^\top Kq>0$ there.
+:::
+
+::: {.callout-note appearance="simple" title="Numerical check"}
+On the analysis library's free bench (trunk plus leg, $q=(y_b,\theta)$), the
+energy-whitened and `"kinetic"` ($\omega_{\rm ref}^2H$) readouts give the same bits,
+71.709.
+
+The equality has a reason: the motion lives on $\mathrm{span}(H^{-1}J^\top)$. On
+that line, $K$ restricts to $k_i(JH^{-1}J^\top)^2$ and $H$ restricts to $JH^{-1}J^\top$.
+Their ratio is $k_i/m_e=\omega_{\rm ref}^2$, where $m_e$ is the effective mass at the foot,
+so the two metrics agree on the motion.
+
+A counterexample violates (i) by pushing on the trunk instead of the foot. The zero mode
+is then forced ($\phi_0^\top e_1=-0.17$), and the singular metric loses
+$71.86-49.66=22.2$ bits relative to the regularized one (`check_floating`).
+:::
+
+::: {.callout-tip appearance="simple" title="What this means physically"}
+The quadruped experiments of @patterson2026quantifying [Sec. V] apply random pushes
+$w_{\rm ext}$ to the calves of a floating quadruped. Those pushes do excite zero-stiffness base positions, so an energy metric built
+from joint springs alone would discard base-position information. Three remedies:
+
+1. keep the base velocities (always weighted, since $H\succ0$) and accept that base
+    position is gauge;
+2. regularize the position block with $\omega_{\rm ref}^2H$ (the code's
+    `"kinetic"` readout) and report sensitivity to $\omega_{\rm ref}$;
+3. use the potential of gravity and contact springs at the operating point.
+
+The Zahedi-Ay $\mathrm{MC}_W$ of @sec-mcw has no Gibbs law when $\Em$ is singular,
+which is why `morphological_bits` correctly refuses the free bench.
+:::
+
+## Further uses
+
+- *Sensor placement.* @def-subset turns "where should the encoder go?"
+    into a Bayesian D-optimal design over physical sensor sites, with noise attached
+    to the body. This is the energy-consistent analogue of effective independence
+    [@kammer1991sensor; @papadimitriou2004optimal]. Joint-side vs motor-side
+    sensing on the SEA (@fig-shapley) is the simplest instance.
+- *Variable-stiffness and parallel-elastic actuators, compliant feet.* All of
+    these add or remove coordinates as parameters vary. @thm-limit guarantees
+    continuity across the degenerate limits.
+- *Learned estimators.* For InfoNCE, whitening does not change the true
+    information (@lem-noise(a)), but it gives the critic dimensionally
+    homogeneous inputs in $\sqrt{\mathrm J}$. Per-feature $z$-scoring is a
+    data-dependent diagonal metric: it is not basis-free, and it changes with the
+    force prior. Noise must be added *after* whitening, as `sim_info` does.

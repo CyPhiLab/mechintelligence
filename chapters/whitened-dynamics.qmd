@@ -1,0 +1,118 @@
+# The dynamics in whitened coordinates {#sec-structure}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** stable · **Updated:** 2026-11-21 · **Checked by:** `tests/test_energy_whitening.py`
+:::
+
+In whitened coordinates the equations of motion separate into a part that conserves
+energy and a part that dissipates it. That structure is behind several later results: the
+information-preservation property of @prp-work, the stationarity used for $\mathrm{MC}_W$
+in @sec-mcw, and the uniform energy bound in the proof of @prp-sea.
+
+::: {#thm-ph name="Port-Hamiltonian form"}
+Let $K\succ0$, and let $z=\Em^{1/2}x_q$. Then $\dot z=\At z+\tilde Bf$ with
+$$
+\At=\Em^{1/2}A\,\Em^{-1/2}
+  =\underbrace{\begin{bmatrix}0&\Omega\\-\Omega^\top&0\end{bmatrix}}_{\Jt\;=\;-\Jt^\top}
+  -\underbrace{\begin{bmatrix}0&0\\0&H^{-1/2}DH^{-1/2}\end{bmatrix}}_{\Rt\;=\;\Rt^\top\;\succeq\;0},
+  \qquad \Omega=K^{1/2}H^{-1/2},\qquad
+  \tilde B=\begin{bmatrix}0\\H^{-1/2}J^\top\end{bmatrix}.
+$$ {#eq-ph}
+Consequently:
+
+(a) *Power balance:*
+    $\frac{d}{dt}\frac12|z|^2=-\dot q^\top D\dot q+(J\dot q)\,f$. The rate of change
+    of energy is the power delivered at the foot minus the power dissipated.
+(b) *Contraction:* $\|e^{\At t}\|_2\le1$ for $t\ge0$. Free motion never increases
+    the whitened norm.
+(c) *Natural frequencies:* the singular values of $\Omega$ are the undamped
+    natural frequencies $\omega_i$, the square roots of the eigenvalues of
+    $K\phi=\omega^2H\phi$.
+(d) *Modes are rotations:* if $D=0$, each mode is a rotation at rate $\omega_i$
+    in a two-dimensional plane of $z$-space. The radius of the circle is
+    $\sqrt{2\times(\text{modal energy})}$.
+
+:::
+
+::: {.proof}
+*Computing $\At$.* With $\Em^{1/2}=\diag(K^{1/2},H^{1/2})$, multiply out
+$\Em^{1/2}A\Em^{-1/2}$ block by block using @eq-AB:
+
+- the $(1,1)$ block is $K^{1/2}\cdot0\cdot K^{-1/2}=0$;
+- the $(1,2)$ block is $K^{1/2}\cdot I\cdot H^{-1/2}=\Omega$;
+- the $(2,1)$ block is
+    $H^{1/2}(-H^{-1}K)K^{-1/2}=-H^{-1/2}K^{1/2}=-\Omega^\top$;
+- the $(2,2)$ block is $H^{1/2}(-H^{-1}D)H^{-1/2}=-H^{-1/2}DH^{-1/2}$.
+
+Also $\tilde B=\Em^{1/2}B=[0;H^{1/2}H^{-1}J^\top]=[0;H^{-1/2}J^\top]$. The matrix
+$\Rt$ is positive semidefinite because it is congruent to $D\succeq0$.
+
+(a) Write $z=(z_q,z_v)$, so $z_v=H^{1/2}\dot q$. Then
+$\frac{d}{dt}\frac12|z|^2=z^\top\At z+z^\top\tilde Bf$. Now $z^\top\Jt z=0$ because
+$\Jt$ is skew. The remaining terms are $-z_v^\top H^{-1/2}DH^{-1/2}z_v=-\dot q^\top
+D\dot q$ and $z_v^\top H^{-1/2}J^\top f=(J\dot q)f$.
+
+(b) Take $f=0$ in (a): $\frac{d}{dt}|z|^2=-2z^\top\Rt z\le0$. So $|e^{\At t}z_0|\le|z_0|$
+for every $z_0$.
+
+(c) $\Omega\Omega^\top=K^{1/2}H^{-1}K^{1/2}=K^{1/2}(H^{-1}K)K^{-1/2}$ is similar to
+$H^{-1}K$. The eigenvalues of $H^{-1}K$ are the $\omega_i^2$.
+
+(d) Take the singular value decomposition $\Omega=P\Sigma U^\top$. In the coordinates
+$(P^\top z_q,\,U^\top z_v)$ the matrix $\Jt$ becomes $\begin{bmatrix}0&\Sigma\\-\Sigma&0
+\end{bmatrix}$. This decouples into $2\times2$ blocks
+$\begin{bmatrix}0&\omega_i\\-\omega_i&0\end{bmatrix}$, each generating a rotation at
+rate $\omega_i$. The squared radius in block $i$ is that mode's share of $|z|^2$, which is
+twice its energy by @lem-energy.
+:::
+
+::: {.callout-note appearance="simple" title="Numerical check"}
+For the rigid leg and SEAs with $k_s\in\{70,10^3,10^4,10^5,10^6\}$:
+
+- the symmetric part of $\At$ equals $-\Rt$ to $7\times10^{-16}$ relative error;
+- the largest eigenvalue of $\At+\At^\top$ is $\le 3\times10^{-14}$;
+- the singular values of $\Omega$ equal $2\pi\times$`modes_hz()`. For example,
+    at $k_s=10^4$ they are $482.087$ and $1197.605$ rad/s (76.7 and 190.6 Hz).
+
+(`check_port_hamiltonian`.)
+:::
+
+**Relation to the literature.**
+
+- *Port-Hamiltonian systems.* @eq-ph is the input-state-output
+    port-Hamiltonian form $\dot z=[\Jt-\Rt]\,\partial\mathcal H/\partial z+gu$,
+    $y=g^\top\partial\mathcal H/\partial z$ of @vanderschaft2014port [Eq. (4.10)],
+    with Hamiltonian $\mathcal H=\frac12|z|^2$ and $g=\tilde B$. Its natural output,
+    $y=\tilde B^\top z=J\dot q$, is the foot velocity: the power conjugate of the
+    unknown force.
+    - Energy whitening is the change of coordinates that turns the storage
+        function into the identity.
+    - The storage function $\frac12x_q^\top\Em x_q$ is the classical one of
+        dissipativity theory [@willems1972dissipative].
+- *Modal analysis and sensor placement [@li2007connection].* The velocity block
+    $z_v=H^{1/2}\dot q$ is the mass weighting behind the *modal kinetic energy*
+    (MKE) criterion for sensor placement. The
+    eigenvectors of $\Omega^\top\Omega=H^{-1/2}KH^{-1/2}$ are the mass-normalized modes
+    $H^{1/2}\phi_i$. The input in modal coordinates is the modal participation
+    $\phi_i^\top J^\top f$.
+    - As we understand it from secondary sources (@sec-sources), the
+        cited work relates effective independence (EfI) and MKE through iteration and
+        re-orthonormalization, without showing that the two coincide under mass
+        whitening.
+    - EfI is the Fisher/D-optimal criterion of @kammer1991sensor. It
+        assumes isotropic noise in *physical* coordinates.
+    - The analogy is with MKE's mass weighting. It covers the kinetic block
+        only, not the stiffness block.
+- *Gramians and balancing [@moore1981principal].*
+    @moore1981principal observed that principal components of the
+    controllability Gramian depend on coordinates: under $x\mapsto Sx$ the Gramian
+    transforms as $W\mapsto SWS^\top$. He removed the dependence by
+    *balancing*, i.e. choosing coordinates in which the controllability and
+    observability Gramians are equal.
+    - Energy whitening removes the same dependence differently. By
+        @prp-fdt, it is the coordinate system in which the
+        controllability Gramian of the *thermal* input is isotropic.
+    - The Gram matrix @eq-gram is a finite-horizon, input-restricted,
+        Gramian-like object whose output inner product is fixed by $\Em$.
+    - Balanced and energy coordinates generally differ. One does not justify
+        the other.

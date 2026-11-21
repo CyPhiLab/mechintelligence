@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mibook"
+version = "0.1.0"
+description = "Computations behind the Mechanical Intelligence live textbook."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.15",
+    "matplotlib>=3.10",
+    "jupyter>=1.1",
+    # The analysis library (mechinfo, passive_info), pinned so the book's numbers are reproducible.
+    "slip-passive-info @ git+https://github.com/zpatty/quadruped-mech-info@2b25bca",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "quarto-cli==1.11.9"]
+
+[tool.setuptools.packages.find]
+where = ["code"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

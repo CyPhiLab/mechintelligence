@@ -1,0 +1,66 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Mechanical Intelligence"
+  subtitle: "A live textbook on information in mechanisms"
+  author: "Zach J. Patterson"
+  date: last-modified
+  date-format: "D MMMM YYYY"
+  site-url: https://zpatty.github.io/mechanical-intelligence/
+  repo-url: https://github.com/zpatty/mechanical-intelligence
+  repo-actions: [issue, source]
+  downloads: [pdf]
+  search: true
+  chapters:
+    - index.qmd
+    - part: "Part I. Information in mechanisms"
+      chapters:
+        - chapters/information-in-mechanisms.qmd
+        - chapters/energy-metric.qmd
+        - chapters/whitened-dynamics.qmd
+        - chapters/different-dof.qmd
+        - chapters/attribution.qmd
+        - chapters/continua-and-floating.qmd
+    - part: "Part II. Is energy the right choice?"
+      chapters:
+        - chapters/why-energy.qmd
+        - chapters/langevin-body.qmd
+    - chapters/open-problems.qmd
+    - part: "Research log"
+      chapters:
+        - notes/index.qmd
+        - notes/2026-11-21-langevin-routing.qmd
+        - ROADMAP.md
+        - CHANGELOG.md
+  appendices:
+    - appendices/sources.qmd
+    - references.qmd
+
+bibliography: references.bib
+number-sections: true
+reference-location: margin
+citation-location: document
+
+execute:
+  freeze: auto
+  echo: false
+  warning: false
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    html-math-method: mathjax
+    fig-format: svg
+    toc-depth: 3
+    include-in-header: _includes/mathjax-macros.html
+  pdf:
+    pdf-engine: xelatex
+    documentclass: scrreprt
+    callout-icon: false
+    papersize: letter
+    fig-format: pdf
+    include-in-header: _includes/macros.tex
