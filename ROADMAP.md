@@ -141,6 +141,10 @@ written up.
 - **2026-11-21.** All prose goes through the humanizer skill.
 - **2026-11-21.** Branch workflow: direct pushes to `main` for book content; pull
   requests for other repositories.
+- **2026-11-21.** The book is live at `mechintelligence.cyphilab.com`, tagged `v0.1`. The
+  Publish workflow installs Quarto and TinyTeX with `quarto-dev/quarto-actions/setup`,
+  because `quarto install tinytex` hit GitHub's anonymous API rate limit on the shared
+  runners.
 
 ## Paper candidates
 
