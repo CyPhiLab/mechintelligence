@@ -1,0 +1,254 @@
+# 2026-11-21: How information spreads along a chain {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T2 · **Checked by:** `tests/test_chain.py`
+:::
+
+**Question.** The [note on propagation](2026-11-21-information-propagation.qmd) showed
+that a part of the body holds the contact force through an effective contact damping
+$b_{\rm eff}(\omega)\ge b_c$, raised by the internal dampers. On the SEA there is one
+internal damper and two parts. What happens in a body with many dampers between the
+contact and a part, such as a chain of masses or a rod?
+
+**Short answer.** Shake the body at the part. Each internal damper then adds its damping
+times the square of its stretch per unit motion of the contact point to $b_{\rm eff}$.
+This follows from reciprocity and holds for any linear body with symmetric mass,
+stiffness and damping. In a chain, the cost of a
+damper between the contact and the part is the same for every part beyond it, so these
+costs only accumulate with distance. Dampers beyond the part add a second cost, which
+we call backflow. At low frequency backflow vanishes and each damper on the way costs
+$b_j(k_c/k_j)^2$, where $k_c$ is the contact stiffness and $k_j$ the damper's spring.
+Information therefore crosses a stiff interior well and a soft one badly. In band, the
+backflow can dominate: on a rod the contact point itself holds the least, because it
+loses near the natural frequencies of the body held fixed at the contact.
+
+## Setting
+
+The body has symmetric $H$, $K$ and $D$, and its dampers are independent:
+$$
+D=b_c\,J^\top J+\sum_j b_j\,a_ja_j^\top ,
+$$
+where damper $j$ resists the velocity $a_j^\top\dot q$ with coefficient $b_j$. A part is
+one combination of coordinates $y=p^\top q$, such as a node or a spring's deflection. By
+@prp-share-basic(e) of the propagation note its velocity adds nothing, so one row is
+enough. The dynamic stiffness at frequency $\omega$ is
+$$
+Z(\omega)=K-\omega^2H+i\omega D ,
+$$
+and $Z(\omega)^{-1}$ maps a harmonic force to the harmonic displacement it produces. This
+is the position block of $(i\omega-A)^{-1}[0;H^{-1}]$ in @def-beff of the propagation note.
+
+A *chain* has node 0 at the contact, where the force acts and the ground holds it through
+a spring $k_c$ and a damper $b_c$. Element $j$ joins node $j$ to node $j+1$ with a spring
+$k_j$ and a damper $b_j$, so $a_j=e_j-e_{j+1}$. The far end is free.
+
+## Results
+
+::: {#thm-reciprocity name="Shake the body at the part"}
+Let $w(\omega)=Z(\omega)^{-1}p$ be the body's response to a unit harmonic force applied at
+the part. Then
+$$
+b_{\rm eff}(\omega)=b_c+\sum_j b_j\,\frac{|a_j^\top w|^2}{|Jw|^2}.
+$$
+:::
+
+::: {.proof}
+*Step 1: the two responses.* At frequency $\omega$ the part responds to the contact force
+with $h=p^\top Z^{-1}J^\top$ and to the noise force of damper $j$, which enters along
+$a_j$, with $p^\top Z^{-1}a_j$.
+
+*Step 2: the definition.* The dampers are independent, so the noise the part receives
+from them is $M=2\sigma_T^2\sum_jb_j|p^\top Z^{-1}a_j|^2$. With one coordinate,
+$q=|h|^2/M$, and the definition of $b_{\rm eff}$ gives
+$$
+b_{\rm eff}-b_c=\frac{1}{2\sigma_T^2q}=\sum_jb_j\,\frac{|p^\top Z^{-1}a_j|^2}{|p^\top Z^{-1}J^\top|^2}.
+$$
+
+*Step 3: reciprocity.* $Z$ is a symmetric complex matrix (not Hermitian), so $Z^{-1}$ is
+symmetric too. Hence $p^\top Z^{-1}a_j=a_j^\top Z^{-1}p=a_j^\top w$ and
+$p^\top Z^{-1}J^\top=JZ^{-1}p=Jw$. This is the Maxwell-Betti reciprocity theorem of
+structural mechanics: the response at the part to a force at the damper equals the
+damper's stretch under a force at the part.
+:::
+
+The formula turns a question about noise into a question about one forced motion. Push
+on the part and watch the body: a damper that stretches a lot while the contact point
+barely moves is expensive. The numerical check uses 20 random chains with 2 to 8 nodes
+and parameters spread over several decades, plus the SEA's rotor, link and spring
+deflection. The formula and the state-space computation of $b_{\rm eff}$ agree to
+$4\times10^{-14}$ on the chains and $10^{-10}$ on the SEA (`check_reciprocity`).
+
+::: {#cor-accumulation name="Costs accumulate along a chain"}
+In a chain, take a part at node $k$ and an element $j<k$, which lies between the contact
+and the part. Its cost $|a_j^\top w|^2/|w_0|^2$ is the same for every part $k>j$. So
+$$
+b_{\rm eff,k}=b_c+\sum_{j<k}b_j\,c_j+B_k ,
+$$
+where $c_j$ does not depend on $k$, and the backflow $B_k$ collects the elements beyond
+node $k$.
+:::
+
+::: {.proof}
+$w$ solves $Zw=e_k$, and $Z$ is tridiagonal. Rows $0,\dots,k-1$ of this system have zero on
+the right. Row 0 reads $Z_{00}w_0+Z_{01}w_1=0$, which fixes $w_1/w_0$; the off-diagonal
+entry $Z_{01}=-(k_0+i\omega b_0)$ is nonzero. Each further row $i\le k-1$ fixes
+$w_{i+1}$ from $w_{i-1}$ and $w_i$. So the ratios $w_1/w_0,\dots,w_k/w_0$ come from rows
+that do not involve $k$, and $(w_j-w_{j+1})/w_0$ is the same for every $k\ge j+1$.
+:::
+
+The ratio $|a_j^\top w|^2/|w_0|^2$ agrees across parts to $10^{-14}$ on the uniform
+chain below (`check_accumulation`). Once information has been lost crossing a damper, no
+part farther along gets it back. The share can still rise along the chain, because the
+backflow $B_k$ shrinks as fewer dampers lie beyond the part.
+
+::: {#prp-static name="The static law"}
+In a chain with a free far end,
+$$
+\rho_k(0)=\frac{b_c}{b_c+k_c^2\sum_{j<k}b_j/k_j^2}.
+$$
+:::
+
+::: {.proof}
+At $\omega=0$, $Z=K$, which is invertible because the contact spring anchors the chain,
+and $w$ is the static deflection under a unit force at node $k$.
+
+- The segment beyond node $k$ is free and unloaded, so its springs carry no force and
+    $a_j^\top w=0$ for $j\ge k$. The backflow is zero.
+- Every element between the contact and node $k$ carries the whole unit force, so it
+    stretches by $1/k_j$.
+- The contact spring carries it too, so $w_0=1/k_c$.
+
+@thm-reciprocity then gives $b_{\rm eff,k}(0)=b_c+\sum_{j<k}b_j\,k_c^2/k_j^2$.
+:::
+
+Each damper on the way costs $b_j(k_c/k_j)^2$. Since $b_j/k_j$ is the damper's relaxation
+time, this cost is the relaxation time multiplied by $k_c^2/k_j$: it grows with slow
+dampers and with springs that are soft compared with the contact. For the SEA's rotor, in joint
+coordinates where the contact has stiffness $k_ir^2$ and damping $b_cr^2$, the law gives
+the cost $b_s(k_ir^2/k_s)^2$, the low-frequency limit of the rotor formula in the
+propagation note. On 20 random chains the law matches $\rho_k$ at $10^{-4}$ Hz to
+$2\times10^{-10}$ (`check_static_law`).
+
+For a rod with Kelvin-Voigt material damping $D=cK$, an element of length $h$ has
+$k_e=EA/h$ and $b_e=c\,EA/h$, so it costs $c\,k_c^2h/EA$. The elements between the contact
+and a point at distance $x$ add up to
+$$
+\rho(x,0)=\frac{b_c}{b_c+c\,k_c^2\,x/EA},
+$$
+which does not depend on the mesh.
+
+::: {#rem-contact-dips name="Where the contact point loses"}
+For the part at the contact node, $w=Z^{-1}e_0$, and by Cramer's rule
+$w_0=\det Z_c/\det Z$, where $Z_c$ is $Z$ with row and column 0 removed: the dynamic
+stiffness of the body held fixed at the contact. Near a natural frequency of that clamped
+body, $\det Z_c$ is small (zero without internal damping). The rest of the body then rings
+while the contact point hardly moves, and the cost in @thm-reciprocity becomes large. On
+the SEA, the clamped body is the rotor on its spring, which is why the link loses near
+$\sqrt{k_s/I_{\rm rot}}$.
+:::
+
+## Numbers
+
+Two bodies. The uniform chain has eight 0.1 kg masses, springs of $10^4$ N/m, dampers at
+5% of critical per element, and a contact ten times stiffer than one element
+($k_c=10^5$ N/m, $b_c=84.9$ N s/m, 15% of critical on the chain's mass). Its modes lie
+between 10 and 168 Hz, and the whole body holds 61.23 bits about a 100 Hz force profile.
+The rod is free at both ends and touches the ground at one: $L=0.2$ m, $EA=10^3$ N,
+$\rho A=0.1$ kg/m, Kelvin-Voigt damping at 5% of critical on the first free-free mode,
+$k_c=EA/L$ and $b_c=3$ N s/m.
+
+```{python}
+#| label: fig-chain
+#| fig-cap: |
+#|   (a) The uniform chain: the share of the body's information held by each node (finite
+#|   window, 100 Hz band), the band average of $\rho$, and the static law of @prp-static.
+#|   (b) The free rod: band average of $\rho$ from 0 to 400 Hz at five positions, for meshes
+#|   of 4 to 64 elements, with the mesh-independent static law (dashed).
+from mibook import figures
+figures.fig_chain();
+```
+
+| Node | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|
+| share, finite window | 0.951 | 0.381 | 0.334 | 0.304 | 0.254 | 0.258 | 0.220 | 0.242 |
+| band mean of $\rho$ | 0.831 | 0.067 | 0.054 | 0.047 | 0.038 | 0.036 | 0.034 | 0.041 |
+| static law $\rho(0)$ | 1 | 0.212 | 0.118 | 0.082 | 0.063 | 0.051 | 0.043 | 0.037 |
+
+: The uniform chain (`check_chain_shares`). {#tbl-chain}
+
+- *The first damper costs most.* The contact is ten times stiffer than one element, so
+    each damper costs $b_j(k_c/k_j)^2=100\,b_j$ statically, about four times $b_c$. The
+    share drops from 0.951 at the contact node to 0.381 one node in, then declines slowly.
+- *The free end beats its neighbour.* Node 7 holds 0.242 and node 6 holds 0.220. Node 7
+    has no damper beyond it, so its backflow is zero; node 6 still receives the last
+    damper's noise from behind.
+- *The finite-window share sits far above the band mean of $\rho$.* The whole-body SNR
+    is 147 per band, and the logarithm in @prp-lowsnr of the propagation note compresses the
+    losses.
+- *The rod converges under mesh refinement.* From 32 to 64 elements the band mean of
+    $\rho$ changes by at most $4\times10^{-4}$ at every position, and the static values
+    match the formula above to $10^{-6}$ on every mesh (`check_rod_mesh`).
+- *On the rod the contact point holds the least.* The band mean of $\rho$ is 0.537 at the
+    contact and rises to 0.711 at $x=0.75L$ and 0.703 at the far end, while the static
+    law falls from 1 to 0.904. The contact node's $\rho$ dips to 0.012 at 125.1 Hz and
+    to 0.092 at 377.5 Hz; the rod clamped at the contact has its modes at 125.0 and
+    375.3 Hz (`check_contact_dips`). The chain's two deepest dips sit at 10.53 and
+    31.13 Hz, against clamped modes at 10.52 and 31.11 Hz.
+
+## The SEA's spring deflection
+
+::: {#prp-deflection name="The deflection holds the force only through the rotor"}
+For the clamped SEA with the motor undriven, the spring deflection
+$\delta=\theta_j-\theta_m$ has
+$$
+\rho_\delta=\Big[1+\frac{b_s}{b_c}\,
+\frac{|k_ir^2-m_j\omega^2+i\omega b_cr^2-I_{\rm rot}\omega^2|^2}{r^2I_{\rm rot}^2\omega^4}\Big]^{-1},
+$$
+which tends to 0 as $\omega\to0$. The spring stiffness $k_s$ enters only through $b_s$.
+:::
+
+::: {.proof}
+Apply @thm-reciprocity with $p=(1,-1)$: equal and opposite torques across the spring.
+With $z_g=k_ir^2+i\omega b_cr^2-m_j\omega^2$ and $c=k_s+i\omega b_s$, $Zw=p$ reads
+$$
+(z_g+c)w_0-c\,w_1=1,\qquad -c\,w_0+(c-I_{\rm rot}\omega^2)w_1=-1 .
+$$
+Adding the two rows gives $z_gw_0=I_{\rm rot}\omega^2w_1$. The damper's stretch is
+$w_0-w_1=w_0(I_{\rm rot}\omega^2-z_g)/(I_{\rm rot}\omega^2)$ and the contact moves by
+$Jw=-rw_0$, so the cost is $b_s|z_g-I_{\rm rot}\omega^2|^2/(r^2I_{\rm rot}^2\omega^4)$.
+Neither expression contains $c$, so $k_s$ appears only inside $b_s$.
+:::
+
+Pinching the spring with equal and opposite torques barely moves the foot when the rotor
+is free, because the rotor's inertia is the only thing the spring can push against. So
+the deflection follows the contact force only through the rotor's acceleration, which
+vanishes at low frequency. Its share falls with stiffness, from 0.566 at $k_s=70$ to
+0.463 at $10^3$ and 0.362 at $10^4$ (predicted 0.597, 0.492, 0.389), because a stiffer
+spring at fixed damping ratio has a larger $b_s$. The closed form matches the state-space
+computation to $10^{-15}$ (`check_deflection`). A driven motor changes this, since the
+motor torque then also balances the spring.
+
+## What this changes
+
+The propagation note found that internal dampers decide where the information sits. This
+note gives the rule for any linear body: shake it at the part and weigh each damper's
+stretch against the contact point's motion. In a chain, losses on the way to a part
+accumulate and are never recovered. Statically they are set by $k_c^2\sum b_j/k_j^2$, so
+a body that is stiff inside compared with its contact keeps the force intact. In band,
+the dampers beyond a part also matter, and the contact point itself can be the worst
+place to hold the force, near the modes of the body held fixed at the contact.
+
+## Limits of this note
+
+- Linear bodies with symmetric $H$, $K$, $D$ and independent viscous dampers. Gyroscopic
+    terms would break the symmetry used in @thm-reciprocity.
+- One-coordinate parts. A part with several independent coordinates needs the matrix
+    version of the formula.
+- The far end of the chain is free, as for an undriven rotor. A clamped far end adds a
+    static backflow.
+
+## Next steps
+
+- The matrix version of @thm-reciprocity for parts with several coordinates.
+- Trees: a body that branches, such as a leg attached to a trunk with other legs.
+- Fold this note and the propagation note into @sec-langevin.

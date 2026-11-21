@@ -306,10 +306,39 @@ def fig_propagation():
     return _save(fig, "propagation")
 
 
+def fig_chain():
+    """Share by node along the uniform chain, and the rod under mesh refinement."""
+    from mibook import chain as ch
+    r = ch.check_chain_shares()
+    nodes = np.arange(r["share"].size)
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    a.plot(nodes, r["share"], color=C1, marker="o", markersize=3, label="share, finite window")
+    a.plot(nodes, r["rho_mean"], color=C3, marker="s", markersize=3, label=r"band mean of $\rho$")
+    a.plot(nodes, r["static"], color=INK2, ls="--", lw=0.9, label=r"static law, $\rho(0)$")
+    a.set_ylim(0, 1.05)
+    a.set_xlabel("node (0 touches the ground)")
+    a.set_ylabel("fraction of the body's information")
+    a.set_title("(a) uniform chain", loc="left")
+    a.legend(loc="upper right", fontsize=7)
+
+    m = ch.check_rod_mesh()
+    for N, row, col in zip(m["N"], m["rho_mean"], (C2, C4, C1, C3, INK2)):
+        b.plot(m["fracs"], row, color=col, marker="o", markersize=3, lw=0.9, label=f"$N={N}$")
+    b.plot(m["fracs"], m["static_law"], color=INK2, ls="--", lw=0.9)
+    b.text(0.03, m["static_law"][1] - 0.06, r"static law, $\rho(0)$", fontsize=7.5)
+    b.set_ylim(0.4, 1.05)
+    b.set_xlabel("distance from the contact, $x/L$")
+    b.set_ylabel(r"band mean of $\rho$ (0 to 400 Hz)")
+    b.set_title("(b) free rod, mesh refinement", loc="left")
+    b.legend(loc="lower right", fontsize=7, ncol=2)
+    fig.tight_layout()
+    return _save(fig, "chain")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain):
         f()

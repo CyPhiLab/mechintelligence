@@ -53,9 +53,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   part holds the force through an effective contact damping $b_{\rm eff}(\omega)\ge b_c$,
   and $\rho=b_c/b_{\rm eff}$ is its spectral share. Losses come only from internal dampers
   between the contact and the part. Closed forms for the SEA's rotor and link.
-- Next step: a chain of masses, springs and dampers, and the rod, to see how the share
-  falls with the number of dampers between the contact and a part. Then the spring
-  deflection as a part. Fold the note into @sec-langevin after that.
+- Done (2026-11-21, [research note](notes/2026-11-21-chains.qmd)): by reciprocity, a
+  damper costs its damping times the square of its stretch per unit contact motion when
+  the body is driven at the part. In a chain these costs accumulate with distance; the
+  static law is $\rho_k(0)=b_c/(b_c+k_c^2\sum_{j<k}b_j/k_j^2)$, mesh-independent on a rod.
+  Dampers beyond the part add backflow, and the contact node loses near the modes of the
+  body clamped at the contact. The SEA's spring deflection holds the force only through
+  the rotor's inertia.
+- Next step: the matrix version of the reciprocity formula for parts with several
+  coordinates, then branching bodies. Fold both notes into @sec-langevin after that.
 
 **T3. The Langevin body as the default noise model.** *Queued.*
 
@@ -110,6 +116,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-21.** Reciprocity gives the cost of every internal damper: drive the body at
+  the part, and a damper costs $b_j|\text{stretch}_j/\text{contact motion}|^2$. Along a
+  chain the costs of dampers on the way accumulate, and statically each costs
+  $b_j(k_c/k_j)^2$. On a free rod the share converges under mesh refinement, and the
+  contact point holds the least in band, losing near the modes of the rod clamped at the
+  contact. The SEA's spring deflection holds 57% to 36% of the body's information,
+  falling with stiffness (`tests/test_chain.py`;
+  [research note](notes/2026-11-21-chains.qmd)).
 
 - **2026-11-21.** Information is lost on its way through the body only at internal
   dampers. A part holds the contact force through

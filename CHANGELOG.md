@@ -9,6 +9,10 @@ Newest first. Each release is tagged in the repository.
 - New research note: how information about the contact propagates through the body. A
   part of the body holds the force through an effective contact damping, and only
   internal dampers between the contact and the part erode it.
+- New research note: how information spreads along a chain. A reciprocity formula gives
+  each internal damper's cost, losses on the way to a part accumulate, a static law
+  holds on chains and rods, and the SEA's spring deflection holds the force only through
+  the rotor's inertia.
 - The Langevin chapter compares the whole body with the rotor under thermal and static
   noise. Static energy noise ranks the rotors as thermal noise does; the 5.9-bit
   misranking belongs to a fixed angle noise.

@@ -86,9 +86,9 @@ def effective_contact_damping(sys, P, omegas, sigma_T2: float | None = None,
     return np.array(out)
 
 
-def spectral_propagation(sys, P, omegas, **kw) -> np.ndarray:
+def spectral_propagation(sys, P, omegas, b_contact: float = B_CONTACT, **kw) -> np.ndarray:
     """rho(w) = b_c / b_eff(w), in [0, 1]."""
-    return B_CONTACT / effective_contact_damping(sys, P, omegas, **kw)
+    return b_contact / effective_contact_damping(sys, P, omegas, b_contact=b_contact, **kw)
 
 
 def sea_propagation_closed_form(ks: float, omega, part: str,
@@ -113,18 +113,18 @@ def sea_propagation_closed_form(ks: float, omega, part: str,
 
 
 def snr_per_band(sigma_T2: float | None = None, dt: float = 1.0 / FS,
-                 sigma_w: float = SIGMA_A) -> float:
+                 sigma_w: float = SIGMA_A, b_contact: float = B_CONTACT) -> float:
     """S / (2 sigma_T^2 b_c): the whole body's SNR. The DCT prior has two-sided PSD sigma_w^2 dt."""
     sigma_T2 = SIGMA_ENERGY ** 2 if sigma_T2 is None else sigma_T2
-    return sigma_w ** 2 * dt / (2.0 * sigma_T2 * B_CONTACT)
+    return sigma_w ** 2 * dt / (2.0 * sigma_T2 * b_contact)
 
 
 def predicted_share(sys, P, band_hz: float = 100.0, snr: float | None = None,
-                    n_freq: int = 2000) -> float:
+                    n_freq: int = 2000, b_contact: float = B_CONTACT) -> float:
     """Infinite-window share: int log(1 + snr rho) df / (B log(1 + snr))."""
-    snr = snr_per_band() if snr is None else snr
+    snr = snr_per_band(b_contact=b_contact) if snr is None else snr
     f = np.linspace(0.0, band_hz, n_freq + 1)[1:]
-    rho = spectral_propagation(sys, P, 2 * np.pi * f)
+    rho = spectral_propagation(sys, P, 2 * np.pi * f, b_contact=b_contact)
     return float(np.mean(np.log1p(snr * rho)) / np.log1p(snr))
 
 
