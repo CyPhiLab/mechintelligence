@@ -25,8 +25,15 @@ jobs:
         run: uv sync
       - name: Test every number in the book
         run: uv run pytest -q
-      - name: Install TinyTeX for the PDF
-        run: uv run quarto install tinytex --no-prompt
+      # The setup action authenticates its GitHub release lookups with the workflow token;
+      # `quarto install tinytex` alone hits the anonymous API rate limit on shared runners.
+      - name: Install Quarto and TinyTeX for the PDF
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.11.9
+          tinytex: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Render website and PDF
         run: uv run quarto render
       - uses: actions/upload-pages-artifact@v3
