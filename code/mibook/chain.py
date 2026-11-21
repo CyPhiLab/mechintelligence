@@ -39,28 +39,35 @@ def _passive(H, K, D, J) -> Passive:
                    readout="energy")
 
 
-def chain_system(m, k, b, k_c: float, b_c: float):
-    """A chain with masses `m` (N), springs `k` and dampers `b` (N-1), contact at node 0.
+def tree_system(m, edges, k_c: float, b_c: float):
+    """A body of point masses joined by spring-damper elements; node 0 touches the ground.
 
-    Returns the system and the list of internal dampers as (b_j, a_j) with a_j = e_j - e_{j+1}.
+    `edges` lists (i, j, k_ij, b_ij). Returns the system and the internal dampers as
+    (b, a) with a = e_i - e_j. A chain is the case edges = [(j, j+1, k_j, b_j)].
     """
-    m, k, b = (np.atleast_1d(np.asarray(v, float)) for v in (m, k, b))
+    m = np.atleast_1d(np.asarray(m, float))
     N = m.size
     H = np.diag(m)
     K = np.zeros((N, N))
     D = np.zeros((N, N))
     dampers = []
-    for j in range(N - 1):
+    for i, j, k, b in edges:
         a = np.zeros(N)
-        a[j], a[j + 1] = 1.0, -1.0
-        K += k[j] * np.outer(a, a)
-        D += b[j] * np.outer(a, a)
-        dampers.append((b[j], a))
+        a[i], a[j] = 1.0, -1.0
+        K += k * np.outer(a, a)
+        D += b * np.outer(a, a)
+        dampers.append((float(b), a))
     J = np.zeros((1, N))
     J[0, 0] = 1.0
     K += k_c * (J.T @ J)
     D += b_c * (J.T @ J)
     return _passive(H, K, D, J), dampers
+
+
+def chain_system(m, k, b, k_c: float, b_c: float):
+    """A chain with masses `m` (N), springs `k` and dampers `b` (N-1), contact at node 0."""
+    m, k, b = (np.atleast_1d(np.asarray(v, float)) for v in (m, k, b))
+    return tree_system(m, [(j, j + 1, k[j], b[j]) for j in range(m.size - 1)], k_c, b_c)
 
 
 def uniform_chain(p: dict = CHAIN):
@@ -124,6 +131,39 @@ def reciprocity_beff(sys, p: np.ndarray, dampers, b_c: float, omegas) -> np.ndar
         cost = sum(bj * abs(aj @ x) ** 2 for bj, aj in dampers)
         out.append(np.inf if contact == 0 else b_c + cost / contact)
     return np.array(out)
+
+
+def _drive_responses(sys, P, dampers, omega):
+    """W = Z^{-1} P^T, the contact motion h = (J W)^T and the stretches s_j = (a_j W)^T."""
+    D = -sys.H @ sys.A[sys.n:, sys.n:]
+    Z = sys.K - omega ** 2 * sys.H + 1j * omega * D
+    W = np.linalg.solve(Z, np.atleast_2d(P).T.astype(complex))
+    h = (np.atleast_2d(sys.J) @ W).ravel()
+    S = np.array([a @ W for _, a in dampers])
+    return W, h, S
+
+
+def pattern_cost(sys, P, dampers, omega: float, phi) -> float:
+    """sum_j b_j |a_j.x|^2 / |J x|^2 for the response x to the force pattern P^T phi."""
+    _, h, S = _drive_responses(sys, P, dampers, omega)
+    bb = np.array([b for b, _ in dampers])
+    return float(np.sum(bb * np.abs(S @ phi) ** 2) / np.abs(h @ phi) ** 2)
+
+
+def best_pattern(sys, P, dampers, omega: float):
+    """The force pattern on the part that minimizes the cost, and that minimum.
+
+    With N = sum_j b_j s_j s_j^*, the minimum is 1 / (h^* N^+ h), reached by phi = conj(N^+ h).
+    Returns (phi, cost); cost is 0 when h lies outside the range of N.
+    """
+    _, h, S = _drive_responses(sys, P, dampers, omega)
+    bb = np.array([b for b, _ in dampers])
+    N = (S.T * bb) @ S.conj()
+    Np = np.linalg.pinv(N, rcond=1e-12, hermitian=True)
+    if np.linalg.norm(h - N @ (Np @ h)) > 1e-9 * np.linalg.norm(h):
+        return None, 0.0
+    psi = Np @ h
+    return psi.conj(), 1.0 / float(np.real(h.conj() @ psi))
 
 
 def static_law(k_c: float, b_c: float, k, b, part: int) -> float:
@@ -270,4 +310,138 @@ def check_contact_dips(n_freq: int = 4000) -> dict:
         i = i[r[i] < 0.5]                                 # real dips, not round-off ripples
         clamped = np.sqrt(sla.eigh(s.K[1:, 1:], s.H[1:, 1:], eigvals_only=True)) / (2 * np.pi)
         out[name] = dict(dips_hz=f[i], rho_at_dips=r[i], clamped_hz=clamped[clamped < band])
+    return out
+
+
+# ---------------------------------------------------------------------------------------
+# Parts with several coordinates, and branching bodies
+# ---------------------------------------------------------------------------------------
+
+def node_set(sys, nodes) -> np.ndarray:
+    """Position rows for a set of nodes, as a selector on x_q."""
+    P = np.zeros((len(nodes), 2 * sys.n))
+    P[np.arange(len(nodes)), list(nodes)] = 1.0
+    return P
+
+
+def check_matrix_reciprocity(n_chains: int = 15, f_hz=(0.8, 7.0, 40.0), n_random: int = 200,
+                             seed: int = 3) -> dict:
+    """Several-coordinate parts: b_eff = b_c + the cost of the best force pattern on the part.
+
+    Compares the state-space b_eff with the best-pattern formula, checks that random patterns
+    never do better, and that the predicted pattern reaches the minimum.
+    """
+    rng = np.random.default_rng(seed)
+    w = 2 * np.pi * np.asarray(f_hz)
+    rel, beaten, reach = 0.0, 0, 0.0
+    for _ in range(n_chains):
+        s, b_c, _, _, _, dampers = random_chain(rng)
+        if s.n < 3:
+            continue
+        nodes = sorted(rng.choice(s.n, size=min(3, s.n - 1), replace=False))
+        P = node_set(s, nodes)[:, :s.n]
+        num = pg.effective_contact_damping(s, node_set(s, nodes), w, b_contact=b_c)
+        for wi, bn in zip(w, num):
+            phi, c = best_pattern(s, P, dampers, wi)
+            rel = max(rel, abs(b_c + c - bn) / bn)
+            reach = max(reach, abs(pattern_cost(s, P, dampers, wi, phi) - c) / c)
+            for _ in range(n_random):
+                z = rng.normal(size=len(nodes)) + 1j * rng.normal(size=len(nodes))
+                beaten += pattern_cost(s, P, dampers, wi, z) < c * (1 - 1e-9)
+    return dict(max_rel_err=rel, n_beaten=int(beaten), reach_rel_err=reach)
+
+
+def check_set_static_law(n_chains: int = 20, seed: int = 5) -> dict:
+    """At low frequency a set of nodes holds what its node nearest the contact holds."""
+    rng = np.random.default_rng(seed)
+    worst = 0.0
+    for _ in range(n_chains):
+        s, b_c, k_c, k, b, _ = random_chain(rng)
+        if s.n < 3:
+            continue
+        nodes = sorted(rng.choice(np.arange(1, s.n), size=2, replace=False))
+        r = float(pg.spectral_propagation(s, node_set(s, nodes), [2 * np.pi * 1e-4],
+                                          b_contact=b_c)[0])
+        worst = max(worst, abs(r - static_law(k_c, b_c, k, b, nodes[0])))
+    return dict(max_abs_err=worst)
+
+
+#: A toy vertical leg on a trunk: foot (0, on the ground), knee (1), hip (2), trunk (3), and
+#: two swing legs hanging from the trunk, knee (4, 6) and foot (5, 7). Masses in kg.
+LEG_TRUNK = dict(m=(0.2, 0.5, 1.0, 5.0, 0.5, 0.2, 0.5, 0.2),
+                 edges=((0, 1, 2e4), (1, 2, 2e4), (2, 3, 5e4),
+                        (3, 4, 2e4), (4, 5, 2e4), (3, 6, 2e4), (6, 7, 2e4)),
+                 swing=(3, 4, 5, 6), zeta=0.05, k_c=1e5, zeta_c=0.15)
+#: The path from the foot to each node, as edge indices into LEG_TRUNK["edges"].
+LEG_TRUNK_PATHS = {0: (), 1: (0,), 2: (0, 1), 3: (0, 1, 2), 4: (0, 1, 2, 3),
+                   5: (0, 1, 2, 3, 4), 6: (0, 1, 2, 5), 7: (0, 1, 2, 5, 6)}
+
+
+def leg_trunk(zeta_swing: float = 0.05, p: dict = LEG_TRUNK):
+    """The leg-on-trunk body; elements are damped at `zeta` (swing legs at `zeta_swing`)
+    of critical on the lighter of their two masses. Returns (sys, b_c, dampers, edges)."""
+    m = p["m"]
+    edges = []
+    for e, (i, j, k) in enumerate(p["edges"]):
+        z = zeta_swing if e in p["swing"] else p["zeta"]
+        edges.append((i, j, k, 2.0 * z * np.sqrt(k * min(m[i], m[j]))))
+    b_c = 2.0 * p["zeta_c"] * np.sqrt(p["k_c"] * sum(m))
+    s, dampers = tree_system(m, edges, p["k_c"], b_c)
+    return s, b_c, dampers, edges
+
+
+def check_tree(zetas=(0.05, 0.2), p: dict = LEG_TRUNK) -> dict:
+    """Shares on the leg-on-trunk body; the static law follows the path to the contact."""
+    out = {}
+    for z in zetas:
+        s, b_c, _, edges = leg_trunk(z, p)
+        whole = checks.langevin_bits(s, np.eye(2 * s.n), 0.0)
+        share, static, path_law = [], [], []
+        for n in range(s.n):
+            P = np.zeros((2, 2 * s.n))
+            P[0, n], P[1, s.n + n] = 1.0, 1.0
+            share.append(checks.langevin_bits(s, P, pg.JITTER) / whole)
+            static.append(float(pg.spectral_propagation(s, node(s, n), [2 * np.pi * 1e-4],
+                                                        b_contact=b_c)[0]))
+            path_law.append(b_c / (b_c + p["k_c"] ** 2 * sum(edges[e][3] / edges[e][2] ** 2
+                                                             for e in LEG_TRUNK_PATHS[n])))
+        out[z] = dict(whole=whole, share=np.array(share), static=np.array(static),
+                      path_law=np.array(path_law))
+    return out
+
+
+def check_bridge(f_hz=(3.0, 25.0, 60.0), n_random: int = 20, seed: int = 7) -> dict:
+    """Across a bridge (an element whose removal separates contact and part), every damper on
+    the contact side costs the same for any part, and any force pattern, beyond the bridge.
+
+    On the leg-on-trunk body the hip-trunk element is a bridge; the contact side holds the
+    foot-knee and knee-hip dampers and the bridge damper itself (indices 0, 1, 2).
+    """
+    rng = np.random.default_rng(seed)
+    s, _, dampers, _ = leg_trunk()
+    far = [3, 4, 5, 6, 7]
+    spread = 0.0
+    for w in 2 * np.pi * np.asarray(f_hz):
+        ref = None
+        trials = [np.eye(s.n)[[n]] for n in far]
+        for _ in range(n_random):
+            P = np.eye(s.n)[far]
+            trials.append((rng.normal(size=len(far)) + 1j * rng.normal(size=len(far))) @ P)
+        for P in trials:
+            _, h, S = _drive_responses(s, np.atleast_2d(P), dampers, w)
+            c = np.abs(S[:3, 0]) ** 2 / abs(h[0]) ** 2
+            ref = c if ref is None else ref
+            spread = max(spread, float(np.max(np.abs(c / ref - 1.0))))
+    return dict(max_rel_spread=spread)
+
+
+def check_pairs(pairs=((1,), (7,), (1, 7), (6,), (6, 7)), band_hz: float = 100.0) -> dict:
+    """Finite-window share of single nodes and pairs on the uniform chain."""
+    s, _, _, _ = uniform_chain()
+    whole = checks.langevin_bits(s, np.eye(2 * s.n), 0.0, band_hz=band_hz)
+    out = {}
+    for nodes in pairs:
+        rows = [n for n in nodes] + [s.n + n for n in nodes]
+        P = np.eye(2 * s.n)[rows]
+        out[nodes] = checks.langevin_bits(s, P, pg.JITTER, band_hz=band_hz) / whole
     return out

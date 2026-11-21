@@ -60,8 +60,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   Dampers beyond the part add backflow, and the contact node loses near the modes of the
   body clamped at the contact. The SEA's spring deflection holds the force only through
   the rotor's inertia.
-- Next step: the matrix version of the reciprocity formula for parts with several
-  coordinates, then branching bodies. Fold both notes into @sec-langevin after that.
+- Done (2026-11-21, [research note](notes/2026-11-21-branching.qmd)): a part with
+  several coordinates holds the force through $b_c$ plus the cost of the best force
+  pattern on it. A group of chain nodes holds statically what its nearest node holds. On
+  the contact side of a bridge element every damper costs the same for all parts beyond.
+  In a tree only the path from the contact matters statically; side branches act in band
+  through backflow.
+- Next step: several contacts at once (two feet on the ground). Fold the three T2 notes
+  into @sec-langevin after that.
 
 **T3. The Langevin body as the default noise model.** *Queued.*
 
@@ -116,6 +122,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-21.** A part with several coordinates holds the force through the best
+  pattern of forces on it. Statically a group of chain nodes holds what its nearest node
+  holds, and in a tree only the path to the contact counts; in band a far node adds (node
+  1 of the uniform chain holds 0.381, nodes 1 and 7 together 0.499) and side branches
+  feed back (heavier swing-leg damping lowers the trunk from 0.242 to 0.214)
+  (`tests/test_chain.py`; [research note](notes/2026-11-21-branching.qmd)).
 
 - **2026-11-21.** Reciprocity gives the cost of every internal damper: drive the body at
   the part, and a damper costs $b_j|\text{stretch}_j/\text{contact motion}|^2$. Along a

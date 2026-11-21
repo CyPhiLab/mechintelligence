@@ -9,6 +9,9 @@ Newest first. Each release is tagged in the repository.
 - New research note: how information about the contact propagates through the body. A
   part of the body holds the force through an effective contact damping, and only
   internal dampers between the contact and the part erode it.
+- New research note: parts with several coordinates, and branching bodies. A part holds
+  the force through the best pattern of forces on it, and in a tree only the path from
+  the contact matters at low frequency.
 - New research note: how information spreads along a chain. A reciprocity formula gives
   each internal damper's cost, losses on the way to a part accumulate, a static law
   holds on chains and rods, and the SEA's spring deflection holds the force only through

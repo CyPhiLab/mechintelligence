@@ -5,6 +5,7 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-21 | [Parts with several coordinates, and branching bodies](2026-11-21-branching.qmd) | exploratory | not yet |
 | 2026-11-21 | [How information spreads along a chain](2026-11-21-chains.qmd) | exploratory | not yet |
 | 2026-11-21 | [How information about the contact propagates through the body](2026-11-21-information-propagation.qmd) | exploratory | not yet |
 | 2026-11-21 | [Energy is the right noise model, and morphology decides where information sits](2026-11-21-langevin-routing.qmd) | promoted | @sec-right, @sec-langevin |

@@ -50,3 +50,34 @@ def test_contact_node_loses_at_the_clamped_body_modes():
         dips, modes = r["dips_hz"], r["clamped_hz"]
         nearest = np.array([np.min(np.abs(modes - d)) / d for d in dips])
         assert dips.size >= 2 and np.all(nearest < 0.02), name
+
+
+def test_several_coordinates_take_the_best_force_pattern():
+    r = ch.check_matrix_reciprocity()
+    assert r["max_rel_err"] < 1e-8
+    assert r["n_beaten"] == 0
+    assert r["reach_rel_err"] < 1e-8
+
+
+def test_a_set_of_nodes_holds_statically_what_its_nearest_node_holds():
+    assert ch.check_set_static_law()["max_abs_err"] < 1e-8
+
+
+def test_contact_side_of_a_bridge_costs_the_same_for_everything_beyond():
+    assert ch.check_bridge()["max_rel_spread"] < 1e-10
+
+
+def test_branching_body():
+    r = ch.check_tree()
+    light, heavy = r[0.05], r[0.2]
+    for v in r.values():
+        np.testing.assert_allclose(v["static"], v["path_law"], atol=1e-8)
+    assert abs(light["whole"] - heavy["whole"]) < 1e-6           # the ceiling ignores them
+    np.testing.assert_allclose(light["static"][:4], heavy["static"][:4], atol=1e-12)
+    assert heavy["share"][3] < light["share"][3] - 0.02           # backflow from the swing legs
+
+
+def test_a_far_node_adds_in_band_what_it_cannot_add_statically():
+    r = ch.check_pairs()
+    assert r[(1, 7)] > r[(1,)] + 0.1
+    assert r[(6, 7)] > max(r[(6,)], r[(7,)])
