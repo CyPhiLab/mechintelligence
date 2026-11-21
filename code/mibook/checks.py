@@ -668,13 +668,25 @@ def langevin_bits(s: Passive, C: np.ndarray, eps: float, sigma_T2: float | None 
     The noise trajectory is stationary Gauss-Markov: Cov(x_k, x_l) = A_d^{k-l} P (k >= l),
     which is exact because P is the FDT-stationary covariance (`gibbs_pair`).
     """
-    sigma_T2 = SIGMA_ENERGY ** 2 if sigma_T2 is None else sigma_T2
-    n2 = 2 * s.n
-    Ad, _ = zoh(s.A, s.B_F, 1.0 / fs)
-    P = sigma_T2 * np.linalg.inv(energy_metric(s.K, s.H))
     M = response_matrix(dataclasses.replace(s, C=C), fs=fs, band_hz=band_hz)
+    S = langevin_noise_cov(s, C, M.shape[0] // C.shape[0], eps, sigma_T2, fs)
+    Z = np.linalg.solve(np.linalg.cholesky(S), M)
+    return bits_from_gram(SIGMA_A ** 2 * (Z.T @ Z))
+
+
+def langevin_noise_cov(s: Passive, C: np.ndarray, n_t: int, eps: float = 0.0,
+                       sigma_T2: float | None = None, fs: float = FS) -> np.ndarray:
+    """Covariance of the thermal noise in C x over n_t samples, plus eps^2 I.
+
+    The noise is stationary Gauss-Markov with Cov(x_k, x_l) = A_d^{k-l} P for k >= l and
+    P = sigma_T^2 E^{-1}, which is exact because P is the FDT-stationary covariance.
+    """
+    sigma_T2 = SIGMA_ENERGY ** 2 if sigma_T2 is None else sigma_T2
+    C = np.atleast_2d(C)
+    n2 = 2 * s.n
+    Ad, _ = zoh(s.A, s.B_F[:, :1], 1.0 / fs)
+    P = sigma_T2 * np.linalg.inv(energy_metric(s.K, s.H))
     m = C.shape[0]
-    n_t = M.shape[0] // m
     powers = [np.eye(n2)]
     for _ in range(n_t):
         powers.append(Ad @ powers[-1])
@@ -685,9 +697,7 @@ def langevin_bits(s: Passive, C: np.ndarray, eps: float, sigma_T2: float | None 
             blk = C @ powers[k - l] @ CP.T
             S[k * m:(k + 1) * m, l * m:(l + 1) * m] = blk
             S[l * m:(l + 1) * m, k * m:(k + 1) * m] = blk.T
-    S += eps ** 2 * np.eye(n_t * m)
-    Z = np.linalg.solve(np.linalg.cholesky(S), M)
-    return bits_from_gram(SIGMA_A ** 2 * (Z.T @ Z))
+    return S + eps ** 2 * np.eye(n_t * m)
 
 
 def langevin_innovation_g(s: Passive, fs: float = FS, sigma_T2: float | None = None) -> float:

@@ -121,7 +121,7 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Question: which measures capture information relevant to the controller or the task,
   such as $I(W;X\mid A)$ or control information?
 
-**T11. Environments beyond force.** *Queued.*
+**T11. Environments beyond force.** *Active.*
 
 - Question: what does the body hold about environmental quantities other than a contact
   force, and do the T2 results carry over?
@@ -130,10 +130,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   the dynamics, such as ground stiffness, ground damping, payload mass and friction,
   which change $K$, $D$ or $H$ and the energy metric with them. Discrete states, such as
   contact or no contact and contact location, which change $J$.
-- First step: terrain height. Check whether a stiffer contact then helps the body, the
-  opposite of the force case, where only the contact damper sets the ceiling. Then
-  ground stiffness as a parameter, including what the body's thermal motion alone
-  reveals about it.
+- Done (2026-11-21, [research note](notes/2026-11-21-terrain.qmd)): terrain height
+  enters as the force $k_cz+b_c\dot z$. Inside the body nothing changes (each part holds
+  the same spectral share as for force); at the contact the two questions part ways.
+  Stiffer ground helps for height and not for force; damping always hurts for force and
+  hurts for height only up to $b_c=k_c/\omega$.
+- Next step: ground stiffness as an unknown parameter of the dynamics, including what the
+  body's thermal motion alone reveals about it.
 
 **T10. Literature.** *Queued.*
 
@@ -144,6 +147,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-21.** Terrain height reaches the body as the force $k_cz+b_c\dot z$. Every
+  design holds 38.21 bits about it, and each part's share matches its share of force
+  information. On the rigid leg, height bits rise from 13.7 to 71.2 as the ground
+  stiffens 16-fold while force bits stay at 37.74; ground damping lowers force bits
+  monotonically but height bits only down to a minimum near $b_c=k_c/\omega$
+  (`tests/test_terrain.py`; [research note](notes/2026-11-21-terrain.qmd)).
 
 - **2026-11-21.** Two feet on the ground: the body always knows the total load through
   the contact dampers alone (47.22 bits in the stance example, whatever the internal

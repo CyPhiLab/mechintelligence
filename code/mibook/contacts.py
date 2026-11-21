@@ -18,10 +18,11 @@ import dataclasses
 
 import numpy as np
 
-from mechinfo.mechanics import bits_from_gram, energy_metric, zoh
-from passive_info.information import FS, SIGMA_A, SIGMA_ENERGY, response_matrix
+from mechinfo.mechanics import bits_from_gram
+from passive_info.information import FS, SIGMA_A, response_matrix
 
 from mibook import chain as ch
+from mibook import checks
 
 
 def body(m, edges, contacts):
@@ -112,28 +113,13 @@ def force_bits(sys, C, eps: float, U=None, sigma_T2: float | None = None, fs: fl
     f = U g with independent g; `U=None` means g = f. Each g_i is scored with the others
     treated as unknown.
     """
-    sigma_T2 = SIGMA_ENERGY ** 2 if sigma_T2 is None else sigma_T2
-    n2 = 2 * sys.n
     C = np.atleast_2d(C)
     Ms = [response_matrix(dataclasses.replace(sys, C=C, B_F=sys.B_F[:, [i]]), fs=fs,
                           band_hz=band_hz) for i in range(sys.B_F.shape[1])]
     U = np.eye(len(Ms)) if U is None else U
     Mg = [sum(U[i, r] * Ms[i] for i in range(len(Ms))) for r in range(U.shape[1])]
-    Ad, _ = zoh(sys.A, sys.B_F, 1.0 / fs)
-    P = sigma_T2 * np.linalg.inv(energy_metric(sys.K, sys.H))
     m = C.shape[0]
-    n_t = Ms[0].shape[0] // m
-    powers = [np.eye(n2)]
-    for _ in range(n_t):
-        powers.append(Ad @ powers[-1])
-    S = np.zeros((n_t * m, n_t * m))
-    CP = C @ P
-    for k in range(n_t):
-        for l in range(k + 1):
-            blk = C @ powers[k - l] @ CP.T
-            S[k * m:(k + 1) * m, l * m:(l + 1) * m] = blk
-            S[l * m:(l + 1) * m, k * m:(k + 1) * m] = blk.T
-    S += eps ** 2 * np.eye(n_t * m)
+    S = checks.langevin_noise_cov(sys, C, Ms[0].shape[0] // m, eps, sigma_T2, fs)
     out = {}
     Mall = np.hstack(Mg)
     L = np.linalg.cholesky(S)

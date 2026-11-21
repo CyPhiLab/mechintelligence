@@ -11,6 +11,7 @@ import pathlib
 import sys
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 import numpy as np
 
 from mibook import checks
@@ -335,10 +336,37 @@ def fig_chain():
     return _save(fig, "chain")
 
 
+def fig_terrain():
+    """Whole-body bits about terrain height and about force as the ground changes."""
+    from mibook import terrain as tr
+    r = tr.check_contact_sweeps()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    for ax, key, xlabel in ((a, "k", r"ground stiffness / baseline ($b_c$ fixed)"),
+                            (b, "b", r"ground damping / baseline ($k_c$ fixed)")):
+        x = [row["factor"] for row in r[key]]
+        ax.semilogx(x, [row["z"] for row in r[key]], color=C1, marker="o", markersize=3,
+                    label="terrain height")
+        ax.semilogx(x, [row["f"] for row in r[key]], color=C3, marker="s", markersize=3,
+                    label="contact force")
+        ax.semilogx(x, [row["z_pred"] for row in r[key]], color=C1, ls=":", lw=1.0)
+        ax.semilogx(x, [row["f_pred"] for row in r[key]], color=C3, ls=":", lw=1.0)
+        ax.set_xlabel(xlabel)
+        ax.set_ylim(0, 80)
+    a.set_xticks([0.25, 0.5, 1, 2, 4])
+    a.set_xticklabels(["1/4", "1/2", "1", "2", "4"])
+    a.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    a.set_ylabel("bits held by the whole body")
+    a.set_title("(a) stiffer ground", loc="left")
+    b.set_title("(b) more damped ground", loc="left")
+    a.legend(loc="upper left", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "terrain")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain):
         f()
