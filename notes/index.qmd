@@ -5,4 +5,5 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-21 | [Routing efficiency and the effective contact damping](2026-11-21-routing-efficiency.qmd) | exploratory | not yet |
 | 2026-11-21 | [Energy is the right noise model, and morphology routes information](2026-11-21-langevin-routing.qmd) | promoted | @sec-right, @sec-langevin |

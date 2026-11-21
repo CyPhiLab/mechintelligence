@@ -41,14 +41,16 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   Lee, Wensing and Park (2020); Zahedi and Ay (2013); Cover and Thomas, chapters 9 and
   12; Kammer (1991); Geveci (1984), or Baker (1976) or Dupont (1973).
 
-**T2. Retained versus routed information.** *Queued.*
+**T2. Retained versus routed information.** *Active.*
 
-- Question: what is the right definition of routing efficiency (sensor bits divided by
-  full-state bits under Langevin noise), and what are its properties? Candidates to prove:
-  bounds, invariance under relabeling the sensor, behaviour under composition of
-  mechanisms.
-- Next step: state the definition, prove the bound $0\le\eta\le1$ and the invariances,
-  and compute $\eta$ for the joint encoder as well as the motor encoder.
+- Question: what is the right definition of routing efficiency, and what limits it?
+- Done (2026-11-21, [research note](notes/2026-11-21-routing-efficiency.qmd)): a sensor
+  sees the force through an effective contact damping $b_{\rm eff}(\omega)\ge b_c$;
+  $\rho=b_c/b_{\rm eff}$ is an intrinsic spectral efficiency; losses come only from
+  internal dampers between contact and sensor and from readout noise; closed forms for the
+  SEA's motor and joint encoders.
+- Next step: combine sensors (joint, motor, spring deflection), then repeat with the
+  motor under force control. Fold the note into @sec-langevin after that.
 
 **T3. The Langevin body as the default sensor model.** *Queued.*
 
@@ -103,6 +105,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-21.** Routing losses come from internal dissipation, not compliance. A sensor
+  sees the contact force through $b_{\rm eff}(\omega)=b_c+1/(2\sigma_T^2q)$; with no
+  internal damper every noiseless sensor routes everything. On the SEA at $k_s=70$ a joint
+  encoder routes 98% of the ceiling and a motor encoder 6%, and lowering the series
+  damping raises the motor encoder's share (`tests/test_routing.py`;
+  [research note](notes/2026-11-21-routing-efficiency.qmd)).
 - **2026-11-21.** Energy is the unique noise metric under five requirements, and
   invariance under free motion is equivalent to "free motion never creates
   information" (`test_uniqueness_step_four_identity`,

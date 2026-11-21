@@ -266,10 +266,43 @@ def fig_langevin():
     return r
 
 
+def fig_routing():
+    """Spectral routing rho(f) for the SEA's encoders, and finite-window efficiency."""
+    from mibook import routing as rt
+    f = np.linspace(0.5, 100.0, 400)
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    for ks, c in ((70.0, C2), (1e3, C4), (1e4, C1)):
+        a.plot(f, rt.sea_routing_closed_form(ks, 2 * np.pi * f, "motor"), color=c,
+               label=f"$k_s={ks:g}$")
+        a.plot(f, rt.sea_routing_closed_form(ks, 2 * np.pi * f, "joint"), color=c, ls="--")
+    a.set_ylim(-0.02, 1.05)
+    a.set_xlabel("force frequency (Hz)")
+    a.set_ylabel(r"$\rho(f)=b_c/b_{\rm eff}(f)$")
+    a.set_title("(a) solid: motor encoder; dashed: joint", loc="left")
+    a.legend(loc="lower right", fontsize=7)
+
+    ks_list = np.array([70.0, 3e2, 1e3, 3e3, 1e4, 3e4, 1e5, 1e6])
+    for sensor, C, col, mk in (("motor", rt.MOTOR["sea"], C1, "o"), ("joint", rt.JOINT, C3, "s")):
+        fin, pred = [], []
+        for ks in ks_list:
+            s = rt.series_elastic(float(ks), readout="energy")
+            fin.append(rt.routing_efficiency(s, C))
+            pred.append(rt.predicted_efficiency(s, C))
+        b.semilogx(ks_list, fin, color=col, marker=mk, markersize=3, label=f"{sensor} encoder")
+        b.semilogx(ks_list, pred, color=col, ls=":", lw=1.0)
+    b.set_ylim(0, 1.05)
+    b.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
+    b.set_ylabel("routing efficiency $\\eta$")
+    b.set_title("(b) finite window (dots: prediction)", loc="left")
+    b.legend(loc="lower right", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "routing")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_routing):
         f()
