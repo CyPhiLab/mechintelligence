@@ -23,18 +23,25 @@ threads with concrete next steps, and research notes record progress on them.
     share in @tbl-langevin is a candidate scalar measure of mechanical intelligence in
     this sense, and the temporal and frequency decompositions of Part I
     apply to it unchanged.
-3. *Relevance is not captured.* Neither the total nor its distribution over the body
+3. *Environments are more than forces.* The results so far treat the environment as an
+    unknown contact force. Other environmental quantities enter the body differently.
+    Prescribed motions, such as the height of the terrain under a foot, act through the
+    contact spring and damper. Parameters, such as the ground's stiffness and damping, a
+    payload's mass or a friction coefficient, change $K$, $D$ or $H$ themselves, and with
+    them the energy metric. Discrete states, such as whether a foot is down and where,
+    change $J$. Each needs its own version of the measures in this book.
+4. *Relevance is not captured.* Neither the total nor its distribution over the body
     asks whether the
     information is about what the task needs. The conditional information $I(W;X\mid A)$
     of @patterson2026quantifying measures relevance to the action, and task-specific
     variables, such as the force component that matters for balance, would sharpen it.
-4. *Nonlinear and multistable bodies.* The framework extends directly: the noise law
+5. *Nonlinear and multistable bodies.* The framework extends directly: the noise law
     becomes the Gibbs law $\exp(-V/T)$ on a non-quadratic potential. A mechanical memory
     then stores a reliable bit when its energy barrier is large compared with the noise
     energy, the classical criterion behind Landauer's bound
     [@landauer1961irreversibility]. This connects the analysis to mechanical
     metamaterials and latching mechanisms, though none of it is tested yet.
-5. *Validation must be predictive.* A definition is checked by its consequences. The
+6. *Validation must be predictive.* A definition is checked by its consequences. The
     consistency checks pass: invariance, the limits, and agreement with the bandwidth
     argument of @wensing2017proprioceptive. The empirical test is whether the total,
     the share held by a part, or relevance best predicts closed-loop performance across designs; Table I

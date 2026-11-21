@@ -10,7 +10,9 @@ This section gives the whole idea without proofs. Later chapters make each sente
 precise.
 
 **The running example.** A robot leg presses on the ground, and an unknown force pushes
-back. We ask how much the leg's motion tells us about that force. Two leg designs recur
+back. We ask how much the leg's motion tells us about that force. The force is the
+running example, not the only thing a body can hold information about: the ground's
+stiffness, the terrain's height or a payload's mass are others (@sec-capture). Two leg designs recur
 throughout the book, both from @patterson2026quantifying with parameters from
 @wensing2017proprioceptive. One has a *rigid* (proprioceptive) transmission, with the motor
 geared directly to the joint. The other is a *series-elastic actuator* (SEA), with a spring

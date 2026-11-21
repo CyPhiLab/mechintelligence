@@ -1,8 +1,11 @@
 # Preface {.unnumbered}
 
 This is a live textbook on how mechanisms carry and process information about the world:
-how much a robot's body holds about the forces acting on it, how that depends on its
-design, and how the information spreads through the body and is lost on the way. It starts from
+how much a robot's body holds about its environment, how that depends on its design, and
+how the information spreads through the body and is lost on the way. The environment
+includes the forces acting on the body, and also properties such as the stiffness of the
+ground, the shape of the terrain or the mass of a load. The results so far are about
+contact forces, the running example. It starts from
 @patterson2026quantifying, which compared actuator transmissions in legged robots with
 information-theoretic measures, and it grows as new results come in.
 

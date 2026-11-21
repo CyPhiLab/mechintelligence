@@ -9,6 +9,9 @@ Newest first. Each release is tagged in the repository.
 - New research note: how information about the contact propagates through the body. A
   part of the body holds the force through an effective contact damping, and only
   internal dampers between the contact and the part erode it.
+- The preface, the first chapter and the open problems now say that contact force is the
+  running example and that the environment also includes terrain, ground properties,
+  payloads and contact state. New roadmap thread T11.
 - New research note: two feet on the ground. The body knows the total load through the
   contact dampers alone; the split between the feet also pays for the dampers on the
   path between them.

@@ -25,7 +25,10 @@ the findings recorded here.
 - **Releases.** Dated tags (`v0.1`, `v0.2`, ...) with a changelog entry. Before a result
   goes to a venue, check that venue's preprint policy.
 - **Scope.** The subject is information in the mechanism: what the body holds about the
-  world, how it moves through the body, and what dissipation does to it. Sensors,
+  world, how it moves through the body, and what dissipation does to it. The world is
+  more than forces: terrain geometry, ground stiffness and damping, payload mass,
+  friction and contact state are environmental quantities too. Contact force is the
+  running example, and results should say which quantity they are about. Sensors,
   readout noise and controllers come later, as their own threads. Results are stated
   for the body and its parts.
 - **Branches.** Book content goes straight to `main`, which deploys the site. Changes to
@@ -118,6 +121,20 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Question: which measures capture information relevant to the controller or the task,
   such as $I(W;X\mid A)$ or control information?
 
+**T11. Environments beyond force.** *Queued.*
+
+- Question: what does the body hold about environmental quantities other than a contact
+  force, and do the T2 results carry over?
+- Three kinds to treat. Prescribed motions, such as terrain height $z$, which enter
+  through the contact spring and damper as the force $(k_c+i\omega b_c)z$. Parameters of
+  the dynamics, such as ground stiffness, ground damping, payload mass and friction,
+  which change $K$, $D$ or $H$ and the energy metric with them. Discrete states, such as
+  contact or no contact and contact location, which change $J$.
+- First step: terrain height. Check whether a stiffer contact then helps the body, the
+  opposite of the force case, where only the contact damper sets the ceiling. Then
+  ground stiffness as a parameter, including what the body's thermal motion alone
+  reveals about it.
+
 **T10. Literature.** *Queued.*
 
 - Confirm the *secondary* citations (see T1), then survey morphological computation,
@@ -207,6 +224,10 @@ written up.
   efficiency to the share of information held by a part of the body. The Langevin
   chapter now compares the whole body and the rotor, and Part I's noise is called static
   noise.
+
+- **2026-11-21.** Environments are more than forces. Contact force stays the running
+  example, but terrain geometry, ground parameters, payload and contact state are in
+  scope, and results name the quantity they are about. New thread T11.
 
 ## Paper candidates
 
