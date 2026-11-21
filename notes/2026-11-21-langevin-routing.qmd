@@ -33,5 +33,4 @@ measuring mechanical intelligence, or only a reasonable one?
 
 **Open from this note.** The constant 1/2 in @prp-contact is confirmed numerically but
 proved only in continuous time (roadmap thread T3). The share in point 6 needs a
-definition and properties of its own (thread T2, now in the research note on
-[information propagation](2026-11-21-information-propagation.qmd)).
+definition and properties of its own (thread T2, now in @sec-inside).

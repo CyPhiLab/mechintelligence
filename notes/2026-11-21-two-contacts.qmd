@@ -1,7 +1,7 @@
 # 2026-11-21: Two feet on the ground {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T2 · **Checked by:** `tests/test_contacts.py`
+**Status:** promoted to @sec-two-feet · **Thread:** T2 · **Checked by:** `tests/test_contacts.py`
 :::
 
 **Question.** The earlier T2 notes ([propagation](2026-11-21-information-propagation.qmd),
@@ -10,7 +10,7 @@ contact. With two feet down there are two unknown forces, the feet share the loa
 the body has two routes to the ground. What does the whole body hold about the two
 forces, and what does each part hold?
 
-**Short answer.** The body always knows the *total load* as well as the contact dampers
+**Findings.** The body always knows the *total load* as well as the contact dampers
 allow. Its knowledge of how the load is *split* between the feet also pays for every
 damper on the path from one foot to the other. Such a damper pushes equally and
 oppositely on its two ends, which looks exactly like one foot pushing harder and the
@@ -22,199 +22,6 @@ Each part sees one mix of the two forces at each frequency: push on the part and
 how much each foot moves. A foot holds its own force and almost nothing of the other. In
 the example below, the trunk mostly knows the total load and much less how it is split.
 
-## Setting
-
-As in the earlier notes, with two contacts. Contact $i$ is node $c_i$, held by a ground
-spring $k_i$ and damper $b_i$, and takes its own force $f_i$. $J$ has one row per contact,
-$B_c=\diag(b_1,b_2)$, and
-$$
-D=J^\top B_cJ+\sum_jb_j\,a_ja_j^\top .
-$$
-We assume every node is connected through dampers to a contact, so $D$ is invertible.
-The two forces have independent priors of equal size. A part's *information matrix*
-$F(\omega)$ is the $2\times2$ matrix with $2\sigma_T^2F$ equal to the Fisher information
-about $(f_1,f_2)$ per unit force spectrum. Its information rate is
-$\int\log\det\big(I+S\,F/(2\sigma_T^2)\big)\,d\omega/2\pi$. With one contact,
-$F=1/b_{\rm eff}$.
-
-## Results
-
-::: {#thm-whole-two name="The whole body sees the forces through one damping matrix"}
-The whole body's information matrix is $F=JD^{-1}J^\top$ at every frequency. Equivalently,
-the body sees the forces through the damping matrix $B=(JD^{-1}J^\top)^{-1}$.
-:::
-
-::: {.proof}
-*Step 1: an equivalent observation.* At frequency $\omega$ the body moves as
-$Zx=J^\top(f+\xi_c)+\sum_ja_j\xi_j$, where $\xi_c$ is the contact dampers' noise and
-$\xi_j$ damper $j$'s. $Z$ is invertible, so observing $x$ is the same as observing $Zx$:
-the net force on every mass.
-
-*Step 2: the noise.* The noise in $Zx$ is $J^\top\xi_c+\sum_ja_j\xi_j$. The dampers are
-independent, so its spectral density is $2\sigma_T^2(J^\top B_cJ+\sum_jb_ja_ja_j^\top)=
-2\sigma_T^2D$, the same at every frequency.
-
-*Step 3: the Gaussian channel.* The signal $J^\top f$ in noise of density $2\sigma_T^2D$
-gives the Fisher matrix $JD^{-1}J^\top/(2\sigma_T^2)$ per unit force spectrum.
-:::
-
-With one contact this gives $F=JD^{-1}J^\top=1/b_c$ for any body whose nodes are all
-connected through dampers, because the internal dampers seen from a single node have no
-effect (Step 2 of the corollary below, with one terminal). That is the infinite-window form of @prp-contact,
-here derived without Duncan's theorem. On 20 random tree-shaped bodies with two contacts,
-the state-space information matrix of the whole body equals $JD^{-1}J^\top$ to
-$10^{-11}$ at 0.5, 8 and 60 Hz (`check_whole_body`).
-
-::: {#cor-series name="The path between the feet, in series"}
-For a tree-shaped body with contacts at nodes $c_1\ne c_2$,
-$$
-B=B_c+b_\times\begin{pmatrix}1&-1\\-1&1\end{pmatrix},\qquad
-b_\times=\Big(\sum_{j\in\text{path}(c_1,c_2)}\frac1{b_j}\Big)^{-1}.
-$$
-With equal contacts ($b_1=b_2=b_c$), the total load $(f_1+f_2)/\sqrt2$ is seen through
-$b_c$ and the split $(f_1-f_2)/\sqrt2$ through $b_c+2b_\times$.
-:::
-
-::: {.proof}
-*Step 1: a Schur complement.* Order the nodes as contacts, then the rest. By the block
-inverse formula, the contact block of $D^{-1}$, which is $JD^{-1}J^\top$, is the inverse
-of the Schur complement $D_{cc}-D_{cr}D_{rr}^{-1}D_{rc}$. So $B$ is that Schur
-complement. The contact dampers sit only in $D_{cc}$, so $B=B_c+L_{\rm red}$, where
-$L_{\rm red}$ is the Schur complement of the internal dampers' matrix $L=\sum_jb_ja_ja_j^\top$.
-
-*Step 2: an electrical network.* $L$ is the Laplacian of a resistor network with
-conductance $b_j$ on element $j$: velocity plays the role of voltage and force the role
-of current. Its Schur complement onto the two contact nodes describes the network seen
-from those two terminals with the other nodes left floating. A two-terminal Laplacian has
-rows summing to zero, so $L_{\rm red}=\beta\left[\begin{smallmatrix}1&-1\\-1&1
-\end{smallmatrix}\right]$, where $\beta$ is the effective conductance between the
-terminals.
-
-*Step 3: the tree.* In a tree the only route between the terminals is the path. Side
-branches are dead ends and carry no current. Conductances in series combine as the
-inverse of the summed inverses, so $\beta=b_\times$.
-
-*Step 4: equal contacts.* $\left[\begin{smallmatrix}1&-1\\-1&1\end{smallmatrix}\right]$ is
-zero on $(1,1)$ and equals 2 on $(1,-1)$, so $B$ has eigenvalue $b_c$ on the total load and
-$b_c+2b_\times$ on the split.
-:::
-
-The formula matches $(JD^{-1}J^\top)^{-1}$ to $4\times10^{-16}$ on the same 20 bodies
-(`check_whole_body`). A damper on the path between the feet adds force noise that is
-equal and opposite at its two ends. That cancels in the total load and looks like a change
-in the split. Side branches, such as a swing leg, have no effect on $B$ at all.
-
-::: {#thm-push-two name="Push on the part and watch both feet"}
-For a part with one coordinate $y=p^\top q$, let $x=Z^{-1}p$ be the body's response to a
-unit push at the part and $h=Jx$ the motion of the two feet. Then
-$$
-F=\frac{\bar h\,h^\top}{\sum_ib_i|h_i|^2+\sum_jb_j|a_j^\top x|^2}.
-$$
-The part sees the single mix $h^\top f$ of the forces, at an information rate of
-$\log\big(1+S\,\|h\|^2/(2\sigma_T^2\,d)\big)$, where $d$ is the denominator.
-:::
-
-::: {.proof}
-By reciprocity ($Z^{-1}$ is symmetric), the part's response to the two forces is the row
-$p^\top Z^{-1}J^\top=h^\top$, and its response to damper $j$ is
-$p^\top Z^{-1}a_j=a_j^\top x$. The part therefore receives $h^\top(f+\xi_c)+\sum_j
-(a_j^\top x)\,\xi_j$. Its noise has density $2\sigma_T^2d$, counting the contact dampers
-($\sum_ib_i|h_i|^2$) and the internal ones. The Fisher matrix of a scalar observation
-$h^\top f$ in noise $2\sigma_T^2d$ is $\bar hh^\top/(2\sigma_T^2d)$. It has rank one, with
-eigenvalue $\|h\|^2/(2\sigma_T^2d)$, which gives the rate.
-:::
-
-With one contact, $F=|x_0|^2/(b_c|x_0|^2+\sum_jb_j|a_j^\top x|^2)=1/b_{\rm eff}$, the rule
-of the chain note. With two, every damper counts, the contact ones included, because each
-foot's own damper noise now competes with the other foot's force. The rule matches the
-state space to $2\times10^{-14}$ on random bodies (`check_push_rule`).
-
-::: {#prp-static-two name="Static law for a chain with both ends down"}
-Let a chain have contacts at both ends, node 0 with $(k_1,b_1)$ and node $N-1$ with
-$(k_2,b_2)$. Push statically on node $k$. The routes to the ground have compliances
-$C_1=1/k_1+\sum_{j<k}1/k_j$ and $C_2=1/k_2+\sum_{j\ge k}1/k_j$, and they carry the
-loads $F_1=C_2/(C_1+C_2)$ and $F_2=C_1/(C_1+C_2)$. Then $h=(F_1/k_1,\;F_2/k_2)$ and
-$$
-d=F_1^2\Big(\frac{b_1}{k_1^2}+\sum_{j<k}\frac{b_j}{k_j^2}\Big)
- +F_2^2\Big(\frac{b_2}{k_2^2}+\sum_{j\ge k}\frac{b_j}{k_j^2}\Big).
-$$
-:::
-
-::: {.proof}
-At $\omega=0$, $Z=K$. The two routes from node $k$ to the ground act as springs in
-parallel, so the unit push splits in inverse proportion to their compliances. Foot $i$
-moves $F_i/k_i$, and every element on route $i$ carries $F_i$ and stretches by $F_i/k_j$.
-Insert these into @thm-push-two.
-:::
-
-This explains why a foot holds its own force and little of the other. Push on foot 1 and
-nearly all the load goes straight into the ground through its stiff contact, so foot 2
-barely moves and $h_2\approx0$. The law matches the state space at $10^{-4}$ Hz to
-$2\times10^{-10}$ on 20 random chains (`check_two_foot_static`).
-
-## A two-foot stance
-
-The body is the leg-on-trunk toy of the branching note, with the foot of the first swing
-leg also on the ground and the second swing leg still in the air. Both contacts have
-$k_c=10^5$ N/m and $b_c=270$ N s/m. The path between the feet runs foot, knee, hip, trunk,
-knee, foot. Its five dampers in series give $b_\times=1.78$ N s/m, small next to $b_c$.
-To see the path matter, the table also scales every internal damper by 10 and by 100.
-
-| internal dampers | $b_\times$ (N s/m) | $f_1$ alone | $f_2$ alone | both forces | total load | split |
-|:--|--:|--:|--:|--:|--:|--:|
-| as built | 1.78 | 47.14 | 47.14 | 94.28 | 47.22 | 47.06 |
-| $\times10$ | 17.8 | 46.45 | 46.45 | 92.95 | 47.22 | 45.73 |
-| $\times100$ | 178 | 41.24 | 41.24 | 84.46 | 47.22 | 37.24 |
-
-: Bits held by the whole body about a 100 Hz force profile at each foot. "$f_1$ alone" treats $f_2$ as unknown. Total load and split are $(f_1\pm f_2)/\sqrt2$ (`check_stance`). {#tbl-stance-whole}
-
-The total load stays at 47.22 bits whatever the internal damping (to $4\times10^{-5}$ in
-the finite window, exactly in the infinite-window limit). This is also what the
-one-footed body of the branching note holds about its single force, since both are seen
-through $b_c$. The split falls from 47.06 to 37.24 bits as $b_\times$ grows.
-
-| part | $f_1$ alone | $f_2$ alone | both forces | total load | split |
-|:--|--:|--:|--:|--:|--:|
-| stance foot | 45.08 | 0.01 | 45.54 | 8.21 | 8.22 |
-| stance hip | 8.94 | 1.72 | 13.21 | 4.83 | 4.87 |
-| trunk | 4.99 | 3.98 | 14.62 | 8.45 | 3.34 |
-| second knee | 0.54 | 25.13 | 28.28 | 7.46 | 7.56 |
-| second foot | 0.01 | 45.14 | 45.58 | 8.21 | 8.21 |
-| swing foot | 2.23 | 1.48 | 5.14 | 4.08 | 0.67 |
-
-: Bits held by single nodes (position and velocity) in the two-foot stance, with the internal dampers as built (`check_stance`). {#tbl-stance-parts}
-
-- *Each foot holds its own force.* The stance foot holds 45.08 bits about $f_1$ and
-    0.01 about $f_2$. Knowing $f_1$ means knowing the sum of the total load and
-    the split. That is worth at most half a bit per force mode about either one, or 8.5
-    bits over the 17 modes, and the foot holds 8.2 about each.
-- *The trunk knows the total load, not the split.* It holds 14.62 bits about the two
-    forces together but only 4.99 and 3.98 about each alone. It can tell how hard the
-    body is pressed down (8.45 bits) much better than how that is shared (3.34).
-- *Nodes on one leg favour that leg's foot.* The second knee holds 25.13 bits about
-    $f_2$ and 0.54 about $f_1$; the stance hip holds 8.94 about $f_1$ and 1.72 about $f_2$.
-- *The swing foot is mostly a load gauge.* Off both legs' paths, it holds 4.08 bits
-    about the total load and 0.67 about the split.
-
-## What this changes
-
-With one foot down, the earlier notes reduce everything to one number per part, the
-effective contact damping. With two feet, what a body holds becomes a matrix. It splits
-naturally into the total load, which internal dampers cannot touch, and the split
-between the feet, which pays for the dampers on the path between them. Parts near a foot
-hold that foot's force. Parts in the middle of the body, such as the trunk, hold the
-total load.
-
-## Limits of this note
-
-- Linear bodies with symmetric $H$, $K$, $D$ and independent viscous dampers.
-- The series formula for $b_\times$ needs a tree. With more than one route between the
-    feet (a closed loop of elements), $b_\times$ is the effective conductance of the
-    network, computed the same way as for resistors.
-- The example is a one-dimensional toy with both feet on identical contacts.
-
-## Next steps
-
-- Fold the four T2 notes into @sec-langevin.
-- More than two contacts, where the split becomes several directions, each with its own
-    effective damping from the network between the feet.
+**Where it lives now.** The definitions, proofs, figures and numbers moved to @sec-two-feet of
+the chapter on information inside the body. This note keeps the dated record of the
+question and what was found.

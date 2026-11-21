@@ -169,9 +169,8 @@ which is why `morphological_bits` correctly refuses the free bench.
 
 - *Where information sits in the body.* @def-subset measures how much a part of the
     body holds when the noise belongs to the body, and @fig-shapley splits the SEA's
-    information over its coordinates. The research note on
-    [information propagation](../notes/2026-11-21-information-propagation.qmd) asks the
-    same question under thermal noise.
+    information over its coordinates. @sec-inside asks the same question
+    under thermal noise.
 - *Variable-stiffness and parallel-elastic actuators, compliant feet.* All of
     these add or remove coordinates as parameters vary. @thm-limit guarantees
     continuity across the degenerate limits.

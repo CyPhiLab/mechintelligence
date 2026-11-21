@@ -1,7 +1,7 @@
 # 2026-11-21: Parts with several coordinates, and branching bodies {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T2 · **Checked by:** `tests/test_chain.py`
+**Status:** promoted to @sec-push and @sec-chains · **Thread:** T2 · **Checked by:** `tests/test_chain.py`
 :::
 
 **Question.** The [note on chains](2026-11-21-chains.qmd) gave a rule for one coordinate:
@@ -10,7 +10,7 @@ stretch per unit motion of the contact point. What if the part has several coord
 such as two masses at once? And what changes when the body branches, like a leg on a
 trunk that carries other legs?
 
-**Short answer.** A part with several coordinates gets to choose how it is pushed. Its
+**Findings.** A part with several coordinates gets to choose how it is pushed. Its
 effective contact damping is $b_c$ plus the cost of the *best* pattern of forces on its
 coordinates. Two consequences follow:
 
@@ -27,194 +27,6 @@ coordinates. Two consequences follow:
 Underneath both is one fact: if an element is the only connection between the contact
 side and the part, everything on the contact side costs the same for every part beyond it.
 
-## Setting
-
-As in the chain note: symmetric $H$, $K$, $D$, independent dampers
-$D=b_cJ^\top J+\sum_jb_ja_ja_j^\top$, and dynamic stiffness $Z=K-\omega^2H+i\omega D$. A part
-now has $m$ coordinates, $y=Pq$ with $P$ an $m\times n$ matrix. By @prp-share-basic(e)
-of the propagation note, velocities add nothing, so positions are enough. A *force
-pattern* on the part is a vector $\phi\in\mathbb C^m$; it applies the generalized force
-$P^\top\phi$, and the body responds with $x(\phi)=Z^{-1}P^\top\phi$.
-
-## Results
-
-::: {#thm-best-pattern name="The part chooses how it is pushed"}
-$$
-b_{\rm eff}(\omega)=b_c+\min_{\phi}\ \sum_jb_j\,\frac{|a_j^\top x(\phi)|^2}{|J\,x(\phi)|^2},
-$$
-the minimum taken over patterns that move the contact point. With $W=Z^{-1}P^\top$,
-$h=W^\top J^\top$, $s_j=W^\top a_j$ and $N=\sum_jb_js_js_j^*$, the minimum equals
-$1/(h^*N^+h)$ and is reached at $\phi=\overline{N^+h}$. If $h$ lies outside the range of
-$N$, some pattern moves the contact point without stretching any internal damper, the
-minimum is 0, and $b_{\rm eff}=b_c$.
-:::
-
-::: {.proof}
-*Step 1: reciprocity.* The part's response to the contact force is $PZ^{-1}J^\top$ and to
-damper $j$'s noise force $PZ^{-1}a_j$. $Z^{-1}$ is symmetric, so these are
-$W^\top J^\top=h$ and $W^\top a_j=s_j$. For any pattern, $h^\top\phi=JW\phi=Jx(\phi)$
-and $s_j^\top\phi=a_j^\top x(\phi)$.
-
-*Step 2: the definition.* The part receives internal noise $M=2\sigma_T^2N$, so
-$q=h^*M^+h=h^*N^+h/(2\sigma_T^2)$ and $b_{\rm eff}-b_c=1/(2\sigma_T^2q)=1/(h^*N^+h)$.
-
-*Step 3: Cauchy-Schwarz.* $N$ is Hermitian and positive semidefinite. If $h$ is in its
-range, then $h=N^{1/2}(N^{+})^{1/2}h$, and for any $\psi$
-$$
-|h^*\psi|^2=\big|\big((N^+)^{1/2}h\big)^*\,N^{1/2}\psi\big|^2\le(h^*N^+h)\,(\psi^*N\psi),
-$$
-with equality at $\psi=N^+h$. So $\max_\psi|h^*\psi|^2/(\psi^*N\psi)=h^*N^+h$. If $h$ is
-outside the range, take $\psi$ in the null space of $N$ with $h^*\psi\ne0$: the ratio is
-unbounded, and $q=\infty$ as in @def-beff of the propagation note.
-
-*Step 4: back to patterns.* Put $\psi=\bar\phi$. Then $|h^*\psi|=|h^\top\phi|=|Jx|$ and
-$\psi^*N\psi=\sum_jb_j|s_j^\top\phi|^2=\sum_jb_j|a_j^\top x|^2$. The maximum of the ratio
-in Step 3 is one over the minimum cost.
-:::
-
-For one coordinate there is only one pattern, and the theorem reduces to
-@thm-reciprocity of the chain note. Two consequences come straight from the minimum:
-
-- *More coordinates never hurt.* Adding coordinates to the part enlarges the set of
-    patterns, so the minimum can only fall. This is a second proof of
-    @prp-share-basic(b).
-- *When a part holds everything.* If some pattern moves the contact point without
-    stretching any internal damper, the part holds the whole body's information at that
-    frequency. For the whole body every force is allowed, so this is possible exactly
-    when $J^\top$ is not in the span of the $a_j$, the condition of @prp-contact. The
-    SEA's rotor and link together hold everything: push both so that they move
-    together, and the series damper never stretches.
-
-The formula matches the state-space $b_{\rm eff}$ to $4\times10^{-11}$ on random chains
-with parts of two or three nodes. In 200 random patterns per case, none did better than
-the predicted best, which reaches the minimum to $10^{-10}$ (`check_matrix_reciprocity`).
-
-::: {#prp-group-static name="A group holds statically what its nearest node holds"}
-In a chain with a free far end, let $S$ be a set of nodes and $s$ its node nearest the
-contact. Then $\rho_S(0)=\rho_s(0)$.
-:::
-
-::: {.proof}
-At $\omega=0$ apply forces $\phi_i$ at the nodes $i\in S$, with total $F=\sum_i\phi_i\ne0$.
-The segment beyond element $j$ is free, so element $j$ carries the sum of the forces
-beyond it, $F_j=\sum_{i\in S,\,i>j}\phi_i$, and stretches by $F_j/k_j$. The contact spring
-carries $F$, so the contact point moves $F/k_c$. The cost is
-$k_c^2\sum_jb_j|F_j|^2/(k_j^2|F|^2)$.
-
-- For $j<s$, every node of $S$ lies beyond element $j$, so $F_j=F$. These terms give
-    $k_c^2\sum_{j<s}b_j/k_j^2$ whatever the pattern.
-- For $j\ge s$ the terms are nonnegative, and they all vanish when the whole force is put
-    at node $s$.
-
-So the minimum is $k_c^2\sum_{j<s}b_j/k_j^2$, the static cost of node $s$ alone
-(@prp-static).
-:::
-
-Statically, a farther node gives the group nothing, because its forces must pass through
-every damper the nearest node's forces pass through. In band it can help: the far node
-lets the part cancel some of the backflow. On the uniform chain of the chain note, node 1
-holds 0.381 of the body's information, node 7 holds 0.242, and the two together hold
-0.499. Nodes 6 and 7 together hold 0.283, against 0.220 and 0.242 alone (`check_pairs`).
-The static law for groups holds on random chains to $4\times10^{-11}$
-(`check_set_static_law`).
-
-::: {#prp-bridge name="Everything before a bridge costs the same"}
-Call an element a *bridge* if removing it splits the body into a side $C$ that contains
-the contact node and a side $F$, with the element the only connection between them (no
-spring, damper or mass coupling otherwise). Let $c\in C$ and $f\in F$ be its two nodes.
-For every force pattern applied on nodes of $F$, the cost
-$|a_j^\top x|^2/|Jx|^2$ of each damper inside $C$, and of the bridge's own damper, is the
-same.
-:::
-
-::: {.proof}
-The forces act only on $F$, so the rows of $Zx=$ (force) for the nodes of $C$ have zero on
-the right. In those rows, $F$ appears only through the bridge, in row $c$, as
-$Z_{cf}x_f$ with $Z_{cf}=-(k_e+i\omega b_e)$. So
-$$
-Z_{CC}\,x_C=-Z_{cf}\,x_f\,e_c ,\qquad x_C=-Z_{cf}\,x_f\,Z_{CC}^{-1}e_c .
-$$
-Every motion on the contact side is a fixed multiple of $x_f$, and so is the bridge's
-stretch $x_c-x_f$. Every ratio of these motions to the contact motion $x_0$ is therefore
-fixed. $Z_{CC}$ is invertible for $\omega>0$: if $Z_{CC}v=0$, the imaginary part of
-$v^*Z_{CC}v$ is $\omega\,v^*D_{CC}v=0$. That forces $v_0=0$ through the contact damper,
-and equal motion across every damper of the connected side $C$, so $v=0$.
-:::
-
-This gives the general form of the chain note's accumulation result:
-$$
-b_{\rm eff}=b_c+\underbrace{\text{(cost of the contact side)}}_{\text{same for every part beyond}}
-+\min_{\phi}\,\text{(cost of the far side)} .
-$$
-In a chain every element is a bridge. In a tree, every element on the path from the
-contact to the part is one. On the leg-on-trunk body below, the hip-trunk element is a
-bridge, and the costs of the three dampers up to and including it agree to
-$3\times10^{-15}$ across single nodes and 20 random patterns beyond it
-(`check_bridge`).
-
-::: {#prp-tree-static name="In a tree, only the path matters statically"}
-In a body whose elements form a tree, with only the contact node attached to the ground,
-$$
-\rho_k(0)=\frac{b_c}{b_c+k_c^2\sum_{j\in\text{path}(k)}b_j/k_j^2},
-$$
-where $\text{path}(k)$ holds the elements between the contact and node $k$.
-:::
-
-::: {.proof}
-Apply a static unit force at node $k$. Every branch off the path ends in free nodes, so it
-is unloaded and its elements do not stretch. Every element on the path carries the whole
-force and stretches by $1/k_j$, and the contact point moves $1/k_c$. @thm-reciprocity of
-the chain note then gives the formula.
-:::
-
-## A leg on a trunk
-
-The toy body is one-dimensional and vertical. The foot (0.2 kg) is on the ground, with
-$k_c=10^5$ N/m and $b_c=270$ N s/m (15% of critical on the total mass). The knee
-(0.5 kg), hip (1 kg) and trunk (5 kg) follow, joined by springs of $2\times10^4$,
-$2\times10^4$ and $5\times10^4$ N/m. Two identical swing legs hang from the trunk, each a
-knee (0.5 kg) and a foot (0.2 kg) on $2\times10^4$ N/m springs. Every element is damped at
-5% of critical on its lighter mass, and the swing legs at either 5% or 20%.
-
-| Node | foot | knee | hip | trunk | swing knee | swing foot |
-|:--|--:|--:|--:|--:|--:|--:|
-| share, swing legs at 5% | 0.957 | 0.525 | 0.241 | 0.242 | 0.076 | 0.073 |
-| share, swing legs at 20% | 0.957 | 0.525 | 0.239 | 0.214 | 0.044 | 0.037 |
-| static $\rho(0)$, 5% | 1 | 0.631 | 0.398 | 0.352 | 0.265 | 0.230 |
-| static $\rho(0)$, 20% | 1 | 0.631 | 0.398 | 0.352 | 0.153 | 0.112 |
-
-: Share of the body's information held by each node of the leg-on-trunk body (finite window, 100 Hz band), and the static values, which match @prp-tree-static to $6\times10^{-11}$ (`check_tree`). The whole body holds 47.22 bits in both cases. {#tbl-tree}
-
-- *The whole body does not notice the swing legs.* It holds 47.22 bits with either swing
-    damping, because the ceiling depends only on the contact damper (@prp-contact).
-- *Statically, the trunk does not notice them either.* Its static value is 0.352 in both
-    cases, as @prp-tree-static says: the swing legs are off its path.
-- *In band, the trunk does notice.* Heavier swing damping lowers the trunk's share from
-    0.242 to 0.214. The swing legs ring and feed their dampers' noise back into the trunk.
-    The hip, one element farther from the swing legs, barely changes (0.241 to 0.239).
-- *The trunk holds as much as the hip.* The hip-trunk spring is stiff and the trunk is
-    heavy, so in band the trunk's share (0.242) matches the hip's (0.241). Statically the
-    trunk still pays for one more damper on its path.
-
-## What this changes
-
-Thread T2 now has a complete rule for linear bodies: push on the part in the best way,
-and add up what each internal damper costs. The path from the contact to the part
-decides the static picture. Everything off the path, such as side branches and the far
-side of the part, matters only in band, through backflow. For legged robots this
-separates two design questions: what lies on the path from the foot to the part that
-must hold the force, and how much ringing the rest of the body sends back.
-
-## Limits of this note
-
-- Linear bodies with symmetric $H$, $K$, $D$ and independent viscous dampers.
-- The leg-on-trunk body is a one-dimensional toy with one foot on the ground. With two
-    feet down the body is no longer a tree, the two contacts share the force, and
-    @prp-tree-static no longer applies as stated.
-- Gyroscopic terms would break the symmetry that reciprocity needs.
-
-## Next steps
-
-- Several contacts at once: two feet on the ground, and what each part holds about each
-    contact force.
-- Fold the three T2 notes into @sec-langevin.
+**Where it lives now.** The definitions, proofs, figures and numbers moved to @sec-push and @sec-chains of
+the chapter on information inside the body. This note keeps the dated record of the
+question and what was found.

@@ -9,6 +9,9 @@ Newest first. Each release is tagged in the repository.
 - New research note: how information about the contact propagates through the body. A
   part of the body holds the force through an effective contact damping, and only
   internal dampers between the contact and the part erode it.
+- New Part III, *Information inside the body*, with one chapter (@sec-inside) that folds in
+  the research notes on propagation, chains, branching, two feet and terrain height. The
+  notes stay as short dated records.
 - New research note (thread T11): what the body knows about the height of the ground.
   Inside the body height and force propagate alike; at the contact, stiffness helps for
   height and not for force.

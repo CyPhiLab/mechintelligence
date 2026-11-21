@@ -48,7 +48,7 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   Lee, Wensing and Park (2020); Zahedi and Ay (2013); Cover and Thomas, chapters 9 and
   12; Kammer (1991); Geveci (1984), or Baker (1976) or Dupont (1973).
 
-**T2. How information propagates through the body.** *Active.*
+**T2. How information propagates through the body.** *Done.*
 
 - Question: how much of the body's information about the contact does each part of the
   body hold, and what erodes it on the way?
@@ -75,7 +75,8 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   the total load is seen through the contact dampers alone, the split also pays for the
   path between the feet. A one-coordinate part sees one mix of the forces, weighted by how
   much each foot moves when the part is pushed.
-- Next step: fold the four T2 notes into @sec-langevin.
+- Done (2026-11-21): the four notes are folded into @sec-inside (Part III), together with
+  the terrain-height result of T11. The notes stay as dated records.
 
 **T3. The Langevin body as the default noise model.** *Queued.*
 
@@ -135,6 +136,7 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   the same spectral share as for force); at the contact the two questions part ways.
   Stiffer ground helps for height and not for force; damping always hurts for force and
   hurts for height only up to $b_c=k_c/\omega$.
+- Folded into @sec-terrain.
 - Next step: ground stiffness as an unknown parameter of the dynamics, including what the
   body's thermal motion alone reveals about it.
 
@@ -239,6 +241,11 @@ written up.
   example, but terrain geometry, ground parameters, payload and contact state are in
   scope, and results name the quantity they are about. New thread T11.
 
+- **2026-11-21.** Thread T2 and the first T11 result are folded into a new Part III,
+  "Information inside the body" (@sec-inside), rather than into the Langevin chapter:
+  the material is about where information sits, not about whether energy is the right
+  metric. Promoted notes become short dated records so theorem labels stay unique.
+
 ## Paper candidates
 
 - **The energy metric is unique, and free motion cannot create information under it.**
@@ -246,4 +253,5 @@ written up.
   robotics venue (RSS, ICRA, IEEE Transactions on Robotics) or a physics or
   information-theory venue.
 - **The contact sets the ceiling; internal dissipation decides where information sits.**
-  @prp-contact and the propagation results, ideally after threads T2, T3 and T5.
+  @prp-contact and @sec-inside (reciprocity, path laws, two contacts, terrain), ideally
+  after threads T3 and T5.

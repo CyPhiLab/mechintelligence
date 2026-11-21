@@ -1,7 +1,7 @@
 # 2026-11-21: What the body knows about the height of the ground {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_terrain.py`
+**Status:** promoted to @sec-terrain · **Thread:** T11 · **Checked by:** `tests/test_terrain.py`
 :::
 
 **Question.** Until now the book has asked what the body holds about the contact force.
@@ -9,7 +9,7 @@ The environment is more than a force (@sec-capture). Take the height of the grou
 the foot as the unknown instead. Do the results for force carry over, and does the same
 body design serve both questions?
 
-**Short answer.** The ground's height reaches the body through the contact spring and
+**Findings.** The ground's height reaches the body through the contact spring and
 damper, as the force $k_cz+b_c\dot z$. So everything known for force carries over, with
 that filter in front. Inside the body nothing changes: each part holds the same fraction
 of what the body knows, whether the question is height or force. The contact itself is
@@ -27,133 +27,6 @@ On soft ground, then, the body knows the force as well as on hard ground but the
 much less. Which contact is best depends on which property of the environment the body
 should hold.
 
-## Setting
-
-The leg designs of the book, rigid and SEA, on the clamped bench with the Langevin body's
-thermal noise (@sec-langevin). The ground surface is at height $z(t)$, and the contact
-spring $k_c$ and damper $b_c$ join it to the foot, whose position is $Jq$. The height
-profile over the window is expanded in the same modes as the force profiles elsewhere, with
-a prior of $\sigma_z=10^{-4}$ m per mode, chosen so that $k_c\sigma_z$ equals the force
-prior of 100 N on the book's ground ($k_c=10^6$ N/m, $b_c=600$ N s/m).
-
-## Results
-
-::: {#prp-height-force name="Height enters as a filtered force"}
-With the ground at height $z$, the body obeys the equations of the force case with
-$$
-f=k_c\,z+b_c\,\dot z ,
-$$
-and the same thermal noise.
-:::
-
-::: {.proof}
-The contact pushes on the foot with $k_c(z-Jq)+b_c(\dot z-J\dot q)+\xi_c$, where $\xi_c$
-is the contact damper's thermal force. The terms $-k_cJq$ and $-b_cJ\dot q$ are the
-contact spring and damper that are already part of $K$ and $D$ in the force case. What is
-left enters through $J^\top$ as $k_cz+b_c\dot z+\xi_c$: a force $k_cz+b_c\dot z$ with the
-contact damper's usual noise.
-:::
-
-::: {#cor-height-ceiling name="What the whole body holds about height"}
-In the stationary, infinite-window limit, with height spectrum $S_z(\omega)$, the whole
-body holds height at the rate
-$$
-\int_0^\infty\log\Big(1+\frac{S_z(\omega)\,(k_c^2+\omega^2b_c^2)}{2\sigma_T^2\,b_c}\Big)
-\frac{d\omega}{2\pi}\ \text{nats/s},
-$$
-whatever the design of the body. At each frequency this is smallest, for fixed $k_c$, at
-$b_c=k_c/\omega$.
-:::
-
-::: {.proof}
-By @thm-whole-two of the two-contacts note with one contact, the whole body sees a force
-through the damping $b_c$, at every frequency and for every design. By
-@prp-height-force the force is $(k_c+i\omega b_c)\,z$ in the frequency domain, so a height
-spectrum $S_z$ is a force spectrum $|k_c+i\omega b_c|^2S_z$. For the minimum, write the
-signal-to-noise ratio as proportional to $k_c^2/b_c+\omega^2b_c$. The two terms have the
-product $k_c^2\omega^2$, which does not depend on $b_c$, so their sum is smallest when they
-are equal, at $b_c=k_c/\omega$.
-:::
-
-At $b_c=k_c/\omega$ the contact's spring and damper carry equal forces at frequency
-$\omega$. Below that damping the spring turns height into force and extra damping only
-adds noise. Above it the damper turns the ground's velocity into force, and its signal
-grows faster than its noise.
-
-::: {#cor-height-shares name="Inside the body, height and force propagate alike"}
-At each frequency, a part of the body holds the same fraction $\rho(\omega)=b_c/b_{\rm eff}(\omega)$
-of the body's information about height as about force.
-:::
-
-::: {.proof}
-$b_{\rm eff}$ (@def-beff of the propagation note) depends on the body, the part and the
-thermal noise, and not on the input. By @prp-height-force, height and force reach the
-body through the same channel, so they see the same $b_{\rm eff}$ at each part.
-:::
-
-Over a finite window the shares differ a little, because a height profile weights high
-frequencies more than a force profile does (through $\omega^2b_c^2$).
-
-## Numbers
-
-```{python}
-#| label: fig-terrain
-#| fig-cap: |
-#|   Bits held by the whole rigid leg about a 100 Hz terrain-height profile and about a
-#|   100 Hz force profile, as (a) the ground's stiffness or (b) its damping changes alone.
-#|   Dotted: the mode-by-mode formula in the text.
-from mibook import figures
-figures.fig_terrain();
-```
-
-| design | whole body, height | whole body, force | rotor share, height | rotor share, force |
-|:--|--:|--:|--:|--:|
-| rigid | 38.21 | 37.74 | 1 | 1 |
-| SEA, $k_s=70$ | 38.21 | 37.74 | 0.063 | 0.060 |
-| SEA, $10^3$ | 38.21 | 37.74 | 0.500 | 0.494 |
-| SEA, $10^4$ | 38.21 | 37.74 | 0.932 | 0.930 |
-| SEA, $10^6$ | 38.21 | 37.74 | 0.995 | 0.995 |
-
-: Bits about terrain height and about force on the book's ground (`check_designs`). The rotor is its angle and velocity; for the rigid leg that is the whole state. {#tbl-terrain}
-
-- *The design of the body does not change the whole body's knowledge of height.* All
-    designs hold 38.21 bits, as @cor-height-ceiling says.
-- *The rotor's share is nearly the same for height and force*, within 0.007 at every
-    stiffness, as @cor-height-shares says.
-- *Stiffness of the ground (@fig-terrain(a)).* With $b_c$ fixed, height bits rise from
-    13.72 at a quarter of the baseline stiffness to 23.83, 38.21, 54.44 and 71.24 at four
-    times. Force bits stay at 37.742 (`check_contact_sweeps`).
-- *Damping of the ground (@fig-terrain(b)).* With $k_c$ fixed, force bits fall from 65.46
-    at a tenth of the baseline damping to 0.82 at 300 times. Height bits fall from 65.47 to
-    a minimum of 26.90 at 10 times, then rise to 57.50 at 300 times. The band runs to
-    100 Hz, where $k_c/\omega=1600$ N s/m, about 2.7 times the baseline; the minimum of the
-    total sits higher because most of the band is at lower frequencies.
-- *A simple formula predicts all of this.* Treating each mode on its own, with
-    signal-to-noise ratio $\sigma_z^2\Delta t\,(k_c^2+b_c^2\omega_j^2)/(2\sigma_T^2b_c)$ at
-    $\omega_j=\pi j/T$, gives the dotted curves. It is within 0.5 bits of the height bits
-    and 0.1 bits of the force bits everywhere (`predicted_whole_bits`).
-
-## What this changes
-
-The T2 results about where information sits inside the body do not depend on which
-property of the environment is asked about, as long as it enters through the contact.
-The contact decides which property the body can know. A softer contact leaves what the
-body knows about the force unchanged and lowers what it knows about the ground's shape. A
-more damped contact lowers what it knows about the force, and lowers or raises what it
-knows about the shape depending on how much damping there is. So a design question has
-to name the environmental quantity first.
-
-## Limits of this note
-
-- The contact is always engaged and linear: no lift-off, no friction, no impacts.
-- $k_c$ and $b_c$ lump the foot pad and the ground together.
-- The prior on height is chosen to match the force prior on the book's ground. Other
-    terrain spectra change the numbers but not @prp-height-force or the shares.
-- Height is still an input. Properties that change the dynamics themselves, such as the
-    ground's stiffness, are the next step.
-
-## Next steps
-
-- Ground stiffness as an unknown parameter of the dynamics, including what the body's
-    thermal motion alone reveals about it.
-- Fold this note with the T2 notes into a chapter on information inside the body.
+**Where it lives now.** The definitions, proofs, figures and numbers moved to @sec-terrain of
+the chapter on information inside the body. This note keeps the dated record of the
+question and what was found.

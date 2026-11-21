@@ -143,9 +143,8 @@ Three findings (@tbl-langevin; @fig-langevin):
     rises monotonically with stiffness: 6% at the prototype's $k_s=70$, 49% at $10^3$,
     93% at $10^4$, 99.5% at $10^6$. The series damper sits between the contact and the
     rotor, and its thermal force erodes what arrives. With no damper on the way, as in
-    the rigid leg, nothing is lost. The research note on
-    [information propagation](../notes/2026-11-21-information-propagation.qmd) turns this
-    into a formula: a part holds the force as if the contact damping were larger, by an
+    the rigid leg, nothing is lost. @sec-inside turns this into a
+    formula: a part holds the force as if the contact damping were larger, by an
     amount set by the internal dampers between the contact and the part. The same
     reasoning underlies the case of @wensing2017proprioceptive for proprioceptive
     actuation, here derived from the mechanics alone.

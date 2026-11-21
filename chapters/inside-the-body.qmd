@@ -1,0 +1,936 @@
+# Information inside the body {#sec-inside}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** draft · **Updated:** 2026-11-21 · **Checked by:** `tests/test_propagation.py`, `tests/test_chain.py`, `tests/test_contacts.py`, `tests/test_terrain.py`
+:::
+
+@sec-langevin showed that, in a body shaken by its own thermal noise, the whole body
+holds the same information about the contact force in every design, and that designs
+differ in how much of it a given part holds. This chapter asks what decides that, and what
+erodes the information on its way from the contact to a part.
+
+The answers, in plain terms:
+
+- *Only internal dampers lose information.* A part holds the contact force as if the
+    contact damping were larger than it is. The increase comes entirely from dampers
+    inside the body. Springs and masses matter only through how they shape those dampers'
+    noise at the part. With no internal damper, every part holds everything
+    (@sec-parts).
+- *Push on the part to find the cost.* Push on the part and watch the body. Each internal
+    damper costs its damping times the square of its stretch per unit motion of the
+    contact point. A part with several coordinates gets to pick the best way to be pushed
+    (@sec-push).
+- *Losses build up along the path from the contact.* At low frequency each damper on that
+    path costs $b_j(k_c/k_j)^2$, so a body that is stiff inside compared with its contact
+    keeps the force intact. Dampers off the path, beyond the part or in side branches,
+    cost nothing at low frequency but feed noise back in band. The contact point itself
+    can hold the least, near the natural frequencies of the body held fixed at the contact
+    (@sec-chains).
+- *With two feet down, the total load and the split differ.* The body knows the total load
+    as well as the contact dampers allow. Knowing how the load is split between the feet
+    also pays for the dampers on the path between them (@sec-two-feet).
+- *Other properties of the environment propagate the same way inside the body.* The
+    height of the ground reaches the body through the contact as a filtered force. Inside
+    the body each part holds the same fraction of it as of the force. At the contact the
+    two questions part ways: stiffer ground helps the body know the height and does
+    nothing for the force (@sec-terrain).
+
+The results were first recorded as dated research notes, which the research log keeps.
+Every number is computed by `mibook` and pinned by the tests named above.
+
+## Parts of the body and the effective contact damping {#sec-parts}
+
+### Definitions
+
+Take the Langevin body of @sec-langevin: thermal forces with covariance $2\sigma_T^2D$,
+started from the Gibbs law. Split the damping into the contact damper and everything else,
+$$
+D=b_c\,J^\top J+D_{\rm int},\qquad D_{\rm int}\succeq0 .
+$$
+For the legs in this book $b_c=b_i=600$ N s/m. For the rigid leg $D_{\rm int}=0$. For the
+SEA, $D_{\rm int}$ is the series damper $b_s$ acting on the spring deflection.
+
+A *part* of the body is a set of its coordinates, $x_P=Px_q$ for a selector matrix $P$. The
+rotor's angle and velocity form one part; the joint-side link's angle and velocity form
+another. Nothing is added to $x_P$: the only noise is the body's own.
+
+::: {#def-share name="Information share"}
+For a force profile acting over a window, the *share* of a part $P$ is
+$$
+\eta_P=\frac{I(w;\,x_P)}{I(w;\,x_q)},
+$$
+the information held by the part's trajectory divided by the information held by the
+whole body's.
+:::
+
+::: {#def-beff name="Effective contact damping"}
+At frequency $\omega$, let $h(\omega)=P(i\omega-A)^{-1}B_F$ be the part's response to the
+contact force and $G(\omega)=P(i\omega-A)^{-1}[0;H^{-1}]$ its response to a generalized
+force. Let
+$$
+M(\omega)=2\sigma_T^2\,G\,D_{\rm int}\,G^*
+$$
+be the thermal noise the part receives from the internal dampers, and
+$q(\omega)=h^*M^+h$, with $q=\infty$ when $h$ lies outside the range of $M$. The
+*effective contact damping* is
+$$
+b_{\rm eff}(\omega)=b_c+\frac{1}{2\sigma_T^2\,q(\omega)},
+$$
+and the *spectral share* is $\rho(\omega)=b_c/b_{\rm eff}(\omega)$.
+:::
+
+::: {#prp-share-basic name="Bounds and invariances"}
+
+(a) $0\le\eta_P\le1$ and $0\le\rho(\omega)\le1$.
+(b) A part that contains another holds at least as much: adding rows to $P$ cannot lower
+    $\eta_P$ or $\rho(\omega)$.
+(c) $\eta_P$ and $\rho$ belong to the physical part, not to the coordinates: under
+    $q=T\tilde q$ the same part has selector $P\mathcal T$, and both quantities are
+    unchanged.
+(d) $\rho$ depends on the part only through the row space of $P$, and not on $\sigma_T$ or
+    on the force prior.
+(e) A coordinate alone and the coordinate with its velocity have the same $\rho$.
+:::
+
+::: {.proof}
+(a) The part is a function of the whole state, so data processing gives
+$I(w;x_P)\le I(w;x_q)$. For $\rho$: $q\ge0$ because $M\succeq0$, so $b_{\rm eff}\ge b_c$.
+
+(b) A larger part contains the smaller one's trajectory, so data processing again gives
+the inequality for $\eta$. For $\rho$, appending rows to $P$ can only increase $h^*M^+h$,
+the signal-to-noise ratio of the best linear combination of the rows.
+
+(c) Under $q=T\tilde q$ the trajectories and the thermal forces are the same physical
+signals written in other coordinates (@thm-invariance), so every information quantity
+is unchanged. The transfer functions $h$ and $G\,D_{\rm int}G^*$ are unchanged for the
+same reason.
+
+(d) Replacing $P$ by $SP$ with $S$ invertible maps $h\mapsto Sh$ and $M\mapsto SMS^*$, which
+leaves $h^*M^+h$ unchanged. $M$ is proportional to $\sigma_T^2$, so $\sigma_T^2q$ and
+hence $b_{\rm eff}$ do not depend on $\sigma_T$. The prior does not appear at all.
+
+(e) In the frequency domain a velocity is $i\omega$ times its coordinate, so the part
+(coordinate, velocity) has $h=v\,h_\theta$ and $M=v\,M_\theta\,v^*$ with $v=(1,i\omega)^\top$.
+Then $M^+=v v^*/(M_\theta|v|^4)$, and $h^*M^+h=|h_\theta|^2/M_\theta$, the value for the
+coordinate alone. Thermal noise moves the velocity and the coordinate together, so the
+velocity adds no independent look at the force.
+:::
+
+::: {#thm-beff name="A part holds the force through an effective damper"}
+In the stationary, infinite-window limit, with force spectrum $S(\omega)$, the
+information rate held by the part is
+$$
+\dot I_P=\int_0^{\infty}\log\Big(1+\frac{S(\omega)}{2\sigma_T^2\,b_{\rm eff}(\omega)}\Big)\,
+\frac{d\omega}{2\pi}\ \text{nats/s},
+$$
+and the whole body's rate is the same expression with $b_{\rm eff}=b_c$.
+:::
+
+::: {.proof}
+*Step 1: the contact damper's noise enters like the force.* The thermal forces have
+covariance $2\sigma_T^2D=2\sigma_T^2(b_cJ^\top J+D_{\rm int})$. In law they equal
+$J^\top\xi_c+\xi_{\rm int}$, with $\xi_c$ a scalar white noise of intensity $2\sigma_T^2b_c$
+and $\xi_{\rm int}$ an independent white noise of covariance $2\sigma_T^2D_{\rm int}$.
+Since $f$ also enters through $J^\top$, the part's trajectory is
+$$
+x_P=h\,(f+\xi_c)+G\,\xi_{\rm int} .
+$$
+
+*Step 2: one frequency.* At each frequency this is a scalar Gaussian signal $f$ in
+Gaussian noise of spectral density $N=2\sigma_T^2b_c\,hh^*+M$. The information rate of a
+stationary Gaussian signal in independent stationary Gaussian noise is the integral of
+$\log(1+S\,h^*N^{-1}h)$ over frequency [@cover2006elements, Ch. 9].
+
+*Step 3: Sherman-Morrison.* With $u=\sqrt{2\sigma_T^2b_c}\,h$,
+$(M+uu^*)^{-1}=M^{-1}-M^{-1}uu^*M^{-1}/(1+u^*M^{-1}u)$, so
+$$
+h^*N^{-1}h=\frac{q}{1+2\sigma_T^2b_c\,q}=\frac{1}{2\sigma_T^2b_c+1/q}
+=\frac{1}{2\sigma_T^2b_{\rm eff}} .
+$$
+When $M$ is singular the same holds with $M^+$, and $q=\infty$ gives $b_{\rm eff}=b_c$.
+
+*Step 4: the whole body.* With $P=I$, $h=G\,J^\top$ and $M=2\sigma_T^2GD_{\rm int}G^*$. The
+matrix $G=(i\omega-A)^{-1}[0;H^{-1}]$ has full column rank, so $h$ lies in the range of
+$M$ exactly when $J^\top$ lies in the range of $D_{\rm int}$. For the rigid leg
+$D_{\rm int}=0$. For the SEA its range is spanned by $(1,-1)$, which does not contain
+$J^\top=(-r,0)$. So $q=\infty$ and $b_{\rm eff}=b_c$, consistent with @prp-contact.
+:::
+
+::: {#cor-lossless name="No internal damper, no loss"}
+If the only damper is at the contact ($D_{\rm int}=0$) and $h(\omega)\ne0$ over the force
+band, then $\rho\equiv1$: *every* part holds everything the body holds. In the rigid leg
+the rotor's angle alone holds the full ceiling, and so does its velocity alone.
+:::
+
+::: {.proof}
+$M=0$, so $h$ lies outside the range of $M$ wherever $h\ne0$, and $b_{\rm eff}=b_c$.
+:::
+
+::: {#prp-sea-parts name="The SEA's rotor and link"}
+For the clamped SEA with series damping $b_s=2\zeta_s\sqrt{k_sI_{\rm rot}}$,
+$m_j=m_lr^2$ and $c=k_s+ib_s\omega$,
+$$
+\rho_{\rm rotor}=\Big[1+\frac{b_s}{b_c}\,
+\frac{|k_ir^2-m_j\omega^2+i\omega b_cr^2|^2}{r^2|c|^2}\Big]^{-1},\qquad
+\rho_{\rm link}=\Big[1+\frac{b_s}{b_c}\,
+\frac{I_{\rm rot}^2\omega^4}{r^2|c-I_{\rm rot}\omega^2|^2}\Big]^{-1}.
+$$
+:::
+
+::: {.proof}
+By @prp-share-basic(e) it is enough to work with each part's angle.
+
+*Step 1: the impedance matrix.* With $z_g=k_ir^2+i\omega b_cr^2-m_j\omega^2$ the
+joint-side impedance, the clamped equations read $Z q=J^\top f+\dots$ with
+$Z=\left[\begin{smallmatrix}z_g+c&-c\\-c&-I_{\rm rot}\omega^2+c\end{smallmatrix}\right]$ and
+$\Delta=\det Z$, so
+$Z^{-1}=\Delta^{-1}\left[\begin{smallmatrix}-I_{\rm rot}\omega^2+c&c\\c&z_g+c
+\end{smallmatrix}\right]$.
+
+*Step 2: the two inputs.* The contact force enters as $J^\top=(-r,0)$. The series damper
+acts on the deflection, so its noise enters as $a_s=(1,-1)$ with intensity
+$2\sigma_T^2b_s$.
+
+*Step 3: the rotor* is row 2 of $Z^{-1}$: $h=-rc/\Delta$ and
+$h_s=(c-z_g-c)/\Delta=-z_g/\Delta$. With one coordinate,
+$1/(2\sigma_T^2q)=b_s|h_s|^2/|h|^2=b_s|z_g|^2/(r^2|c|^2)$.
+
+*Step 4: the link* is row 1: $h=-r(c-I_{\rm rot}\omega^2)/\Delta$ and
+$h_s=(c-I_{\rm rot}\omega^2-c)/\Delta=-I_{\rm rot}\omega^2/\Delta$, which gives
+$b_s|h_s|^2/|h|^2=b_sI_{\rm rot}^2\omega^4/(r^2|c-I_{\rm rot}\omega^2|^2)$.
+:::
+
+The two formulas say where the series damper's noise lands. The rotor sits behind the
+damper, so it receives the damper's noise against the force filtered through the spring,
+and a soft spring makes that filter weak. The link sits on the contact side. Its losses
+come only near the rotor resonance $\sqrt{k_s/I_{\rm rot}}$, where the rotor swings and
+pumps the damper's noise back through the spring.
+
+::: {#prp-lowsnr name="At low SNR, the share is the band average of rho"}
+With a flat force spectrum over $[0,B]$ and whole-body SNR $\mathrm{snr}=S/(2\sigma_T^2b_c)$,
+the infinite-window share is
+$\eta=\int_0^B\log(1+\mathrm{snr}\,\rho)\,df\big/\big(B\log(1+\mathrm{snr})\big)$, and
+$\eta\to\frac1B\int_0^B\rho\,df$ as $\mathrm{snr}\to0$.
+:::
+
+::: {.proof}
+The formula for $\eta$ is @thm-beff divided by its whole-body value. As
+$\mathrm{snr}\to0$, $\log(1+\mathrm{snr}\,\rho)/\log(1+\mathrm{snr})\to\rho$ for each $f$,
+and the ratio is bounded by 1, so the limit passes inside the integral (dominated
+convergence).
+:::
+
+So $\rho(\omega)$ describes the body and the part without reference to a noise level or
+a force prior, and $\eta$ is that description at a stated SNR. A larger SNR compresses the
+losses, because the logarithm saturates.
+
+### The SEA in numbers
+
+```{python}
+#| label: fig-propagation
+#| fig-cap: |
+#|   (a) Spectral share of the SEA's rotor (solid) and joint-side link (dashed), from the
+#|   closed forms of @prp-sea-parts. The link holds almost everything except near the rotor
+#|   resonance $\sqrt{k_s/I_{\rm rot}}$; with a soft spring the rotor loses most of the force
+#|   to the series damper's noise. (b) Finite-window share $\eta$ against $k_s$, with the
+#|   infinite-window prediction of @prp-lowsnr at the book's SNR (dotted).
+from mibook import figures
+figures.fig_propagation();
+```
+
+| $k_s$ (N m/rad) | rotor, finite | rotor, predicted | link, finite | link, predicted |
+|--:|--:|--:|--:|--:|
+| 70 | 0.060 | 0.068 | 0.984 | 0.985 |
+| $10^3$ | 0.494 | 0.518 | 0.907 | 0.910 |
+| $10^4$ | 0.930 | 0.951 | 0.986 | 0.994 |
+| $10^6$ | 0.995 | 1.000 | 0.998 | 1.000 |
+
+: Share of the body's information held by the SEA's rotor and link, each taken as angle and velocity ($B_w=100$ Hz, $\mathrm{snr}=20.8$). The rigid leg's rotor holds 0.9987 in the finite window and exactly 1 in the prediction. {#tbl-propagation}
+
+- The state-space computation and the closed forms agree to $7\times10^{-16}$, and $\rho$
+  is unchanged, to $4\times10^{-16}$, under every reparametrization of @fig-invariance
+  (`check_closed_forms`, `check_reparametrization`).
+- The finite-window share sits up to 0.025 below the prediction. The gap comes from the
+  window's edges and from the Gibbs initial state, and shrinks as $k_s$ grows
+  (`check_prediction`).
+- Series damping is the loss. At $k_s=70$, lowering $\zeta_s$ from 0.1 to 0.03 to 0.01
+  raises the rotor's share from 0.060 to 0.095 to 0.200, while the whole body stays at
+  37.742 bits (`check_series_damping`).
+- At low SNR the share tends to the band average of $\rho$: 0.221 for the rotor at
+  $k_s=10^3$, against 0.518 at the book's SNR (`check_low_snr_limit`).
+
+## Push on the part {#sec-push}
+
+The SEA has one internal damper. To handle bodies with many, take any linear body with
+symmetric $H$, $K$ and $D$ whose dampers are independent:
+$$
+D=b_c\,J^\top J+\sum_j b_j\,a_ja_j^\top ,
+$$
+where damper $j$ resists the velocity $a_j^\top\dot q$ with coefficient $b_j$. A part is
+one combination of coordinates $y=p^\top q$, such as a node or a spring's deflection. By
+@prp-share-basic(e) its velocity adds nothing, so one row is enough. The dynamic stiffness at frequency $\omega$ is
+$$
+Z(\omega)=K-\omega^2H+i\omega D ,
+$$
+and $Z(\omega)^{-1}$ maps a harmonic force to the harmonic displacement it produces. This
+is the position block of $(i\omega-A)^{-1}[0;H^{-1}]$ in @def-beff.
+
+::: {#thm-reciprocity name="Shake the body at the part"}
+Let $w(\omega)=Z(\omega)^{-1}p$ be the body's response to a unit harmonic force applied at
+the part. Then
+$$
+b_{\rm eff}(\omega)=b_c+\sum_j b_j\,\frac{|a_j^\top w|^2}{|Jw|^2}.
+$$
+:::
+
+::: {.proof}
+*Step 1: the two responses.* At frequency $\omega$ the part responds to the contact force
+with $h=p^\top Z^{-1}J^\top$ and to the noise force of damper $j$, which enters along
+$a_j$, with $p^\top Z^{-1}a_j$.
+
+*Step 2: the definition.* The dampers are independent, so the noise the part receives
+from them is $M=2\sigma_T^2\sum_jb_j|p^\top Z^{-1}a_j|^2$. With one coordinate,
+$q=|h|^2/M$, and the definition of $b_{\rm eff}$ gives
+$$
+b_{\rm eff}-b_c=\frac{1}{2\sigma_T^2q}=\sum_jb_j\,\frac{|p^\top Z^{-1}a_j|^2}{|p^\top Z^{-1}J^\top|^2}.
+$$
+
+*Step 3: reciprocity.* $Z$ is a symmetric complex matrix (not Hermitian), so $Z^{-1}$ is
+symmetric too. Hence $p^\top Z^{-1}a_j=a_j^\top Z^{-1}p=a_j^\top w$ and
+$p^\top Z^{-1}J^\top=JZ^{-1}p=Jw$. This is the Maxwell-Betti reciprocity theorem of
+structural mechanics: the response at the part to a force at the damper equals the
+damper's stretch under a force at the part.
+:::
+
+The formula turns a question about noise into a question about one forced motion. Push
+on the part and watch the body: a damper that stretches a lot while the contact point
+barely moves is expensive. The numerical check uses 20 random chains with 2 to 8 nodes
+and parameters spread over several decades, plus the SEA's rotor, link and spring
+deflection. The formula and the state-space computation of $b_{\rm eff}$ agree to
+$4\times10^{-14}$ on the chains and $10^{-10}$ on the SEA (`check_reciprocity`).
+
+### Parts with several coordinates
+
+A part may have $m$ coordinates, $y=Pq$ with $P$ an $m\times n$ matrix, such as two masses
+at once. By @prp-share-basic(e), velocities add nothing, so positions are enough. A *force
+pattern* on the part is a vector $\phi\in\mathbb C^m$; it applies the generalized force
+$P^\top\phi$, and the body responds with $x(\phi)=Z^{-1}P^\top\phi$.
+
+::: {#thm-best-pattern name="The part chooses how it is pushed"}
+$$
+b_{\rm eff}(\omega)=b_c+\min_{\phi}\ \sum_jb_j\,\frac{|a_j^\top x(\phi)|^2}{|J\,x(\phi)|^2},
+$$
+the minimum taken over patterns that move the contact point. With $W=Z^{-1}P^\top$,
+$h=W^\top J^\top$, $s_j=W^\top a_j$ and $N=\sum_jb_js_js_j^*$, the minimum equals
+$1/(h^*N^+h)$ and is reached at $\phi=\overline{N^+h}$. If $h$ lies outside the range of
+$N$, some pattern moves the contact point without stretching any internal damper, the
+minimum is 0, and $b_{\rm eff}=b_c$.
+:::
+
+::: {.proof}
+*Step 1: reciprocity.* The part's response to the contact force is $PZ^{-1}J^\top$ and to
+damper $j$'s noise force $PZ^{-1}a_j$. $Z^{-1}$ is symmetric, so these are
+$W^\top J^\top=h$ and $W^\top a_j=s_j$. For any pattern, $h^\top\phi=JW\phi=Jx(\phi)$
+and $s_j^\top\phi=a_j^\top x(\phi)$.
+
+*Step 2: the definition.* The part receives internal noise $M=2\sigma_T^2N$, so
+$q=h^*M^+h=h^*N^+h/(2\sigma_T^2)$ and $b_{\rm eff}-b_c=1/(2\sigma_T^2q)=1/(h^*N^+h)$.
+
+*Step 3: Cauchy-Schwarz.* $N$ is Hermitian and positive semidefinite. If $h$ is in its
+range, then $h=N^{1/2}(N^{+})^{1/2}h$, and for any $\psi$
+$$
+|h^*\psi|^2=\big|\big((N^+)^{1/2}h\big)^*\,N^{1/2}\psi\big|^2\le(h^*N^+h)\,(\psi^*N\psi),
+$$
+with equality at $\psi=N^+h$. So $\max_\psi|h^*\psi|^2/(\psi^*N\psi)=h^*N^+h$. If $h$ is
+outside the range, take $\psi$ in the null space of $N$ with $h^*\psi\ne0$: the ratio is
+unbounded, and $q=\infty$ as in @def-beff.
+
+*Step 4: back to patterns.* Put $\psi=\bar\phi$. Then $|h^*\psi|=|h^\top\phi|=|Jx|$ and
+$\psi^*N\psi=\sum_jb_j|s_j^\top\phi|^2=\sum_jb_j|a_j^\top x|^2$. The maximum of the ratio
+in Step 3 is one over the minimum cost.
+:::
+
+For one coordinate there is only one pattern, and the theorem reduces to
+@thm-reciprocity. Two consequences come straight from the minimum:
+
+- *More coordinates never hurt.* Adding coordinates to the part enlarges the set of
+    patterns, so the minimum can only fall. This is a second proof of
+    @prp-share-basic(b).
+- *When a part holds everything.* If some pattern moves the contact point without
+    stretching any internal damper, the part holds the whole body's information at that
+    frequency. For the whole body every force is allowed, so this is possible exactly
+    when $J^\top$ is not in the span of the $a_j$, the condition of @prp-contact. The
+    SEA's rotor and link together hold everything: push both so that they move
+    together, and the series damper never stretches.
+
+The formula matches the state-space $b_{\rm eff}$ to $4\times10^{-11}$ on random chains
+with parts of two or three nodes. In 200 random patterns per case, none did better than
+the predicted best, which reaches the minimum to $10^{-10}$ (`check_matrix_reciprocity`).
+
+### Example: the SEA's spring deflection
+
+::: {#prp-deflection name="The deflection holds the force only through the rotor"}
+For the clamped SEA with the motor undriven, the spring deflection
+$\delta=\theta_j-\theta_m$ has
+$$
+\rho_\delta=\Big[1+\frac{b_s}{b_c}\,
+\frac{|k_ir^2-m_j\omega^2+i\omega b_cr^2-I_{\rm rot}\omega^2|^2}{r^2I_{\rm rot}^2\omega^4}\Big]^{-1},
+$$
+which tends to 0 as $\omega\to0$. The spring stiffness $k_s$ enters only through $b_s$.
+:::
+
+::: {.proof}
+Apply @thm-reciprocity with $p=(1,-1)$: equal and opposite torques across the spring.
+With $z_g=k_ir^2+i\omega b_cr^2-m_j\omega^2$ and $c=k_s+i\omega b_s$, $Zw=p$ reads
+$$
+(z_g+c)w_0-c\,w_1=1,\qquad -c\,w_0+(c-I_{\rm rot}\omega^2)w_1=-1 .
+$$
+Adding the two rows gives $z_gw_0=I_{\rm rot}\omega^2w_1$. The damper's stretch is
+$w_0-w_1=w_0(I_{\rm rot}\omega^2-z_g)/(I_{\rm rot}\omega^2)$ and the contact moves by
+$Jw=-rw_0$, so the cost is $b_s|z_g-I_{\rm rot}\omega^2|^2/(r^2I_{\rm rot}^2\omega^4)$.
+Neither expression contains $c$, so $k_s$ appears only inside $b_s$.
+:::
+
+Pinching the spring with equal and opposite torques barely moves the foot when the rotor
+is free, because the rotor's inertia is the only thing the spring can push against. So
+the deflection follows the contact force only through the rotor's acceleration, which
+vanishes at low frequency. Its share falls with stiffness, from 0.566 at $k_s=70$ to
+0.463 at $10^3$ and 0.362 at $10^4$ (predicted 0.597, 0.492, 0.389), because a stiffer
+spring at fixed damping ratio has a larger $b_s$. The closed form matches the state-space
+computation to $10^{-15}$ (`check_deflection`). A driven motor changes this, since the
+motor torque then also balances the spring.
+
+## Chains, rods and trees {#sec-chains}
+
+A *chain* has node 0 at the contact, where the force acts and the ground holds it through
+a spring $k_c$ and a damper $b_c$. Element $j$ joins node $j$ to node $j+1$ with a spring
+$k_j$ and a damper $b_j$, so $a_j=e_j-e_{j+1}$. The far end is free.
+
+::: {#cor-accumulation name="Costs accumulate along a chain"}
+In a chain, take a part at node $k$ and an element $j<k$, which lies between the contact
+and the part. Its cost $|a_j^\top w|^2/|w_0|^2$ is the same for every part $k>j$. So
+$$
+b_{\rm eff,k}=b_c+\sum_{j<k}b_j\,c_j+B_k ,
+$$
+where $c_j$ does not depend on $k$, and the backflow $B_k$ collects the elements beyond
+node $k$.
+:::
+
+::: {.proof}
+$w$ solves $Zw=e_k$, and $Z$ is tridiagonal. Rows $0,\dots,k-1$ of this system have zero on
+the right. Row 0 reads $Z_{00}w_0+Z_{01}w_1=0$, which fixes $w_1/w_0$; the off-diagonal
+entry $Z_{01}=-(k_0+i\omega b_0)$ is nonzero. Each further row $i\le k-1$ fixes
+$w_{i+1}$ from $w_{i-1}$ and $w_i$. So the ratios $w_1/w_0,\dots,w_k/w_0$ come from rows
+that do not involve $k$, and $(w_j-w_{j+1})/w_0$ is the same for every $k\ge j+1$.
+:::
+
+The ratio $|a_j^\top w|^2/|w_0|^2$ agrees across parts to $10^{-14}$ on the uniform
+chain below (`check_accumulation`). Once information has been lost crossing a damper, no
+part farther along gets it back. The share can still rise along the chain, because the
+backflow $B_k$ shrinks as fewer dampers lie beyond the part.
+
+::: {#prp-static name="The static law"}
+In a chain with a free far end,
+$$
+\rho_k(0)=\frac{b_c}{b_c+k_c^2\sum_{j<k}b_j/k_j^2}.
+$$
+:::
+
+::: {.proof}
+At $\omega=0$, $Z=K$, which is invertible because the contact spring anchors the chain,
+and $w$ is the static deflection under a unit force at node $k$.
+
+- The segment beyond node $k$ is free and unloaded, so its springs carry no force and
+    $a_j^\top w=0$ for $j\ge k$. The backflow is zero.
+- Every element between the contact and node $k$ carries the whole unit force, so it
+    stretches by $1/k_j$.
+- The contact spring carries it too, so $w_0=1/k_c$.
+
+@thm-reciprocity then gives $b_{\rm eff,k}(0)=b_c+\sum_{j<k}b_j\,k_c^2/k_j^2$.
+:::
+
+Each damper on the way costs $b_j(k_c/k_j)^2$. Since $b_j/k_j$ is the damper's relaxation
+time, this cost is the relaxation time multiplied by $k_c^2/k_j$: it grows with slow
+dampers and with springs that are soft compared with the contact. For the SEA's rotor, in joint
+coordinates where the contact has stiffness $k_ir^2$ and damping $b_cr^2$, the law gives
+the cost $b_s(k_ir^2/k_s)^2$, the low-frequency limit of @prp-sea-parts. On 20 random chains the law matches $\rho_k$ at $10^{-4}$ Hz to
+$2\times10^{-10}$ (`check_static_law`).
+
+For a rod with Kelvin-Voigt material damping $D=cK$, an element of length $h$ has
+$k_e=EA/h$ and $b_e=c\,EA/h$, so it costs $c\,k_c^2h/EA$. The elements between the contact
+and a point at distance $x$ add up to
+$$
+\rho(x,0)=\frac{b_c}{b_c+c\,k_c^2\,x/EA},
+$$
+which does not depend on the mesh.
+
+::: {#rem-contact-dips name="Where the contact point loses"}
+For the part at the contact node, $w=Z^{-1}e_0$, and by Cramer's rule
+$w_0=\det Z_c/\det Z$, where $Z_c$ is $Z$ with row and column 0 removed: the dynamic
+stiffness of the body held fixed at the contact. Near a natural frequency of that clamped
+body, $\det Z_c$ is small (zero without internal damping). The rest of the body then rings
+while the contact point hardly moves, and the cost in @thm-reciprocity becomes large. On
+the SEA, the clamped body is the rotor on its spring, which is why the link loses near
+$\sqrt{k_s/I_{\rm rot}}$.
+:::
+
+### A uniform chain and a rod
+
+The uniform chain has eight 0.1 kg masses, springs of $10^4$ N/m, dampers at
+5% of critical per element, and a contact ten times stiffer than one element
+($k_c=10^5$ N/m, $b_c=84.9$ N s/m, 15% of critical on the chain's mass). Its modes lie
+between 10 and 168 Hz, and the whole body holds 61.23 bits about a 100 Hz force profile.
+The rod is free at both ends and touches the ground at one: $L=0.2$ m, $EA=10^3$ N,
+$\rho A=0.1$ kg/m, Kelvin-Voigt damping at 5% of critical on the first free-free mode,
+$k_c=EA/L$ and $b_c=3$ N s/m.
+
+```{python}
+#| label: fig-chain
+#| fig-cap: |
+#|   (a) The uniform chain: the share of the body's information held by each node (finite
+#|   window, 100 Hz band), the band average of $\rho$, and the static law of @prp-static.
+#|   (b) The free rod: band average of $\rho$ from 0 to 400 Hz at five positions, for meshes
+#|   of 4 to 64 elements, with the mesh-independent static law (dashed).
+from mibook import figures
+figures.fig_chain();
+```
+
+| Node | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|:--|--:|--:|--:|--:|--:|--:|--:|--:|
+| share, finite window | 0.951 | 0.381 | 0.334 | 0.304 | 0.254 | 0.258 | 0.220 | 0.242 |
+| band mean of $\rho$ | 0.831 | 0.067 | 0.054 | 0.047 | 0.038 | 0.036 | 0.034 | 0.041 |
+| static law $\rho(0)$ | 1 | 0.212 | 0.118 | 0.082 | 0.063 | 0.051 | 0.043 | 0.037 |
+
+: The uniform chain (`check_chain_shares`). {#tbl-chain}
+
+- *The first damper costs most.* The contact is ten times stiffer than one element, so
+    each damper costs $b_j(k_c/k_j)^2=100\,b_j$ statically, about four times $b_c$. The
+    share drops from 0.951 at the contact node to 0.381 one node in, then declines slowly.
+- *The free end beats its neighbour.* Node 7 holds 0.242 and node 6 holds 0.220. Node 7
+    has no damper beyond it, so its backflow is zero; node 6 still receives the last
+    damper's noise from behind.
+- *The finite-window share sits far above the band mean of $\rho$.* The whole-body SNR
+    is 147 per band, and the logarithm in @prp-lowsnr compresses the losses.
+- *The rod converges under mesh refinement.* From 32 to 64 elements the band mean of
+    $\rho$ changes by at most $4\times10^{-4}$ at every position, and the static values
+    match the formula above to $10^{-6}$ on every mesh (`check_rod_mesh`).
+- *On the rod the contact point holds the least.* The band mean of $\rho$ is 0.537 at the
+    contact and rises to 0.711 at $x=0.75L$ and 0.703 at the far end, while the static
+    law falls from 1 to 0.904. The contact node's $\rho$ dips to 0.012 at 125.1 Hz and
+    to 0.092 at 377.5 Hz; the rod clamped at the contact has its modes at 125.0 and
+    375.3 Hz (`check_contact_dips`). The chain's two deepest dips sit at 10.53 and
+    31.13 Hz, against clamped modes at 10.52 and 31.11 Hz.
+
+### Groups of nodes, bridges and trees
+
+::: {#prp-group-static name="A group holds statically what its nearest node holds"}
+In a chain with a free far end, let $S$ be a set of nodes and $s$ its node nearest the
+contact. Then $\rho_S(0)=\rho_s(0)$.
+:::
+
+::: {.proof}
+At $\omega=0$ apply forces $\phi_i$ at the nodes $i\in S$, with total $F=\sum_i\phi_i\ne0$.
+The segment beyond element $j$ is free, so element $j$ carries the sum of the forces
+beyond it, $F_j=\sum_{i\in S,\,i>j}\phi_i$, and stretches by $F_j/k_j$. The contact spring
+carries $F$, so the contact point moves $F/k_c$. The cost is
+$k_c^2\sum_jb_j|F_j|^2/(k_j^2|F|^2)$.
+
+- For $j<s$, every node of $S$ lies beyond element $j$, so $F_j=F$. These terms give
+    $k_c^2\sum_{j<s}b_j/k_j^2$ whatever the pattern.
+- For $j\ge s$ the terms are nonnegative, and they all vanish when the whole force is put
+    at node $s$.
+
+So the minimum is $k_c^2\sum_{j<s}b_j/k_j^2$, the static cost of node $s$ alone
+(@prp-static).
+:::
+
+Statically, a farther node gives the group nothing, because its forces must pass through
+every damper the nearest node's forces pass through. In band it can help: the far node
+lets the part cancel some of the backflow. On the uniform chain of @tbl-chain, node 1
+holds 0.381 of the body's information, node 7 holds 0.242, and the two together hold
+0.499. Nodes 6 and 7 together hold 0.283, against 0.220 and 0.242 alone (`check_pairs`).
+The static law for groups holds on random chains to $4\times10^{-11}$
+(`check_set_static_law`).
+
+::: {#prp-bridge name="Everything before a bridge costs the same"}
+Call an element a *bridge* if removing it splits the body into a side $C$ that contains
+the contact node and a side $F$, with the element the only connection between them (no
+spring, damper or mass coupling otherwise). Let $c\in C$ and $f\in F$ be its two nodes.
+For every force pattern applied on nodes of $F$, the cost
+$|a_j^\top x|^2/|Jx|^2$ of each damper inside $C$, and of the bridge's own damper, is the
+same.
+:::
+
+::: {.proof}
+The forces act only on $F$, so the rows of $Zx=$ (force) for the nodes of $C$ have zero on
+the right. In those rows, $F$ appears only through the bridge, in row $c$, as
+$Z_{cf}x_f$ with $Z_{cf}=-(k_e+i\omega b_e)$. So
+$$
+Z_{CC}\,x_C=-Z_{cf}\,x_f\,e_c ,\qquad x_C=-Z_{cf}\,x_f\,Z_{CC}^{-1}e_c .
+$$
+Every motion on the contact side is a fixed multiple of $x_f$, and so is the bridge's
+stretch $x_c-x_f$. Every ratio of these motions to the contact motion $x_0$ is therefore
+fixed. $Z_{CC}$ is invertible for $\omega>0$: if $Z_{CC}v=0$, the imaginary part of
+$v^*Z_{CC}v$ is $\omega\,v^*D_{CC}v=0$. That forces $v_0=0$ through the contact damper,
+and equal motion across every damper of the connected side $C$, so $v=0$.
+:::
+
+This is the general form of @cor-accumulation:
+$$
+b_{\rm eff}=b_c+\underbrace{\text{(cost of the contact side)}}_{\text{same for every part beyond}}
++\min_{\phi}\,\text{(cost of the far side)} .
+$$
+In a chain every element is a bridge. In a tree, every element on the path from the
+contact to the part is one. On the leg-on-trunk body below, the hip-trunk element is a
+bridge, and the costs of the three dampers up to and including it agree to
+$3\times10^{-15}$ across single nodes and 20 random patterns beyond it
+(`check_bridge`).
+
+::: {#prp-tree-static name="In a tree, only the path matters statically"}
+In a body whose elements form a tree, with only the contact node attached to the ground,
+$$
+\rho_k(0)=\frac{b_c}{b_c+k_c^2\sum_{j\in\text{path}(k)}b_j/k_j^2},
+$$
+where $\text{path}(k)$ holds the elements between the contact and node $k$.
+:::
+
+::: {.proof}
+Apply a static unit force at node $k$. Every branch off the path ends in free nodes, so it
+is unloaded and its elements do not stretch. Every element on the path carries the whole
+force and stretches by $1/k_j$, and the contact point moves $1/k_c$. @thm-reciprocity then gives the formula.
+:::
+
+### A leg on a trunk
+
+The toy body is one-dimensional and vertical. The foot (0.2 kg) is on the ground, with
+$k_c=10^5$ N/m and $b_c=270$ N s/m (15% of critical on the total mass). The knee
+(0.5 kg), hip (1 kg) and trunk (5 kg) follow, joined by springs of $2\times10^4$,
+$2\times10^4$ and $5\times10^4$ N/m. Two identical swing legs hang from the trunk, each a
+knee (0.5 kg) and a foot (0.2 kg) on $2\times10^4$ N/m springs. Every element is damped at
+5% of critical on its lighter mass, and the swing legs at either 5% or 20%.
+
+| Node | foot | knee | hip | trunk | swing knee | swing foot |
+|:--|--:|--:|--:|--:|--:|--:|
+| share, swing legs at 5% | 0.957 | 0.525 | 0.241 | 0.242 | 0.076 | 0.073 |
+| share, swing legs at 20% | 0.957 | 0.525 | 0.239 | 0.214 | 0.044 | 0.037 |
+| static $\rho(0)$, 5% | 1 | 0.631 | 0.398 | 0.352 | 0.265 | 0.230 |
+| static $\rho(0)$, 20% | 1 | 0.631 | 0.398 | 0.352 | 0.153 | 0.112 |
+
+: Share of the body's information held by each node of the leg-on-trunk body (finite window, 100 Hz band), and the static values, which match @prp-tree-static to $6\times10^{-11}$ (`check_tree`). The whole body holds 47.22 bits in both cases. {#tbl-tree}
+
+- *The whole body does not notice the swing legs.* It holds 47.22 bits with either swing
+    damping, because the ceiling depends only on the contact damper (@prp-contact).
+- *Statically, the trunk does not notice them either.* Its static value is 0.352 in both
+    cases, as @prp-tree-static says: the swing legs are off its path.
+- *In band, the trunk does notice.* Heavier swing damping lowers the trunk's share from
+    0.242 to 0.214. The swing legs ring and feed their dampers' noise back into the trunk.
+    The hip, one element farther from the swing legs, barely changes (0.241 to 0.239).
+- *The trunk holds as much as the hip.* The hip-trunk spring is stiff and the trunk is
+    heavy, so in band the trunk's share (0.242) matches the hip's (0.241). Statically the
+    trunk still pays for one more damper on its path.
+
+## Two feet on the ground {#sec-two-feet}
+
+With two feet down there are two unknown forces, the feet share the load, and the body has
+two routes to the ground. Contact $i$ is node $c_i$, held by a ground
+spring $k_i$ and damper $b_i$, and takes its own force $f_i$. $J$ has one row per contact,
+$B_c=\diag(b_1,b_2)$, and
+$$
+D=J^\top B_cJ+\sum_jb_j\,a_ja_j^\top .
+$$
+We assume every node is connected through dampers to a contact, so $D$ is invertible.
+The two forces have independent priors of equal size. A part's *information matrix*
+$F(\omega)$ is the $2\times2$ matrix with $2\sigma_T^2F$ equal to the Fisher information
+about $(f_1,f_2)$ per unit force spectrum. Its information rate is
+$\int\log\det\big(I+S\,F/(2\sigma_T^2)\big)\,d\omega/2\pi$. With one contact,
+$F=1/b_{\rm eff}$.
+
+::: {#thm-whole-two name="The whole body sees the forces through one damping matrix"}
+The whole body's information matrix is $F=JD^{-1}J^\top$ at every frequency. Equivalently,
+the body sees the forces through the damping matrix $B=(JD^{-1}J^\top)^{-1}$.
+:::
+
+::: {.proof}
+*Step 1: an equivalent observation.* At frequency $\omega$ the body moves as
+$Zx=J^\top(f+\xi_c)+\sum_ja_j\xi_j$, where $\xi_c$ is the contact dampers' noise and
+$\xi_j$ damper $j$'s. $Z$ is invertible, so observing $x$ is the same as observing $Zx$:
+the net force on every mass.
+
+*Step 2: the noise.* The noise in $Zx$ is $J^\top\xi_c+\sum_ja_j\xi_j$. The dampers are
+independent, so its spectral density is $2\sigma_T^2(J^\top B_cJ+\sum_jb_ja_ja_j^\top)=
+2\sigma_T^2D$, the same at every frequency.
+
+*Step 3: the Gaussian channel.* The signal $J^\top f$ in noise of density $2\sigma_T^2D$
+gives the Fisher matrix $JD^{-1}J^\top/(2\sigma_T^2)$ per unit force spectrum.
+:::
+
+With one contact this gives $F=JD^{-1}J^\top=1/b_c$ for any body whose nodes are all
+connected through dampers, because the internal dampers seen from a single node have no
+effect (Step 2 of the corollary below, with one terminal). That is the infinite-window form of @prp-contact,
+here derived without Duncan's theorem. On 20 random tree-shaped bodies with two contacts,
+the state-space information matrix of the whole body equals $JD^{-1}J^\top$ to
+$10^{-11}$ at 0.5, 8 and 60 Hz (`check_whole_body`).
+
+::: {#cor-series name="The path between the feet, in series"}
+For a tree-shaped body with contacts at nodes $c_1\ne c_2$,
+$$
+B=B_c+b_\times\begin{pmatrix}1&-1\\-1&1\end{pmatrix},\qquad
+b_\times=\Big(\sum_{j\in\text{path}(c_1,c_2)}\frac1{b_j}\Big)^{-1}.
+$$
+With equal contacts ($b_1=b_2=b_c$), the total load $(f_1+f_2)/\sqrt2$ is seen through
+$b_c$ and the split $(f_1-f_2)/\sqrt2$ through $b_c+2b_\times$.
+:::
+
+::: {.proof}
+*Step 1: a Schur complement.* Order the nodes as contacts, then the rest. By the block
+inverse formula, the contact block of $D^{-1}$, which is $JD^{-1}J^\top$, is the inverse
+of the Schur complement $D_{cc}-D_{cr}D_{rr}^{-1}D_{rc}$. So $B$ is that Schur
+complement. The contact dampers sit only in $D_{cc}$, so $B=B_c+L_{\rm red}$, where
+$L_{\rm red}$ is the Schur complement of the internal dampers' matrix $L=\sum_jb_ja_ja_j^\top$.
+
+*Step 2: an electrical network.* $L$ is the Laplacian of a resistor network with
+conductance $b_j$ on element $j$: velocity plays the role of voltage and force the role
+of current. Its Schur complement onto the two contact nodes describes the network seen
+from those two terminals with the other nodes left floating. A two-terminal Laplacian has
+rows summing to zero, so $L_{\rm red}=\beta\left[\begin{smallmatrix}1&-1\\-1&1
+\end{smallmatrix}\right]$, where $\beta$ is the effective conductance between the
+terminals.
+
+*Step 3: the tree.* In a tree the only route between the terminals is the path. Side
+branches are dead ends and carry no current. Conductances in series combine as the
+inverse of the summed inverses, so $\beta=b_\times$.
+
+*Step 4: equal contacts.* $\left[\begin{smallmatrix}1&-1\\-1&1\end{smallmatrix}\right]$ is
+zero on $(1,1)$ and equals 2 on $(1,-1)$, so $B$ has eigenvalue $b_c$ on the total load and
+$b_c+2b_\times$ on the split.
+:::
+
+The formula matches $(JD^{-1}J^\top)^{-1}$ to $4\times10^{-16}$ on the same 20 bodies
+(`check_whole_body`). A damper on the path between the feet adds force noise that is
+equal and opposite at its two ends. That cancels in the total load and looks like a change
+in the split. Side branches, such as a swing leg, have no effect on $B$ at all.
+
+::: {#thm-push-two name="Push on the part and watch both feet"}
+For a part with one coordinate $y=p^\top q$, let $x=Z^{-1}p$ be the body's response to a
+unit push at the part and $h=Jx$ the motion of the two feet. Then
+$$
+F=\frac{\bar h\,h^\top}{\sum_ib_i|h_i|^2+\sum_jb_j|a_j^\top x|^2}.
+$$
+The part sees the single mix $h^\top f$ of the forces, at an information rate of
+$\log\big(1+S\,\|h\|^2/(2\sigma_T^2\,d)\big)$, where $d$ is the denominator.
+:::
+
+::: {.proof}
+By reciprocity ($Z^{-1}$ is symmetric), the part's response to the two forces is the row
+$p^\top Z^{-1}J^\top=h^\top$, and its response to damper $j$ is
+$p^\top Z^{-1}a_j=a_j^\top x$. The part therefore receives $h^\top(f+\xi_c)+\sum_j
+(a_j^\top x)\,\xi_j$. Its noise has density $2\sigma_T^2d$, counting the contact dampers
+($\sum_ib_i|h_i|^2$) and the internal ones. The Fisher matrix of a scalar observation
+$h^\top f$ in noise $2\sigma_T^2d$ is $\bar hh^\top/(2\sigma_T^2d)$. It has rank one, with
+eigenvalue $\|h\|^2/(2\sigma_T^2d)$, which gives the rate.
+:::
+
+With one contact, $F=|x_0|^2/(b_c|x_0|^2+\sum_jb_j|a_j^\top x|^2)=1/b_{\rm eff}$, as in
+@thm-reciprocity. With two, every damper counts, the contact ones included, because each
+foot's own damper noise now competes with the other foot's force. The rule matches the
+state space to $2\times10^{-14}$ on random bodies (`check_push_rule`).
+
+::: {#prp-static-two name="Static law for a chain with both ends down"}
+Let a chain have contacts at both ends, node 0 with $(k_1,b_1)$ and node $N-1$ with
+$(k_2,b_2)$. Push statically on node $k$. The routes to the ground have compliances
+$C_1=1/k_1+\sum_{j<k}1/k_j$ and $C_2=1/k_2+\sum_{j\ge k}1/k_j$, and they carry the
+loads $F_1=C_2/(C_1+C_2)$ and $F_2=C_1/(C_1+C_2)$. Then $h=(F_1/k_1,\;F_2/k_2)$ and
+$$
+d=F_1^2\Big(\frac{b_1}{k_1^2}+\sum_{j<k}\frac{b_j}{k_j^2}\Big)
+ +F_2^2\Big(\frac{b_2}{k_2^2}+\sum_{j\ge k}\frac{b_j}{k_j^2}\Big).
+$$
+:::
+
+::: {.proof}
+At $\omega=0$, $Z=K$. The two routes from node $k$ to the ground act as springs in
+parallel, so the unit push splits in inverse proportion to their compliances. Foot $i$
+moves $F_i/k_i$, and every element on route $i$ carries $F_i$ and stretches by $F_i/k_j$.
+Insert these into @thm-push-two.
+:::
+
+This explains why a foot holds its own force and little of the other. Push on foot 1 and
+nearly all the load goes straight into the ground through its stiff contact, so foot 2
+barely moves and $h_2\approx0$. The law matches the state space at $10^{-4}$ Hz to
+$2\times10^{-10}$ on 20 random chains (`check_two_foot_static`).
+
+### A two-foot stance
+
+The body is the leg-on-trunk toy of @tbl-tree, with the foot of the first swing
+leg also on the ground and the second swing leg still in the air. Both contacts have
+$k_c=10^5$ N/m and $b_c=270$ N s/m. The path between the feet runs foot, knee, hip, trunk,
+knee, foot. Its five dampers in series give $b_\times=1.78$ N s/m, small next to $b_c$.
+To see the path matter, the table also scales every internal damper by 10 and by 100.
+
+| internal dampers | $b_\times$ (N s/m) | $f_1$ alone | $f_2$ alone | both forces | total load | split |
+|:--|--:|--:|--:|--:|--:|--:|
+| as built | 1.78 | 47.14 | 47.14 | 94.28 | 47.22 | 47.06 |
+| $\times10$ | 17.8 | 46.45 | 46.45 | 92.95 | 47.22 | 45.73 |
+| $\times100$ | 178 | 41.24 | 41.24 | 84.46 | 47.22 | 37.24 |
+
+: Bits held by the whole body about a 100 Hz force profile at each foot. "$f_1$ alone" treats $f_2$ as unknown. Total load and split are $(f_1\pm f_2)/\sqrt2$ (`check_stance`). {#tbl-stance-whole}
+
+The total load stays at 47.22 bits whatever the internal damping (to $4\times10^{-5}$ in
+the finite window, exactly in the infinite-window limit). This is also what the
+one-footed body of @tbl-tree holds about its single force, since both are seen
+through $b_c$. The split falls from 47.06 to 37.24 bits as $b_\times$ grows.
+
+| part | $f_1$ alone | $f_2$ alone | both forces | total load | split |
+|:--|--:|--:|--:|--:|--:|
+| stance foot | 45.08 | 0.01 | 45.54 | 8.21 | 8.22 |
+| stance hip | 8.94 | 1.72 | 13.21 | 4.83 | 4.87 |
+| trunk | 4.99 | 3.98 | 14.62 | 8.45 | 3.34 |
+| second knee | 0.54 | 25.13 | 28.28 | 7.46 | 7.56 |
+| second foot | 0.01 | 45.14 | 45.58 | 8.21 | 8.21 |
+| swing foot | 2.23 | 1.48 | 5.14 | 4.08 | 0.67 |
+
+: Bits held by single nodes (position and velocity) in the two-foot stance, with the internal dampers as built (`check_stance`). {#tbl-stance-parts}
+
+- *Each foot holds its own force.* The stance foot holds 45.08 bits about $f_1$ and
+    0.01 about $f_2$. Knowing $f_1$ means knowing the sum of the total load and
+    the split. That is worth at most half a bit per force mode about either one, or 8.5
+    bits over the 17 modes, and the foot holds 8.2 about each.
+- *The trunk knows the total load, not the split.* It holds 14.62 bits about the two
+    forces together but only 4.99 and 3.98 about each alone. It can tell how hard the
+    body is pressed down (8.45 bits) much better than how that is shared (3.34).
+- *Nodes on one leg favour that leg's foot.* The second knee holds 25.13 bits about
+    $f_2$ and 0.54 about $f_1$; the stance hip holds 8.94 about $f_1$ and 1.72 about $f_2$.
+- *The swing foot is mostly a load gauge.* Off both legs' paths, it holds 4.08 bits
+    about the total load and 0.67 about the split.
+
+## Beyond force: the height of the ground {#sec-terrain}
+
+So far the environment has been an unknown contact force. The environment is more than
+that (@sec-capture). This section takes the height of the ground under the foot as the
+unknown instead, and asks whether the results above carry over. The bodies are the leg
+designs of the book, rigid and SEA, on the clamped bench with the Langevin body's thermal
+noise (@sec-langevin). The ground surface is at height $z(t)$, and the contact
+spring $k_c$ and damper $b_c$ join it to the foot, whose position is $Jq$. The height
+profile over the window is expanded in the same modes as the force profiles elsewhere, with
+a prior of $\sigma_z=10^{-4}$ m per mode, chosen so that $k_c\sigma_z$ equals the force
+prior of 100 N on the book's ground ($k_c=10^6$ N/m, $b_c=600$ N s/m).
+
+::: {#prp-height-force name="Height enters as a filtered force"}
+With the ground at height $z$, the body obeys the equations of the force case with
+$$
+f=k_c\,z+b_c\,\dot z ,
+$$
+and the same thermal noise.
+:::
+
+::: {.proof}
+The contact pushes on the foot with $k_c(z-Jq)+b_c(\dot z-J\dot q)+\xi_c$, where $\xi_c$
+is the contact damper's thermal force. The terms $-k_cJq$ and $-b_cJ\dot q$ are the
+contact spring and damper that are already part of $K$ and $D$ in the force case. What is
+left enters through $J^\top$ as $k_cz+b_c\dot z+\xi_c$: a force $k_cz+b_c\dot z$ with the
+contact damper's usual noise.
+:::
+
+::: {#cor-height-ceiling name="What the whole body holds about height"}
+In the stationary, infinite-window limit, with height spectrum $S_z(\omega)$, the whole
+body holds height at the rate
+$$
+\int_0^\infty\log\Big(1+\frac{S_z(\omega)\,(k_c^2+\omega^2b_c^2)}{2\sigma_T^2\,b_c}\Big)
+\frac{d\omega}{2\pi}\ \text{nats/s},
+$$
+whatever the design of the body. At each frequency this is smallest, for fixed $k_c$, at
+$b_c=k_c/\omega$.
+:::
+
+::: {.proof}
+By @thm-whole-two with one contact, the whole body sees a force
+through the damping $b_c$, at every frequency and for every design. By
+@prp-height-force the force is $(k_c+i\omega b_c)\,z$ in the frequency domain, so a height
+spectrum $S_z$ is a force spectrum $|k_c+i\omega b_c|^2S_z$. For the minimum, write the
+signal-to-noise ratio as proportional to $k_c^2/b_c+\omega^2b_c$. The two terms have the
+product $k_c^2\omega^2$, which does not depend on $b_c$, so their sum is smallest when they
+are equal, at $b_c=k_c/\omega$.
+:::
+
+At $b_c=k_c/\omega$ the contact's spring and damper carry equal forces at frequency
+$\omega$. Below that damping the spring turns height into force and extra damping only
+adds noise. Above it the damper turns the ground's velocity into force, and its signal
+grows faster than its noise.
+
+::: {#cor-height-shares name="Inside the body, height and force propagate alike"}
+At each frequency, a part of the body holds the same fraction $\rho(\omega)=b_c/b_{\rm eff}(\omega)$
+of the body's information about height as about force.
+:::
+
+::: {.proof}
+$b_{\rm eff}$ (@def-beff) depends on the body, the part and the
+thermal noise, and not on the input. By @prp-height-force, height and force reach the
+body through the same channel, so they see the same $b_{\rm eff}$ at each part.
+:::
+
+Over a finite window the shares differ a little, because a height profile weights high
+frequencies more than a force profile does (through $\omega^2b_c^2$).
+
+### Height and force on the leg designs
+
+```{python}
+#| label: fig-terrain
+#| fig-cap: |
+#|   Bits held by the whole rigid leg about a 100 Hz terrain-height profile and about a
+#|   100 Hz force profile, as (a) the ground's stiffness or (b) its damping changes alone.
+#|   Dotted: the mode-by-mode formula in the text.
+from mibook import figures
+figures.fig_terrain();
+```
+
+| design | whole body, height | whole body, force | rotor share, height | rotor share, force |
+|:--|--:|--:|--:|--:|
+| rigid | 38.21 | 37.74 | 1 | 1 |
+| SEA, $k_s=70$ | 38.21 | 37.74 | 0.063 | 0.060 |
+| SEA, $10^3$ | 38.21 | 37.74 | 0.500 | 0.494 |
+| SEA, $10^4$ | 38.21 | 37.74 | 0.932 | 0.930 |
+| SEA, $10^6$ | 38.21 | 37.74 | 0.995 | 0.995 |
+
+: Bits about terrain height and about force on the book's ground (`check_designs`). The rotor is its angle and velocity; for the rigid leg that is the whole state. {#tbl-terrain}
+
+- *The design of the body does not change the whole body's knowledge of height.* All
+    designs hold 38.21 bits, as @cor-height-ceiling says.
+- *The rotor's share is nearly the same for height and force*, within 0.007 at every
+    stiffness, as @cor-height-shares says.
+- *Stiffness of the ground (@fig-terrain(a)).* With $b_c$ fixed, height bits rise from
+    13.72 at a quarter of the baseline stiffness to 23.83, 38.21, 54.44 and 71.24 at four
+    times. Force bits stay at 37.742 (`check_contact_sweeps`).
+- *Damping of the ground (@fig-terrain(b)).* With $k_c$ fixed, force bits fall from 65.46
+    at a tenth of the baseline damping to 0.82 at 300 times. Height bits fall from 65.47 to
+    a minimum of 26.90 at 10 times, then rise to 57.50 at 300 times. The band runs to
+    100 Hz, where $k_c/\omega=1600$ N s/m, about 2.7 times the baseline; the minimum of the
+    total sits higher because most of the band is at lower frequencies.
+- *A simple formula predicts all of this.* Treating each mode on its own, with
+    signal-to-noise ratio $\sigma_z^2\Delta t\,(k_c^2+b_c^2\omega_j^2)/(2\sigma_T^2b_c)$ at
+    $\omega_j=\pi j/T$, gives the dotted curves. It is within 0.5 bits of the height bits
+    and 0.1 bits of the force bits everywhere (`predicted_whole_bits`).
+
+## What this chapter shows {#sec-inside-summary}
+
+For a linear body the chapter gives a complete rule for where information about the
+environment sits. Push on the part in the best way and add up what each internal damper
+costs. The path from the contact to the part decides the low-frequency picture.
+Everything off that path, such as side branches and the far side of the part, matters
+only in band, through backflow. With several contacts the information becomes a matrix,
+and it splits into the total load, which internal dampers cannot touch, and the split
+between the feet, which pays for the path between them. The contact itself decides which
+environmental property the body can know: its stiffness matters for the ground's shape
+and not for the force.
+
+**Limits.**
+
+- Linear bodies with symmetric $H$, $K$, $D$ and independent viscous dampers. Gyroscopic
+    terms would break the symmetry that reciprocity needs.
+- The bench is passive and clamped, with the motor undriven. A part is a set of the
+    body's own coordinates; how a controller or a sensor would use it is a later question.
+- The contact is always engaged and linear: no lift-off, friction or impacts.
+- The chains, rods and leg-on-trunk bodies are one-dimensional toys.
+
+**Open.** More than two contacts, where the split becomes several directions; properties
+of the environment that change the dynamics themselves, such as the ground's stiffness
+or a payload's mass (roadmap thread T11); and the controlled case, once controllers come
+into scope.

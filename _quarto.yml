@@ -27,6 +27,9 @@ book:
       chapters:
         - chapters/why-energy.qmd
         - chapters/langevin-body.qmd
+    - part: "Part III. Information inside the body"
+      chapters:
+        - chapters/inside-the-body.qmd
     - chapters/open-problems.qmd
     - part: "Research log"
       chapters:
