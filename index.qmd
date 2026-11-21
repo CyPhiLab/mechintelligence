@@ -1,8 +1,8 @@
 # Preface {.unnumbered}
 
 This is a live textbook on how mechanisms carry and process information about the world:
-how much a robot's body knows about the forces acting on it, how that knowledge depends on
-its design, and how much of it reaches the sensors a controller can use. It starts from
+how much a robot's body holds about the forces acting on it, how that depends on its
+design, and how the information spreads through the body and is lost on the way. It starts from
 @patterson2026quantifying, which compared actuator transmissions in legged robots with
 information-theoretic measures, and it grows as new results come in.
 
@@ -14,9 +14,9 @@ under any change of coordinates, the right behaviour when a spring becomes rigid
 that do not depend on a finite-element mesh), and works through the leg designs of the
 running example. Part II asks whether energy is the right choice: it proves that energy
 is the only noise model with a short list of physical properties, compares the
-alternatives, and builds a thermally consistent body in which a design's job is to route
-information to its sensors. The research log holds dated notes, the roadmap and the
-changelog.
+alternatives, and builds a thermally consistent body in which every design holds the same total and
+designs differ in which parts of the body hold it. The research log holds dated notes,
+the roadmap and the changelog.
 
 ## How the book changes
 

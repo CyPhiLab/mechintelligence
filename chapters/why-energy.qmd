@@ -49,7 +49,7 @@ The requirements, each with the reason it matters:
     the rule cannot know which spring is which.
 - (U3) *No outside scales.* No dimensional constant other than the element's own
     parameter may appear: no reference frequency, length or time. Otherwise the result
-    depends on an arbitrary choice; the `"kinetic"` readout's $\omega_{\rm ref}$
+    depends on an arbitrary choice; the kinetic metric's $\omega_{\rm ref}$
     can flip the sign of the SEA-rigid comparison
     (`test_the_ground_decides_whether_series_compliance_helps_or_hurts`).
 - (U4) *Time-reversal symmetric.* $W(q,-\dot q)=W(q,\dot q)$. Resolution should not
@@ -264,7 +264,6 @@ design gap.)
 | per-coordinate (`"state"`) | U1, U2, U3, U5 | 8.4716 | +33.3, keeps growing |
 | data-driven whitening | not built from the body | erases the body (@prp-datadriven) | |
 | Gramian or balanced coordinates | not built from the body | | |
-| encoder on the motor (`"motor"`) | answers a different question (the sensor) | | |
 
 : Candidate noise models. The stiff-limit column is SEA minus rigid bits at $k_s=10^{10}$ ($B_w=100$ Hz). The mesh column is the change from $N=32$ to $N=64$ elements on the rod of @thm-mesh. {#tbl-rules}
 

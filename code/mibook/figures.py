@@ -149,7 +149,7 @@ def fig_rod():
     ax.semilogx(N, r["tip"], color=C3, marker="s", base=2)
     ax.semilogx(N, r["energy"], color=C1, marker="D", base=2)
     ax.text(N[-1] * 1.15, r["per_node"][-1], "per-node isotropic", va="center", fontsize=7.5)
-    ax.text(N[-1] * 1.15, r["tip"][-1], "tip sensor only", va="center", fontsize=7.5)
+    ax.text(N[-1] * 1.15, r["tip"][-1], "tip motion only", va="center", fontsize=7.5)
     ax.text(N[-1] * 1.15, r["energy"][-1], "energy-whitened", va="center", fontsize=7.5)
     ax.set_xlim(N[0] / 1.3, N[-1] * 12)
     ax.set_xlabel("finite elements $N$")
@@ -242,61 +242,68 @@ def fig_langevin():
     rows = r["rows"]
     get = lambda key: np.array([rows[k][key] for k in ks]) - rows["rigid"][key]
     fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
-    a.semilogx(ks, get("full"), color=INK2, ls="-.")
-    a.semilogx(ks, get("motor"), color=C1, marker="o", markersize=3)
-    a.semilogx(ks, get("readout_motor"), color=C2, marker="s", markersize=3)
+    a.semilogx(ks, get("whole"), color=INK2, ls="-.")
+    a.semilogx(ks, get("rotor"), color=C1, marker="o", markersize=3)
+    a.semilogx(ks, get("static_rotor"), color=C3, marker="D", markersize=3)
+    a.semilogx(ks, get("percoord_rotor"), color=C2, marker="s", markersize=3, lw=0.8, ls=":")
     a.axhline(0, color=INK2, lw=0.6)
-    a.text(2e4, -4.5, "Langevin, full state", fontsize=7.5)
-    a.text(1.2e3, -22, "Langevin, motor encoder", fontsize=7.5)
-    a.text(1.3e4, 4.5, "readout noise, motor", fontsize=7.5)
+    a.text(75, 2.5, "Langevin, whole body", fontsize=7.5)
+    a.text(1.3e3, -24, "Langevin, rotor", fontsize=7.5)
+    a.text(1.6e3, -42, "static energy noise, rotor", fontsize=7.5)
+    a.text(4e3, 9, "fixed angle noise, rotor", fontsize=7.5)
+    a.set_ylim(top=15)
     a.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
     a.set_ylabel("bits(SEA) $-$ bits(rigid)")
     a.set_title("(a) design gap by noise model", loc="left")
 
-    eff = np.array([rows[k]["motor"] / rows[k]["full"] for k in ks])
-    b.semilogx(ks, eff, color=C1, marker="o", markersize=3)
-    b.axhline(rows["rigid"]["motor"] / rows["rigid"]["full"], color=INK2, lw=0.8, ls="--")
-    b.text(80, rows["rigid"]["motor"] / rows["rigid"]["full"] - 0.08, "rigid transmission", fontsize=7.5)
+    share = lambda part, whole: np.array([rows[k][part] / rows[k][whole] for k in ks])
+    b.semilogx(ks, share("rotor", "whole"), color=C1, marker="o", markersize=3, label="Langevin")
+    b.semilogx(ks, share("static_rotor", "static_whole"), color=C3, marker="D", markersize=3,
+               label="static energy noise")
+    rigid = rows["rigid"]["rotor"] / rows["rigid"]["whole"]
+    b.axhline(rigid, color=INK2, lw=0.8, ls="--")
+    b.text(80, rigid - 0.1, "rigid transmission (Langevin)", fontsize=7.5)
     b.set_ylim(0, 1.05)
     b.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
-    b.set_ylabel("motor bits / full-state bits")
-    b.set_title("(b) routing efficiency", loc="left")
+    b.set_ylabel("rotor bits / whole-body bits")
+    b.set_title("(b) share held by the rotor", loc="left")
+    b.legend(loc="lower right", fontsize=7)
     fig.tight_layout()
     _save(fig, "langevin")
     return r
 
 
-def fig_routing():
-    """Spectral routing rho(f) for the SEA's encoders, and finite-window efficiency."""
-    from mibook import routing as rt
+def fig_propagation():
+    """Spectral propagation rho(f) to the SEA's rotor and link, and the finite-window share."""
+    from mibook import propagation as pg
     f = np.linspace(0.5, 100.0, 400)
     fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
     for ks, c in ((70.0, C2), (1e3, C4), (1e4, C1)):
-        a.plot(f, rt.sea_routing_closed_form(ks, 2 * np.pi * f, "motor"), color=c,
+        a.plot(f, pg.sea_propagation_closed_form(ks, 2 * np.pi * f, "rotor"), color=c,
                label=f"$k_s={ks:g}$")
-        a.plot(f, rt.sea_routing_closed_form(ks, 2 * np.pi * f, "joint"), color=c, ls="--")
+        a.plot(f, pg.sea_propagation_closed_form(ks, 2 * np.pi * f, "link"), color=c, ls="--")
     a.set_ylim(-0.02, 1.05)
     a.set_xlabel("force frequency (Hz)")
     a.set_ylabel(r"$\rho(f)=b_c/b_{\rm eff}(f)$")
-    a.set_title("(a) solid: motor encoder; dashed: joint", loc="left")
+    a.set_title("(a) solid: rotor; dashed: link", loc="left")
     a.legend(loc="lower right", fontsize=7)
 
     ks_list = np.array([70.0, 3e2, 1e3, 3e3, 1e4, 3e4, 1e5, 1e6])
-    for sensor, C, col, mk in (("motor", rt.MOTOR["sea"], C1, "o"), ("joint", rt.JOINT, C3, "s")):
+    for part, P, col, mk in (("rotor", pg.ROTOR["sea"], C1, "o"), ("link", pg.LINK, C3, "s")):
         fin, pred = [], []
         for ks in ks_list:
-            s = rt.series_elastic(float(ks), readout="energy")
-            fin.append(rt.routing_efficiency(s, C))
-            pred.append(rt.predicted_efficiency(s, C))
-        b.semilogx(ks_list, fin, color=col, marker=mk, markersize=3, label=f"{sensor} encoder")
+            s = pg.series_elastic(float(ks), readout="energy")
+            fin.append(pg.information_share(s, P))
+            pred.append(pg.predicted_share(s, P))
+        b.semilogx(ks_list, fin, color=col, marker=mk, markersize=3, label=part)
         b.semilogx(ks_list, pred, color=col, ls=":", lw=1.0)
     b.set_ylim(0, 1.05)
     b.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
-    b.set_ylabel("routing efficiency $\\eta$")
+    b.set_ylabel("share of the body's information")
     b.set_title("(b) finite window (dots: prediction)", loc="left")
     b.legend(loc="lower right", fontsize=7)
     fig.tight_layout()
-    return _save(fig, "routing")
+    return _save(fig, "propagation")
 
 
 if __name__ == "__main__":
@@ -304,5 +311,5 @@ if __name__ == "__main__":
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_routing):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation):
         f()

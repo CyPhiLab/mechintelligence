@@ -140,14 +140,14 @@ expectation. When $K\succ0$ we call the metric *nondegenerate*.
 
 **The channel.** The unknown force over a window $[0,T]$ is expanded in $d$ basis
 functions, $f(t)=\sum_{j=1}^d w_j\varphi_j(t)$ with $w\sim\mathcal N(0,\sigma_w^2I_d)$. The
-state is sampled at $t_k=k/f_s$, $k=0,\dots,N_t-1$. A readout matrix $C$ is applied, and
-i.i.d. noise $n_k\sim\mathcal N(0,\sigma^2 I)$ is added:
+state is sampled at $t_k=k/f_s$, $k=0,\dots,N_t-1$. A matrix $C$ maps the state into the units in which
+noise is measured, and i.i.d. noise $n_k\sim\mathcal N(0,\sigma^2 I)$ is added:
 $$
 y_k = C x_q(t_k) + n_k,\qquad y = Mw + n .
 $$ {#eq-channel}
-Here $M$ stacks the responses: column $j$ of $M$ is the sampled readout of the response to
+Here $M$ stacks the responses: column $j$ of $M$ is the sampled response $Cx_q$ to
 $\varphi_j$. Write $X_k\in\R^{2n\times d}$ for the matrix whose column $j$ is the state at
-$t_k$ under input $\varphi_j$, so that $M=[CX_0;\dots;CX_{N_t-1}]$. The energy readout is
+$t_k$ under input $\varphi_j$, so that $M=[CX_0;\dots;CX_{N_t-1}]$. The energy metric takes
 $C=\Em^{1/2}$, with noise scale $\sigma$ in $\sqrt{\mathrm J}$
 (`passive_info.information.SIGMA_ENERGY`).
 
@@ -177,7 +177,7 @@ $$ {#eq-gram}
 Throughout, "bits" means $\bits(G)=\tfrac12\log_2\det(I+G)$
 (`mechinfo.mechanics.bits_from_gram`).
 
-**The question.** @lem-gauss shows that the readout enters only through $C^\top C$, so
+**The question.** @lem-gauss shows that the map $C$ enters only through $C^\top C$, so
 whitening by $\Em^{1/2}$ amounts to declaring $C^\top C=\Em$. The following chapters ask
 why this is the right declaration, what it buys, and where it fails.
 

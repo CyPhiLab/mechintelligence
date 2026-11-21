@@ -13,7 +13,7 @@ $(\sigma^2\Em^{-1})_{SS}$ with a pseudo-inverse, and this section explains why t
 right choice.
 
 ::: {#def-subset name="Observing a subset"}
-The noise lives on the *body*, not on a sensor: $\tilde x_q=x_q+\nu$ with
+The noise lives on the body: $\tilde x_q=x_q+\nu$ with
 $\nu\sim\mathcal N(0,\sigma^2\Em^{-1})$ independently at each sample. Observing a subset
 $S$ of coordinates means observing $P_S\tilde x_q$, where $P_S$ selects rows. Its noise
 covariance is $N_S=\sigma^2(\Em^{-1})_{SS}$.

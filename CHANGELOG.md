@@ -2,6 +2,17 @@
 
 Newest first. Each release is tagged in the repository.
 
+## Unreleased
+
+- The book's subject is now stated as information in the mechanism. Sensor, encoder and
+  readout language is gone from the text; Part I's noise is called static noise.
+- New research note: how information about the contact propagates through the body. A
+  part of the body holds the force through an effective contact damping, and only
+  internal dampers between the contact and the part erode it.
+- The Langevin chapter compares the whole body with the rotor under thermal and static
+  noise. Static energy noise ranks the rotors as thermal noise does; the 5.9-bit
+  misranking belongs to a fixed angle noise.
+
 ## v0.1 (2026-11-21)
 
 First version of the book.

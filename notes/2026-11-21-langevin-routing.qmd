@@ -1,4 +1,4 @@
-# 2026-11-21: Energy is the right noise model, and morphology routes information {.unnumbered}
+# 2026-11-21: Energy is the right noise model, and morphology decides where information sits {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
 **Status:** promoted to @sec-right and @sec-langevin · **Checked by:** `tests/test_energy_whitening.py`
@@ -24,14 +24,14 @@ measuring mechanical intelligence, or only a reasonable one?
    predicted (@tbl-rules).
 5. Whitening by the data gives every body the same bits (@prp-datadriven).
 6. In a Langevin body, with noise injected through the dampers, every design gives the
-   same 37.742 bits when the full state is observed. The limit is set by the damping at
-   the contact, $JD^+J^\top=1/b_i$ (@prp-contact). Through the motor encoder, the rigid
-   transmission captures 99.9% of that limit, and the SEA climbs from 6% to 99.5% with
-   stiffness (@tbl-langevin).
-7. Readout-only noise lets a resonant SEA beat the rigid leg through the encoder by up to
-   5.9 bits. Under the fluctuation-dissipation theorem the resonance amplifies the
-   thermal noise by the same factor, so that advantage is an artifact.
+   same 37.742 bits in the whole body. The limit is set by the damping at the contact,
+   $JD^+J^\top=1/b_i$ (@prp-contact). The rigid leg's rotor holds 99.9% of that limit,
+   and the SEA's rotor climbs from 6% to 99.5% with stiffness (@tbl-langevin).
+7. A fixed angle noise on the rotor lets a resonant SEA beat the rigid leg by up to
+   5.9 bits. Under energy noise, static or thermal, the resonance amplifies the noise at
+   the rotor by the same factor, so that advantage is an artifact.
 
 **Open from this note.** The constant 1/2 in @prp-contact is confirmed numerically but
-proved only in continuous time (roadmap thread T3). The routing efficiency in point 6
-needs a definition and properties of its own (thread T2).
+proved only in continuous time (roadmap thread T3). The share in point 6 needs a
+definition and properties of its own (thread T2, now in the research note on
+[information propagation](2026-11-21-information-propagation.qmd)).

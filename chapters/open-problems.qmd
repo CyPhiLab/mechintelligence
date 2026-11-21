@@ -15,13 +15,16 @@ threads with concrete next steps, and research notes record progress on them.
     information quantity built on it is coordinate-free, composes across components,
     converges in constraint and refinement limits, and changes only through work and
     dissipation (@prp-work).
-2. *Routing is what morphology does.* In a thermodynamically consistent body the total
-    is capped by the dissipation at the contact (@prp-contact). Designs differ in how much
-    of that total reaches the coordinates a controller can read, at a latency it can use.
-    The efficiency in @tbl-langevin is a candidate scalar measure of mechanical
-    intelligence in this sense, and the temporal and frequency decompositions of Part I
+2. *Morphology decides where the information sits.* In a thermodynamically consistent
+    body the total is capped by the dissipation at the contact (@prp-contact). Designs
+    differ in how much of that total each part of the body holds, and the loss on the way
+    to a part comes from the internal dampers between it and the contact (research note
+    on [information propagation](../notes/2026-11-21-information-propagation.qmd)). The
+    share in @tbl-langevin is a candidate scalar measure of mechanical intelligence in
+    this sense, and the temporal and frequency decompositions of Part I
     apply to it unchanged.
-3. *Relevance is not captured.* Neither retention nor routing asks whether the
+3. *Relevance is not captured.* Neither the total nor its distribution over the body
+    asks whether the
     information is about what the task needs. The conditional information $I(W;X\mid A)$
     of @patterson2026quantifying measures relevance to the action, and task-specific
     variables, such as the force component that matters for balance, would sharpen it.
@@ -33,16 +36,15 @@ threads with concrete next steps, and research notes record progress on them.
     metamaterials and latching mechanisms, though none of it is tested yet.
 5. *Validation must be predictive.* A definition is checked by its consequences. The
     consistency checks pass: invariance, the limits, and agreement with the bandwidth
-    argument of @wensing2017proprioceptive. The empirical test is whether retention,
-    routing or relevance best predicts closed-loop performance across designs; Table I
+    argument of @wensing2017proprioceptive. The empirical test is whether the total,
+    the share held by a part, or relevance best predicts closed-loop performance across designs; Table I
     of @patterson2026quantifying gives a first hint.
 
 ## Limitations {#sec-limits}
 
-1. *Body versus sensor.* The energy noise model quantifies what the body retains. Real
-    encoders have per-coordinate noise, and an encoder readout answers a different
-    question. The two should be reported as distinct quantities; @sec-langevin shows how
-    to combine them consistently.
+1. *The body, not its use.* The book so far measures what the body holds and where it
+    holds it. How a sensor or a controller reads a part of the body is a separate,
+    later question, with its own noise.
 2. *The environment lives in the metric.* $K$ includes the ground spring, so $\Em$
     differs between stance and flight, and the ground stiffness can flip the sign of the
     SEA-rigid comparison (the analysis library shows this in

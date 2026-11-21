@@ -1,0 +1,266 @@
+# 2026-11-21: How information about the contact propagates through the body {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T2 · **Checked by:** `tests/test_propagation.py`
+:::
+
+**Question.** @sec-langevin found that, in a body thermalized by its own dampers, every
+design holds the same information about the contact force, and designs differ in how much
+of it a given part of the body holds. What decides how much reaches a part, and what
+erodes it on the way?
+
+**Short answer.** A part of the body holds the contact force as if the contact damping
+were larger than it is: it sees the force through an *effective contact damping*
+$b_{\rm eff}(\omega)\ge b_c$. The ratio $\rho(\omega)=b_c/b_{\rm eff}(\omega)$, between 0 and
+1, is the fraction that propagates to the part at frequency $\omega$. It falls below 1 for
+one reason only: thermal noise from dampers inside the body that the force has to cross
+on its way to the part. Inertia and compliance matter through how they shape that noise
+at the part. With no internal damper, every part holds everything. On the SEA at
+$k_s=70$ the joint-side link holds 98% of the body's information and the rotor, behind
+the series damper, holds 6%.
+
+## Setting and definitions
+
+Take the Langevin body of @sec-langevin: thermal forces with covariance $2\sigma_T^2D$,
+started from the Gibbs law. Split the damping into the contact damper and everything else,
+$$
+D=b_c\,J^\top J+D_{\rm int},\qquad D_{\rm int}\succeq0 .
+$$
+For the legs in this book $b_c=b_i=600$ N s/m. For the rigid leg $D_{\rm int}=0$. For the
+SEA, $D_{\rm int}$ is the series damper $b_s$ acting on the spring deflection.
+
+A *part* of the body is a set of its coordinates, $x_P=Px_q$ for a selector matrix $P$. The
+rotor's angle and velocity form one part; the joint-side link's angle and velocity form
+another. Nothing is added to $x_P$: the only noise is the body's own.
+
+::: {#def-share name="Information share"}
+For a force profile acting over a window, the *share* of a part $P$ is
+$$
+\eta_P=\frac{I(w;\,x_P)}{I(w;\,x_q)},
+$$
+the information held by the part's trajectory divided by the information held by the
+whole body's.
+:::
+
+::: {#def-beff name="Effective contact damping"}
+At frequency $\omega$, let $h(\omega)=P(i\omega-A)^{-1}B_F$ be the part's response to the
+contact force and $G(\omega)=P(i\omega-A)^{-1}[0;H^{-1}]$ its response to a generalized
+force. Let
+$$
+M(\omega)=2\sigma_T^2\,G\,D_{\rm int}\,G^*
+$$
+be the thermal noise the part receives from the internal dampers, and
+$q(\omega)=h^*M^+h$, with $q=\infty$ when $h$ lies outside the range of $M$. The
+*effective contact damping* is
+$$
+b_{\rm eff}(\omega)=b_c+\frac{1}{2\sigma_T^2\,q(\omega)},
+$$
+and the *spectral share* is $\rho(\omega)=b_c/b_{\rm eff}(\omega)$.
+:::
+
+## Results
+
+::: {#prp-share-basic name="Bounds and invariances"}
+
+(a) $0\le\eta_P\le1$ and $0\le\rho(\omega)\le1$.
+(b) A part that contains another holds at least as much: adding rows to $P$ cannot lower
+    $\eta_P$ or $\rho(\omega)$.
+(c) $\eta_P$ and $\rho$ belong to the physical part, not to the coordinates: under
+    $q=T\tilde q$ the same part has selector $P\mathcal T$, and both quantities are
+    unchanged.
+(d) $\rho$ depends on the part only through the row space of $P$, and not on $\sigma_T$ or
+    on the force prior.
+(e) A coordinate alone and the coordinate with its velocity have the same $\rho$.
+:::
+
+::: {.proof}
+(a) The part is a function of the whole state, so data processing gives
+$I(w;x_P)\le I(w;x_q)$. For $\rho$: $q\ge0$ because $M\succeq0$, so $b_{\rm eff}\ge b_c$.
+
+(b) A larger part contains the smaller one's trajectory, so data processing again gives
+the inequality for $\eta$. For $\rho$, appending rows to $P$ can only increase $h^*M^+h$,
+the signal-to-noise ratio of the best linear combination of the rows.
+
+(c) Under $q=T\tilde q$ the trajectories and the thermal forces are the same physical
+signals written in other coordinates (@thm-invariance), so every information quantity
+is unchanged. The transfer functions $h$ and $G\,D_{\rm int}G^*$ are unchanged for the
+same reason.
+
+(d) Replacing $P$ by $SP$ with $S$ invertible maps $h\mapsto Sh$ and $M\mapsto SMS^*$, which
+leaves $h^*M^+h$ unchanged. $M$ is proportional to $\sigma_T^2$, so $\sigma_T^2q$ and
+hence $b_{\rm eff}$ do not depend on $\sigma_T$. The prior does not appear at all.
+
+(e) In the frequency domain a velocity is $i\omega$ times its coordinate, so the part
+(coordinate, velocity) has $h=v\,h_\theta$ and $M=v\,M_\theta\,v^*$ with $v=(1,i\omega)^\top$.
+Then $M^+=v v^*/(M_\theta|v|^4)$, and $h^*M^+h=|h_\theta|^2/M_\theta$, the value for the
+coordinate alone. Thermal noise moves the velocity and the coordinate together, so the
+velocity adds no independent look at the force.
+:::
+
+::: {#thm-beff name="A part holds the force through an effective damper"}
+In the stationary, infinite-window limit, with force spectrum $S(\omega)$, the
+information rate held by the part is
+$$
+\dot I_P=\int_0^{\infty}\log\Big(1+\frac{S(\omega)}{2\sigma_T^2\,b_{\rm eff}(\omega)}\Big)\,
+\frac{d\omega}{2\pi}\ \text{nats/s},
+$$
+and the whole body's rate is the same expression with $b_{\rm eff}=b_c$.
+:::
+
+::: {.proof}
+*Step 1: the contact damper's noise enters like the force.* The thermal forces have
+covariance $2\sigma_T^2D=2\sigma_T^2(b_cJ^\top J+D_{\rm int})$. In law they equal
+$J^\top\xi_c+\xi_{\rm int}$, with $\xi_c$ a scalar white noise of intensity $2\sigma_T^2b_c$
+and $\xi_{\rm int}$ an independent white noise of covariance $2\sigma_T^2D_{\rm int}$.
+Since $f$ also enters through $J^\top$, the part's trajectory is
+$$
+x_P=h\,(f+\xi_c)+G\,\xi_{\rm int} .
+$$
+
+*Step 2: one frequency.* At each frequency this is a scalar Gaussian signal $f$ in
+Gaussian noise of spectral density $N=2\sigma_T^2b_c\,hh^*+M$. The information rate of a
+stationary Gaussian signal in independent stationary Gaussian noise is the integral of
+$\log(1+S\,h^*N^{-1}h)$ over frequency [@cover2006elements, Ch. 9].
+
+*Step 3: Sherman-Morrison.* With $u=\sqrt{2\sigma_T^2b_c}\,h$,
+$(M+uu^*)^{-1}=M^{-1}-M^{-1}uu^*M^{-1}/(1+u^*M^{-1}u)$, so
+$$
+h^*N^{-1}h=\frac{q}{1+2\sigma_T^2b_c\,q}=\frac{1}{2\sigma_T^2b_c+1/q}
+=\frac{1}{2\sigma_T^2b_{\rm eff}} .
+$$
+When $M$ is singular the same holds with $M^+$, and $q=\infty$ gives $b_{\rm eff}=b_c$.
+
+*Step 4: the whole body.* With $P=I$, $h=G\,J^\top$ and $M=2\sigma_T^2GD_{\rm int}G^*$. The
+matrix $G=(i\omega-A)^{-1}[0;H^{-1}]$ has full column rank, so $h$ lies in the range of
+$M$ exactly when $J^\top$ lies in the range of $D_{\rm int}$. For the rigid leg
+$D_{\rm int}=0$. For the SEA its range is spanned by $(1,-1)$, which does not contain
+$J^\top=(-r,0)$. So $q=\infty$ and $b_{\rm eff}=b_c$, consistent with @prp-contact.
+:::
+
+::: {#cor-lossless name="No internal damper, no loss"}
+If the only damper is at the contact ($D_{\rm int}=0$) and $h(\omega)\ne0$ over the force
+band, then $\rho\equiv1$: *every* part holds everything the body holds. In the rigid leg
+the rotor's angle alone holds the full ceiling, and so does its velocity alone.
+:::
+
+::: {.proof}
+$M=0$, so $h$ lies outside the range of $M$ wherever $h\ne0$, and $b_{\rm eff}=b_c$.
+:::
+
+::: {#prp-sea-parts name="The SEA's rotor and link"}
+For the clamped SEA with series damping $b_s=2\zeta_s\sqrt{k_sI_{\rm rot}}$,
+$m_j=m_lr^2$ and $c=k_s+ib_s\omega$,
+$$
+\rho_{\rm rotor}=\Big[1+\frac{b_s}{b_c}\,
+\frac{|k_ir^2-m_j\omega^2+i\omega b_cr^2|^2}{r^2|c|^2}\Big]^{-1},\qquad
+\rho_{\rm link}=\Big[1+\frac{b_s}{b_c}\,
+\frac{I_{\rm rot}^2\omega^4}{r^2|c-I_{\rm rot}\omega^2|^2}\Big]^{-1}.
+$$
+:::
+
+::: {.proof}
+By @prp-share-basic(e) it is enough to work with each part's angle.
+
+*Step 1: the impedance matrix.* With $z_g=k_ir^2+i\omega b_cr^2-m_j\omega^2$ the
+joint-side impedance, the clamped equations read $Z q=J^\top f+\dots$ with
+$Z=\left[\begin{smallmatrix}z_g+c&-c\\-c&-I_{\rm rot}\omega^2+c\end{smallmatrix}\right]$ and
+$\Delta=\det Z$, so
+$Z^{-1}=\Delta^{-1}\left[\begin{smallmatrix}-I_{\rm rot}\omega^2+c&c\\c&z_g+c
+\end{smallmatrix}\right]$.
+
+*Step 2: the two inputs.* The contact force enters as $J^\top=(-r,0)$. The series damper
+acts on the deflection, so its noise enters as $a_s=(1,-1)$ with intensity
+$2\sigma_T^2b_s$.
+
+*Step 3: the rotor* is row 2 of $Z^{-1}$: $h=-rc/\Delta$ and
+$h_s=(c-z_g-c)/\Delta=-z_g/\Delta$. With one coordinate,
+$1/(2\sigma_T^2q)=b_s|h_s|^2/|h|^2=b_s|z_g|^2/(r^2|c|^2)$.
+
+*Step 4: the link* is row 1: $h=-r(c-I_{\rm rot}\omega^2)/\Delta$ and
+$h_s=(c-I_{\rm rot}\omega^2-c)/\Delta=-I_{\rm rot}\omega^2/\Delta$, which gives
+$b_s|h_s|^2/|h|^2=b_sI_{\rm rot}^2\omega^4/(r^2|c-I_{\rm rot}\omega^2|^2)$.
+:::
+
+The two formulas say where the series damper's noise lands. The rotor sits behind the
+damper, so it receives the damper's noise against the force filtered through the spring,
+and a soft spring makes that filter weak. The link sits on the contact side. Its losses
+come only near the rotor resonance $\sqrt{k_s/I_{\rm rot}}$, where the rotor swings and
+pumps the damper's noise back through the spring.
+
+::: {#prp-lowsnr name="At low SNR, the share is the band average of rho"}
+With a flat force spectrum over $[0,B]$ and whole-body SNR $\mathrm{snr}=S/(2\sigma_T^2b_c)$,
+the infinite-window share is
+$\eta=\int_0^B\log(1+\mathrm{snr}\,\rho)\,df\big/\big(B\log(1+\mathrm{snr})\big)$, and
+$\eta\to\frac1B\int_0^B\rho\,df$ as $\mathrm{snr}\to0$.
+:::
+
+::: {.proof}
+The formula for $\eta$ is @thm-beff divided by its whole-body value. As
+$\mathrm{snr}\to0$, $\log(1+\mathrm{snr}\,\rho)/\log(1+\mathrm{snr})\to\rho$ for each $f$,
+and the ratio is bounded by 1, so the limit passes inside the integral (dominated
+convergence).
+:::
+
+So $\rho(\omega)$ describes the body and the part without reference to a noise level or
+a force prior, and $\eta$ is that description at a stated SNR. A larger SNR compresses the
+losses, because the logarithm saturates.
+
+## Numbers
+
+```{python}
+#| label: fig-propagation
+#| fig-cap: |
+#|   (a) Spectral share of the SEA's rotor (solid) and joint-side link (dashed), from the
+#|   closed forms of @prp-sea-parts. The link holds almost everything except near the rotor
+#|   resonance $\sqrt{k_s/I_{\rm rot}}$; with a soft spring the rotor loses most of the force
+#|   to the series damper's noise. (b) Finite-window share $\eta$ against $k_s$, with the
+#|   infinite-window prediction of @prp-lowsnr at the book's SNR (dotted).
+from mibook import figures
+figures.fig_propagation();
+```
+
+| $k_s$ (N m/rad) | rotor, finite | rotor, predicted | link, finite | link, predicted |
+|--:|--:|--:|--:|--:|
+| 70 | 0.060 | 0.068 | 0.984 | 0.985 |
+| $10^3$ | 0.494 | 0.518 | 0.907 | 0.910 |
+| $10^4$ | 0.930 | 0.951 | 0.986 | 0.994 |
+| $10^6$ | 0.995 | 1.000 | 0.998 | 1.000 |
+
+: Share of the body's information held by the SEA's rotor and link, each taken as angle and velocity ($B_w=100$ Hz, $\mathrm{snr}=20.8$). The rigid leg's rotor holds 0.9987 in the finite window and exactly 1 in the prediction. {#tbl-propagation-note}
+
+- The state-space computation and the closed forms agree to $7\times10^{-16}$, and $\rho$
+  is unchanged, to $4\times10^{-16}$, under every reparametrization of @fig-invariance
+  (`check_closed_forms`, `check_reparametrization`).
+- The finite-window share sits up to 0.025 below the prediction. The gap comes from the
+  window's edges and from the Gibbs initial state, and shrinks as $k_s$ grows
+  (`check_prediction`).
+- Series damping is the loss. At $k_s=70$, lowering $\zeta_s$ from 0.1 to 0.03 to 0.01
+  raises the rotor's share from 0.060 to 0.095 to 0.200, while the whole body stays at
+  37.742 bits (`check_series_damping`).
+- At low SNR the share tends to the band average of $\rho$: 0.221 for the rotor at
+  $k_s=10^3$, against 0.518 at the book's SNR (`check_low_snr_limit`).
+
+## What this changes
+
+@sec-langevin reported that the share held by the SEA's rotor climbs from 6% to 99.5%
+with stiffness. The link of the same SEA holds 91% to 99.8% at every stiffness tested
+(@fig-propagation(b)). Where the information sits in the body is decided by where the
+internal dampers sit: a part on the contact side of the dissipation holds the force, and
+a part behind it holds what survives the damper's thermal noise. Compliance changes this
+only through how it filters the force and that noise on the way to each part.
+
+## Limits of this note
+
+- The bench is passive and clamped, with the motor undriven. A part here is a set of the
+  body's own coordinates. How a controller or a sensor would use a part is outside the
+  scope of this note.
+- Damping is viscous and constant.
+- The rate formula in @thm-beff is the standard infinite-window result. The finite-window
+  numbers are computed directly and agree with it to within 0.025.
+
+## Next steps
+
+- A chain of masses, springs and dampers, and the rod of @thm-mesh: how the share
+  falls with the number of dampers between the contact and a part.
+- The spring deflection, which is a part that mixes the rotor and the link.
+- Once this is settled, fold the note into @sec-langevin.

@@ -229,16 +229,20 @@ def test_langevin_full_state_information_depends_only_on_contact_damping():
         np.testing.assert_allclose(v["ratio"], 0.5, atol=1e-4)
 
 
-def test_langevin_routing_reproduces_the_proprioceptive_argument():
-    """Langevin body: equal ceiling, rigid at the ceiling, SEA climbing with stiffness."""
-    r = checks.check_langevin_designs(ks_list=(70.0, 1e3, 1e4, 1e6))
+def test_langevin_information_reaching_the_rotor():
+    """Langevin body: equal ceiling, rigid rotor at the ceiling, SEA rotor climbing with k_s."""
+    r = checks.check_langevin_designs(ks_list=(70.0, 3e3, 1e4, 1e6))
     rows = r["rows"]
-    full = [v["full"] for v in rows.values()]
-    assert max(full) - min(full) < 1e-4
-    assert rows["rigid"]["motor"] / rows["rigid"]["full"] > 0.998
-    motor = [rows[k]["motor"] for k in r["ks"]]
-    assert all(np.diff(motor) > 0)
+    whole = [v["whole"] for v in rows.values()]
+    assert max(whole) - min(whole) < 1e-4
+    assert rows["rigid"]["rotor"] / rows["rigid"]["whole"] > 0.998
+    rotor = [rows[k]["rotor"] for k in r["ks"]]
+    assert all(np.diff(rotor) > 0)
     for k in r["ks"]:
-        assert rows[k]["motor"] <= rows["rigid"]["full"] + 1e-9                 # the ceiling
-    # the readout-only model lets a resonant SEA beat the rigid leg through the motor
-    assert rows[1e4]["readout_motor"] > rows["rigid"]["readout_motor"]
+        assert rows[k]["rotor"] <= rows["rigid"]["whole"] + 1e-9                 # the ceiling
+        # static energy noise ranks the rotors the same way: no SEA rotor beats the rigid one
+        assert rows[k]["static_rotor"] < rows["rigid"]["static_rotor"]
+    static = [rows[k]["static_rotor"] for k in r["ks"]]
+    assert all(np.diff(static) > 0)
+    # a fixed angle noise (the per-coordinate metric) lets a resonant SEA beat the rigid rotor
+    assert rows[3e3]["percoord_rotor"] > rows["rigid"]["percoord_rotor"] + 5.0

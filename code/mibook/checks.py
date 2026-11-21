@@ -728,23 +728,31 @@ def check_langevin_dt_limit(fs_list=(1e2, 1e3, 4e3, 16e3, 64e3)) -> dict:
 
 
 def check_langevin_designs(ks_list=(70.0, 3e2, 1e3, 3e3, 1e4, 3e4, 1e5, 1e6)) -> dict:
-    """SEA vs rigid under Langevin noise for several readouts, and the readout-only models."""
+    """SEA vs rigid: the whole body and the rotor, under Langevin noise and under static noise.
+
+    `whole` and `rotor` are the bits held by the whole body and by the rotor's angle when the
+    only noise is the body's own thermal noise through its dampers. `static_whole` and
+    `static_rotor` are the same two quantities under Part I's static noise: a fresh draw from
+    N(0, sigma^2 E^{-1}) at each sample, so the rotor's angle carries variance
+    sigma^2 (E^{-1})_rr. `percoord_rotor` replaces that with a fixed angle noise of 1e-4 rad,
+    the per-coordinate metric of the alternatives chapter.
+    """
     from passive_info.information import SIGMA_THETA
     designs = [("rigid", None)] + [(k, float(k)) for k in ks_list]
     rows = {}
     for name, ks in designs:
         s = proprioceptive(readout="energy") if ks is None else series_elastic(ks, readout="energy")
         n2 = 2 * s.n
-        Ce = sym_sqrt(energy_metric(s.K, s.H))
-        Cm = np.zeros((1, n2))
-        Cm[0, s.n - 1] = 1.0
+        Cr = np.zeros((1, n2))
+        Cr[0, s.n - 1] = 1.0                      # the rotor's angle
+        v_r = (Cr @ np.linalg.inv(energy_metric(s.K, s.H)) @ Cr.T).item()
         rows[name] = dict(
-            full=langevin_bits(s, np.eye(n2), 0.0),
-            full_readout=langevin_bits(s, Ce, SIGMA_ENERGY),
-            motor=langevin_bits(s, Cm, 1e-9),
-            motor_encoder=langevin_bits(s, Cm, SIGMA_THETA),
-            readout_energy=profile_bits(s)["bits"],
-            readout_motor=profile_bits(dataclasses.replace(s, C=Cm, readout="motor"))["bits"])
+            whole=langevin_bits(s, np.eye(n2), 0.0),
+            rotor=langevin_bits(s, Cr, 1e-9),
+            static_whole=profile_bits(s)["bits"],
+            static_rotor=profile_bits(dataclasses.replace(s, C=Cr / np.sqrt(v_r)),
+                                      sigma=SIGMA_ENERGY)["bits"],
+            percoord_rotor=profile_bits(dataclasses.replace(s, C=Cr), sigma=SIGMA_THETA)["bits"])
     return dict(ks=np.asarray(ks_list, float), rows=rows)
 
 

@@ -55,7 +55,7 @@ gives the rest.
 :::
 
 ::: {#lem-roots name="Every square root gives the same bits"}
-Let $C$ be any readout with $C^\top C=\Em$. Examples are the symmetric root
+Let $C$ be any matrix with $C^\top C=\Em$. Examples are the symmetric root
 $\Em^{1/2}$, the upper Cholesky factor, and any $U\Em^{1/2}$ with $U^\top U=I$. Then every
 such $C$ produces the same Gram matrix @eq-gram, and so the same bits.
 Conversely, if $C$ is square and invertible with $C^\top C=\Em$, then $C=U\Em^{1/2}$ for an
@@ -185,7 +185,7 @@ figures.fig_invariance();
     attribution *over coordinates* is not: its players are the coordinates.
     Attributing over $(\theta_j,\delta)$ gives different shares from attributing over
     $(\theta_j,\theta_m)$. Shares are meaningful when the players are physically
-    meaningful (sensor sites, modes); see @sec-shapley.
+    meaningful (parts of the body, modes); see @sec-shapley.
 
 :::
 
@@ -257,8 +257,8 @@ caveat: it uses Lebesgue measure on $(q,\dot q)$. For constant $H$ this differs 
 
 ::: {.callout-tip appearance="simple" title="What this means physically"}
 We anchor $\sigma=\sqrt{k_i}\,r\,\sigma_\theta=10^{-2}\sqrt{\mathrm J}$.
-That makes $\sigma^2$ twice the ground-spring energy stored by one encoder tick of foot
-travel, $\sigma^2=10^{-4}$ J.
+That makes $\sigma^2$ twice the ground-spring energy stored when the joint turns by
+$\sigma_\theta=10^{-4}$ rad, $\sigma^2=10^{-4}$ J.
 
 Room-temperature $k_BT$ is $4.1\times10^{-21}$ J, so $\Theta_{\rm eff}$ is about
 $10^{16}$ times room temperature. The "temperature" is a *resolution* written in
@@ -296,8 +296,8 @@ Step 2 exactly.
 "thermalized" by noise matched to its own dampers, its state fluctuates with covariance
 $\propto\Em^{-1}$.
 
-For the observation noise of @sec-setup this is only an analogy: that noise is added to
-the readout, and $\sigma^2$ is not tied to $D$, so only the shape matches. The
+For the observation noise of @sec-setup this is only an analogy: that noise is static, drawn
+afresh at each sample, and $\sigma^2$ is not tied to $D$, so only the shape matches. The
 morphological-computation metric of @sec-mcw uses the dynamical version: `channel.gibbs_pair` chooses the process noise so that
 $\Em^{-1}$ is exactly stationary. (Residual of the Lyapunov equation on both leg models:
 $1.4\times10^{-16}$, `check_fdt`.)

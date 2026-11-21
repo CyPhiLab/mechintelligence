@@ -24,6 +24,10 @@ the findings recorded here.
   inflated claims, no em dashes in prose, plain verbs.
 - **Releases.** Dated tags (`v0.1`, `v0.2`, ...) with a changelog entry. Before a result
   goes to a venue, check that venue's preprint policy.
+- **Scope.** The subject is information in the mechanism: what the body holds about the
+  world, how it moves through the body, and what dissipation does to it. Sensors,
+  readout noise and controllers come later, as their own threads. Results are stated
+  for the body and its parts.
 - **Branches.** Book content goes straight to `main`, which deploys the site. Changes to
   other repositories, such as the lab website, go through pull requests. This is a
   default and can change.
@@ -41,18 +45,19 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   Lee, Wensing and Park (2020); Zahedi and Ay (2013); Cover and Thomas, chapters 9 and
   12; Kammer (1991); Geveci (1984), or Baker (1976) or Dupont (1973).
 
-**T2. Retained versus routed information.** *Active.*
+**T2. How information propagates through the body.** *Active.*
 
-- Question: what is the right definition of routing efficiency, and what limits it?
-- Done (2026-11-21, [research note](notes/2026-11-21-routing-efficiency.qmd)): a sensor
-  sees the force through an effective contact damping $b_{\rm eff}(\omega)\ge b_c$;
-  $\rho=b_c/b_{\rm eff}$ is an intrinsic spectral efficiency; losses come only from
-  internal dampers between contact and sensor and from readout noise; closed forms for the
-  SEA's motor and joint encoders.
-- Next step: combine sensors (joint, motor, spring deflection), then repeat with the
-  motor under force control. Fold the note into @sec-langevin after that.
+- Question: how much of the body's information about the contact does each part of the
+  body hold, and what erodes it on the way?
+- Done (2026-11-21, [research note](notes/2026-11-21-information-propagation.qmd)): a
+  part holds the force through an effective contact damping $b_{\rm eff}(\omega)\ge b_c$,
+  and $\rho=b_c/b_{\rm eff}$ is its spectral share. Losses come only from internal dampers
+  between the contact and the part. Closed forms for the SEA's rotor and link.
+- Next step: a chain of masses, springs and dampers, and the rod, to see how the share
+  falls with the number of dampers between the contact and a part. Then the spring
+  deflection as a part. Fold the note into @sec-langevin after that.
 
-**T3. The Langevin body as the default sensor model.** *Queued.*
+**T3. The Langevin body as the default noise model.** *Queued.*
 
 - Question: can the discrete-time constant in @prp-contact be proved, not only checked?
 - Next step: expand $B_d^\top Q_d^{-1}B_d$ in $\Delta t$, including the position-block
@@ -60,14 +65,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 **T4. Predictive validation on the Go2 designs.** *Parked: needs data.*
 
-- Question: which of retention, routing efficiency and $I(W;X\mid A)$ best predicts
+- Question: which of the total information, the share held by a part and $I(W;X\mid A)$
+  best predicts
   closed-loop tracking error across designs and seeds?
 - Depends on: the RL training pipeline and trained policies from the quadruped
   experiments, which are not in either repository.
 
 **T5. The Langevin body in the MuJoCo leg.** *Queued.*
 
-- Question: does the analytic Langevin result (flat full-state bits, motor bits climbing
+- Question: does the analytic Langevin result (flat whole-body bits, rotor bits climbing
   with stiffness) hold in the nonlinear simulated leg?
 - Next step: inject damping-matched noise forces in the simulation and estimate with
   InfoNCE. Needs the `sim` extra (torch and warp), ideally on a GPU.
@@ -87,8 +93,8 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 **T8. Latency.** *Queued.*
 
-- Question: when does routed information arrive at the sensor, and how does that depend
-  on the transmission? Extends the temporal Shapley analysis.
+- Question: when does information about the contact arrive at each part of the body,
+  and how does that depend on the transmission? Extends the temporal Shapley analysis.
 
 **T9. Relevance.** *Queued.*
 
@@ -105,12 +111,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
-- **2026-11-21.** Routing losses come from internal dissipation, not compliance. A sensor
-  sees the contact force through $b_{\rm eff}(\omega)=b_c+1/(2\sigma_T^2q)$; with no
-  internal damper every noiseless sensor routes everything. On the SEA at $k_s=70$ a joint
-  encoder routes 98% of the ceiling and a motor encoder 6%, and lowering the series
-  damping raises the motor encoder's share (`tests/test_routing.py`;
-  [research note](notes/2026-11-21-routing-efficiency.qmd)).
+- **2026-11-21.** Information is lost on its way through the body only at internal
+  dampers. A part holds the contact force through
+  $b_{\rm eff}(\omega)=b_c+1/(2\sigma_T^2q)$; with no internal damper every part holds
+  everything. On the SEA at $k_s=70$ the link holds 98% of the body's information and the
+  rotor 6%, and lowering the series damping raises the rotor's share
+  (`tests/test_propagation.py`;
+  [research note](notes/2026-11-21-information-propagation.qmd)).
 - **2026-11-21.** Energy is the unique noise metric under five requirements, and
   invariance under free motion is equivalent to "free motion never creates
   information" (`test_uniqueness_step_four_identity`,
@@ -121,14 +128,14 @@ written up.
   `test_frequency_weighted_mesh_behaviour`; @sec-alternatives).
 - **2026-11-21.** Data-driven whitening gives every body the same bits
   (`test_data_driven_whitening_erases_the_body`; @prp-datadriven).
-- **2026-11-21.** Langevin body: with the full state observed, every design gives the
-  same bits, set by the contact damping $JD^+J^\top=1/b_i$. The rigid transmission routes
-  99.9% of that to its motor encoder; the SEA climbs from 6% to 99.5% with stiffness.
-  Readout-only noise misranks resonant SEAs by up to 5.9 bits
+- **2026-11-21.** Langevin body: the whole body holds the same bits in every design, set
+  by the contact damping $JD^+J^\top=1/b_i$. The rigid leg's rotor holds 99.9% of that;
+  the SEA's rotor climbs from 6% to 99.5% with stiffness. Static energy noise ranks the
+  rotors the same way, while a fixed angle noise lets a resonant SEA win by up to 5.9 bits
   (`test_langevin_full_state_information_depends_only_on_contact_damping`,
-  `test_langevin_routing_reproduces_the_proprioceptive_argument`; @sec-langevin).
+  `test_langevin_information_reaching_the_rotor`; @sec-langevin).
 - **2026-11-20.** Coordinate invariance, the port-Hamiltonian structure, the stiff-SEA
-  limit with explicit rates, the 8.4716-bit duplicate-readout artifact, SNR asymptotics,
+  limit with explicit rates, the 8.4716-bit double-counting artifact, SNR asymptotics,
   consistent Shapley noise, the closed form for $\mathrm{MC}_W$, mesh independence and
   the floating-base condition (the remaining tests in `tests/test_energy_whitening.py`;
   Part I).
@@ -154,11 +161,18 @@ written up.
   because `quarto install tinytex` hit GitHub's anonymous API rate limit on the shared
   runners.
 
+- **2026-11-21.** Scope rule: the book is about information in the mechanism. Sensors,
+  encoders and readout noise are out of scope until the mechanism is understood, and
+  return later as their own threads. Thread T2 was reframed from a sensor's routing
+  efficiency to the share of information held by a part of the body. The Langevin
+  chapter now compares the whole body and the rotor, and Part I's noise is called static
+  noise.
+
 ## Paper candidates
 
 - **The energy metric is unique, and free motion cannot create information under it.**
   @thm-unique and @prp-work, with the comparison of alternatives. Possible venues: a
   robotics venue (RSS, ICRA, IEEE Transactions on Robotics) or a physics or
   information-theory venue.
-- **Morphology routes information; the contact sets the ceiling.** @prp-contact and the
-  routing results, ideally after threads T2, T3 and T5.
+- **The contact sets the ceiling; internal dissipation decides where information sits.**
+  @prp-contact and the propagation results, ideally after threads T2, T3 and T5.
