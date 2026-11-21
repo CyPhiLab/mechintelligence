@@ -66,8 +66,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   the contact side of a bridge element every damper costs the same for all parts beyond.
   In a tree only the path from the contact matters statically; side branches act in band
   through backflow.
-- Next step: several contacts at once (two feet on the ground). Fold the three T2 notes
-  into @sec-langevin after that.
+- Done (2026-11-21, [research note](notes/2026-11-21-two-contacts.qmd)): with two feet
+  down the whole body sees the forces through $B=(JD^{-1}J^\top)^{-1}$ at every frequency.
+  For a tree, $B=B_c+b_\times L$ with $b_\times$ the dampers between the feet in series:
+  the total load is seen through the contact dampers alone, the split also pays for the
+  path between the feet. A one-coordinate part sees one mix of the forces, weighted by how
+  much each foot moves when the part is pushed.
+- Next step: fold the four T2 notes into @sec-langevin.
 
 **T3. The Langevin body as the default noise model.** *Queued.*
 
@@ -122,6 +127,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-21.** Two feet on the ground: the body always knows the total load through
+  the contact dampers alone (47.22 bits in the stance example, whatever the internal
+  damping), while the split between the feet pays for the dampers on the path between
+  them (47.06 down to 37.24 bits as that damping grows 100-fold). Each foot holds its own
+  force; the trunk holds the total load (8.45 bits) much better than the split (3.34)
+  (`tests/test_contacts.py`; [research note](notes/2026-11-21-two-contacts.qmd)).
 
 - **2026-11-21.** A part with several coordinates holds the force through the best
   pattern of forces on it. Statically a group of chain nodes holds what its nearest node

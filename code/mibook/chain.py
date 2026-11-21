@@ -34,7 +34,7 @@ def _passive(H, K, D, J) -> Passive:
     n = H.shape[0]
     Hi = np.linalg.inv(H)
     A = np.block([[np.zeros((n, n)), np.eye(n)], [-Hi @ K, -Hi @ D]])
-    B = np.vstack([np.zeros((n, 1)), Hi @ J.T])
+    B = np.vstack([np.zeros((n, J.shape[0])), Hi @ J.T])
     return Passive(A=A, B_F=B, C=np.eye(2 * n), H=H, K=K, J=J, ks=None, label="chain",
                    readout="energy")
 

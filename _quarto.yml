@@ -31,6 +31,7 @@ book:
     - part: "Research log"
       chapters:
         - notes/index.qmd
+        - notes/2026-11-21-two-contacts.qmd
         - notes/2026-11-21-branching.qmd
         - notes/2026-11-21-chains.qmd
         - notes/2026-11-21-information-propagation.qmd
