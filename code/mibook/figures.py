@@ -504,10 +504,35 @@ def fig_bitbody():
     return _save(fig, "bitbody")
 
 
+def fig_erasure():
+    """Erasing the bit: work against the protocol's duration, and the error it leaves."""
+    from mibook import erasure as er
+    r = er.check_erasure()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    a.errorbar(r["tau"], r["work"], yerr=2 * r["work_err"], color=C1, marker="o", markersize=3,
+               capsize=2, label="simulated erasure")
+    tt = np.geomspace(r["tau"][0], r["tau"][-1] * 3, 200)
+    a.plot(tt, r["w_inf"] + r["b"] / tt, color=C1, ls=":", lw=0.9, label=r"$W_\infty+B/\tau$")
+    a.axhline(np.log(2.0), color=INK2, lw=0.8, ls="--")
+    a.text(r["tau"][0], np.log(2.0) - 0.08, r"Landauer: $\sigma_T^2\ln2$", fontsize=7.5)
+    a.set_xscale("log")
+    a.set_ylim(0.5, None)
+    a.set_xlabel(r"duration of each stage $\tau$")
+    a.set_ylabel(r"mean work / $\sigma_T^2$")
+    a.set_title("(a) cost of erasing", loc="left")
+    a.legend(loc="upper right", fontsize=7)
+    b.semilogx(r["tau"], 100 * (1 - r["left"]), color=C3, marker="s", markersize=3)
+    b.set_xlabel(r"duration of each stage $\tau$")
+    b.set_ylabel("ended in the wrong well (%)")
+    b.set_title("(b) error left by the erasure", loc="left")
+    fig.tight_layout()
+    return _save(fig, "erasure")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write, fig_bitbody):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write, fig_bitbody, fig_erasure):
         f()

@@ -4,6 +4,8 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T7): erasing a mechanical bit, and the cost of a
+  write-read-erase cycle against Landauer's bound.
 - New research note (thread T7): a mechanical bit inside a body. A part reads a stored
   bit only if the element is in its load path, and the push-back that makes it readable
   also lowers its barrier.

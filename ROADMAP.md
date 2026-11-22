@@ -136,8 +136,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   body's push-back $k_{\rm eff}$ makes the bit readable and lowers its barrier by
   $(1-2k_{\rm eff}/k_w)^2$; reading a small shift takes a window, at the zero-frequency
   push-on-the-part rate.
-- Next steps: erasure and the write-read-erase cycle against Landauer's bound; a part
-  watching a bit being written; a stiffening ground spring.
+- Done (2026-11-22, [research note](notes/2026-11-22-erasing-a-bit.qmd)): erasure. The
+  four-stage protocol costs $1.37\,\sigma_T^2$ at $\tau=5$ and $0.695\,\sigma_T^2$ at
+  $\tau=200$, approaching Landauer's $\sigma_T^2\ln2$ with a $1/\tau$ excess; slow erasure
+  leaks (1.2% errors). In a cycle the push-driven write ($\approx29\,\sigma_T^2$) dominates;
+  reading costs no work.
+- Next steps: a part watching a bit being written; erasing a bit inside a body; a
+  stiffening ground spring.
 
 **T8. Latency.** *Queued.*
 
@@ -203,6 +208,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** Erasing a mechanical bit costs at least $\sigma_T^2(\ln2-H(p))$ for error
+  $p$; the simulated four-stage erasure costs 1.372 down to 0.695 $\sigma_T^2$ as each stage
+  lengthens from 5 to 200 time units, with a $1/\tau$ excess ($B=4.2$), and stays above
+  its bound at every speed (`tests/test_erasure.py`;
+  [research note](notes/2026-11-22-erasing-a-bit.qmd)).
 
 - **2026-11-22.** A bit inside a body: a part reads it only through a load path. A
   bistable series element on the SEA moves the rotor by its full stroke and the link by

@@ -31,6 +31,7 @@ text. This table is updated as sources are read in full (thread T10 of the
 | @willems1972dissipative; @stuart2010inverse | secondary | storage functions; the function-space viewpoint |
 | @dupont1973l2; @baker1976error; @geveci1984convergence | secondary | semi-discrete finite-element convergence (an assumption of @thm-mesh) |
 | @landauer1961irreversibility; @bennett1982thermodynamics | secondary | reversibility of conservative dynamics; dissipation as erasure |
+| @berut2012experimental; @esposito2011second | secondary | the four-stage erasure protocol and its $1/\tau$ excess work; the second law for nonequilibrium free energy and Landauer's bound with errors |
 | @callen1951irreversibility | secondary | quantum FDT, $\frac{\hbar\omega}{2}\coth\frac{\hbar\omega}{2k_BT}$ |
 | @nyquist1928thermal | secondary | thermal noise set by dissipation |
 | @duncan1970calculation | secondary | mutual information for signals in white Gaussian noise |
