@@ -1,0 +1,177 @@
+# 2026-11-22: What a part's history can say without limit {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_scale.py`
+:::
+
+**Question.** The [note on payload mass](2026-11-22-mass-and-resolution.qmd) found that a
+body's history says more and more about its masses and dampings the faster the motion it
+resolves, while what it says about the ground's stiffness settles. The energy metric has no
+time scale of its own; the uniqueness theorem demands that (requirement U3 of
+@thm-unique). So which properties of the environment have a finite answer per second
+without an outside scale, and which need a stated band?
+
+**Short answer.** One number decides. At high frequency a part's thermal motion has the
+spectrum $c/\omega^4$, with
+$$
+c=2\sigma_T^2\,p^\top H^{-1}DH^{-1}p ,
+$$
+set by the inertia and the damping that the part feels directly. If a property leaves $c$
+unchanged, the part's history holds a finite amount about it per second, however finely
+the motion is resolved. If it changes $c$, the information grows by
+$(\partial_\theta\log c)^2$ per second for every extra hertz.
+
+For a body of point masses joined by elements, $c$ involves only the part's own mass and
+the dampers attached to it. So a part learns without limit only about what it touches.
+About everything else (masses elsewhere, dampers elsewhere, and every stiffness, the
+ground's included) its history holds a finite amount per second. On the SEA the rotor
+holds a finite 31.2 per second about the link's mass, while the link itself gains 4 per
+second per hertz.
+
+This keeps the history view of the book: what a part holds is what its whole trajectory
+holds. The price of that view is a stated band for the few properties a part touches.
+
+## Setting
+
+A linear body with symmetric $H$, $K$, $D$ and the Langevin body's white thermal force
+(@sec-langevin). A part is one coordinate $y=p^\top q$, observed over a long window with
+its motion resolved up to a band of $B$ hertz. The unknown $\theta$ is the log of one
+property: a mass, a damping or a stiffness. The checks use the SEA at $k_s=10^3$ N m/rad,
+with the link and the rotor as parts.
+
+## Results
+
+::: {#thm-leading name="The leading coefficient decides"}
+Let $c(\theta)=p^\top H^{-1}DH^{-1}p>0$. As the band $B$ grows, the information rate about
+$\theta$ held by the part's history behaves as
+$$
+\dot I(B)=\big(\partial_\theta\log c\big)^2\,B+O(1).
+$$
+In particular it stays bounded exactly when $c$ does not depend on $\theta$.
+:::
+
+::: {.proof name="Proof sketch"}
+*Step 1: the rate from the spectrum.* For a long window, a stationary Gaussian signal with
+spectrum $S_\theta(\omega)$ carries Fisher information about $\theta$ at the rate
+$\frac1{4\pi}\int_{|\omega|<2\pi B}(\partial_\theta\log S_\theta)^2\,d\omega$ per second (Whittle's
+formula [@whittle1953analysis]).
+
+*Step 2: the spectrum at high frequency.* The part's spectrum is
+$S=2\sigma_T^2\,p^\top YDY^*p$ with $Y=(K-\omega^2H+i\omega D)^{-1}$. Expanding for large
+$\omega$,
+$$
+Y=-\frac{H^{-1}}{\omega^2}-\frac{i\,H^{-1}DH^{-1}}{\omega^3}+O(\omega^{-4}).
+$$
+Inserting this, the two cross terms of order $\omega^{-5}$ are equal and opposite and
+cancel, so $S=\frac{2\sigma_T^2}{\omega^4}\big(c+O(\omega^{-2})\big)$.
+
+*Step 3: the log-derivative.* Since $c>0$,
+$\log S=\log(2\sigma_T^2)-4\log\omega+\log c+O(\omega^{-2})$, and
+$\partial_\theta\log S=\partial_\theta\log c+O(\omega^{-2})$, because every term is a rational
+function of $\omega$ that depends smoothly on $\theta$.
+
+*Step 4: the integral.* If $\partial_\theta\log c\ne0$, the integrand tends to
+$(\partial_\theta\log c)^2$, and the integral over $|\omega|<2\pi B$ is
+$(\partial_\theta\log c)^2B+O(1)$. If $\partial_\theta\log c=0$, the integrand is $O(\omega^{-4})$
+and the integral converges.
+
+*What is not proved here.* The error terms of Whittle's formula. The case $c=0$, a part
+with no damping reaching it at leading order, where the next term of the expansion decides.
+:::
+
+Over a finite window the same dichotomy has a classical form. Two Gaussian processes with
+rational spectra are, on any finite interval, either impossible to tell apart with
+certainty or certain to be told apart, according to whether their spectra agree at high
+frequency [@ibragimov1978gaussian]. Here that means a property that changes $c$ is
+determined exactly by any stretch of a perfectly resolved history. The book does not rely
+on this result; it is the finite-window counterpart of @thm-leading.
+
+::: {#cor-touch name="A part learns without limit only about what it touches"}
+Let the body be point masses joined by spring-damper elements, so that $H$ is diagonal,
+and let the part be node $k$ with mass $m_k$. Then
+$$
+c=\frac{D_{kk}}{m_k^2},\qquad D_{kk}=\sum_{j\ \text{attached to}\ k}b_j ,
+$$
+the sum running over the dampers attached to node $k$, the ground damper included if $k$
+touches the ground. The part's information grows with the band
+
+- about its own mass, by 4 per second per hertz;
+- about a damper $b_j$ attached to it, by $(b_j/D_{kk})^2$ per second per hertz;
+
+and stays finite about every other mass, every damper not attached to it, and every
+stiffness.
+:::
+
+::: {.proof}
+With $H$ diagonal, $p^\top H^{-1}DH^{-1}p=D_{kk}/m_k^2$ for $p=e_k$. An element between
+nodes $i$ and $j$ adds $b$ to $D_{ii}$ and $D_{jj}$ and nothing else on the diagonal, so
+$D_{kk}$ is the sum of the dampers attached to $k$. Then $\partial\log c/\partial\log m_k=-2$,
+$\partial\log c/\partial\log b_j=b_j/D_{kk}$ for an attached damper, and 0 for any other
+property. @thm-leading gives the rates.
+:::
+
+The SEA, in joint coordinates, fits this form: $H=\diag(m_lr^2,I_{\rm rot})$, the link
+carries the ground damper $b_cr^2=6$ and the series damper $b_s=0.63$, and the rotor
+carries only $b_s$. The corollary predicts:
+
+- the link gains 4 per hertz about its mass, $(6/6.63)^2=0.82$ about the ground damping
+    and $(0.63/6.63)^2=0.009$ about the series damper;
+- the rotor gains 1 per hertz about the series damper;
+- everything else is finite: the rotor about the link's mass and the ground damping, and
+    both parts about both stiffnesses.
+
+The rigid leg has one coordinate whose inertia combines link and rotor, so its own mass is
+only partly the link's: $\partial\log c/\partial\log m_l=-2\varepsilon$ with $\varepsilon=0.75$,
+and the growth $(2\varepsilon)^2=2.25$ of the mass note.
+
+## Numbers
+
+| property | part | 800 Hz | 1,600 Hz | 3,200 Hz | growth per Hz | predicted |
+|:--|:--|--:|--:|--:|--:|--:|
+| link mass | link | 3,551.6 | 6,792.1 | 13,212.2 | 4.013 | 4 |
+| link mass | rotor | 31.2 | 31.2 | 31.2 | 0 | 0 |
+| ground damping | link | 553.4 | 1,205.1 | 2,513.0 | 0.817 | 0.818 |
+| ground damping | rotor | 4.5 | 4.5 | 4.5 | 0 | 0 |
+| series damping | link | 11.3 | 18.6 | 33.1 | 0.009 | 0.009 |
+| series damping | rotor | 712.5 | 1,511.9 | 3,111.7 | 1.000 | 1 |
+| ground stiffness | link | 635.1 | 635.3 | 635.3 | 0 | 0 |
+| ground stiffness | rotor | 43.2 | 43.2 | 43.2 | 0 | 0 |
+| series stiffness | link | 96.9 | 96.9 | 96.9 | 0 | 0 |
+| series stiffness | rotor | 649.7 | 649.7 | 649.7 | 0 | 0 |
+
+: Fisher information per second about the log of each property, held by the history of one part of the SEA ($k_s=10^3$), with its motion resolved up to each band, sampled at 64 kHz (`check_criterion`). The growth is measured between 1,600 and 3,200 Hz; the prediction is $(\partial_\theta\log c)^2$. When the series stiffness changes, $b_s$ is held fixed. {#tbl-criterion}
+
+All ten predictions hold: the growth matches $(\partial_\theta\log c)^2$ to within 0.013 per
+hertz, and every property predicted to be finite changes by at most 0.2 per second from
+800 to 3,200 Hz.
+
+## What this changes
+
+The history view stays. What a part holds about its environment is what its whole
+trajectory holds, which is what computation over time will need. @thm-leading says when
+that is finite without an outside scale: whenever the property does not change the part's
+own inertia and damping. A part's history holds a finite amount per second about the
+ground's stiffness, about masses elsewhere in the body and about dampers it does not
+touch. For the few properties a part touches, its own mass and its own dampers, the answer
+depends on the band, and the book states one. For the whole body, which touches all its
+masses and dampers, every mass and damping question needs a band.
+
+This refines the proposal of the mass note: a band is needed only where @cor-touch says the
+part touches the property.
+
+## Limits of this note
+
+- Linear bodies with the white-noise Langevin body. The mass note shows that a bath with
+    finite memory leaves the growth unchanged; the criterion for such baths would use the
+    bath's own high-frequency spectrum.
+- One-coordinate parts. For several coordinates the same argument gives the growth
+    $\operatorname{tr}\big[(C^{-1}\partial_\theta C)^2\big]$ per hertz, with $C$ the leading
+    matrix coefficient; this is not checked here.
+- The case $c=0$ is not treated.
+
+## Next steps
+
+- Check the several-coordinate form, and a chain, where a node far from a payload should
+    hold a finite amount about it.
+- Use the criterion in the nonlinear thread (T7), where the high-frequency behaviour may
+    differ.

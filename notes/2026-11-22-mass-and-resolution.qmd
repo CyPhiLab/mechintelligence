@@ -179,4 +179,6 @@ which bounds the band anyway.
 
 ## Next steps
 
-- Settle the band rule, then payload on the SEA and on the bodies of @sec-inside.
+- The [note on what a part's history can say](2026-11-22-finite-answers.qmd) shows that a
+    band is needed only for the masses and dampers a part touches.
+- Payload on the SEA and on the bodies of @sec-inside.

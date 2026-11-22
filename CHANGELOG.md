@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T11): what a part's history can say without limit. One
+  coefficient of the part's high-frequency motion decides whether its information about
+  a property of the environment is finite; a part learns without limit only about its
+  own mass and the dampers attached to it.
 - New research note (thread T11): payload mass, and why some properties need a stated
   band. Information about masses and dampings grows with the band of motion resolved,
   because inertia sets the motion above a body's modes; a thermal bath with finite memory

@@ -163,8 +163,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   stiffness settles. A thermal bath with finite memory (Maxwell elements, consistent with
   fluctuation-dissipation, `mibook.bath`) gives the same growth, so the cause is inertia,
   not white noise.
-- **Decision pending:** give information about masses and dampings for a stated band,
-  defaulting to the book's 100 Hz (proposed in the note).
+- Done (2026-11-22, [research note](notes/2026-11-22-finite-answers.qmd)): which
+  properties have a finite answer without an outside scale. A part's high-frequency
+  spectrum is $c/\omega^4$ with $c=2\sigma_T^2p^\top H^{-1}DH^{-1}p$; the information rate
+  about a property is finite exactly when it leaves $c$ unchanged, and otherwise grows by
+  $(\partial_\theta\log c)^2$ per hertz. A part learns without limit only about what it
+  touches: its own mass and the dampers attached to it.
+- **Decision pending:** state a band (default 100 Hz) for the masses and dampers a part
+  touches, and for every mass and damping question about the whole body.
 - Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
   whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
@@ -177,6 +183,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** A part's history holds a finite amount per second about a property
+  exactly when the property leaves the part's leading high-frequency coefficient
+  $p^\top H^{-1}DH^{-1}p$ unchanged; otherwise the information grows by
+  $(\partial_\theta\log c)^2$ per hertz. On the SEA all ten property-part pairs match: the
+  rotor holds a finite 31.2 per second about the link mass while the link gains 4 per
+  hertz (`tests/test_scale.py`; [research note](notes/2026-11-22-finite-answers.qmd)).
 
 - **2026-11-22.** Information about masses and dampings grows with the band of motion
   resolved, because inertia sets the motion above a body's modes: on the rigid leg the
@@ -301,6 +314,10 @@ written up.
 - **2026-11-22.** Nonlinear bodies are in scope for later: thread T7 widened from
   multistable elements to nonlinear springs, configuration-dependent inertia, switching
   contact and mechanical memory.
+
+- **2026-11-22.** The book keeps the history view: what a part holds is what its whole
+  trajectory holds, because computation over time will need it. Defining "holding" by the
+  instantaneous state was considered and set aside.
 
 ## Paper candidates
 

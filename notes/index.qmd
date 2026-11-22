@@ -5,6 +5,7 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-22 | [What a part's history can say without limit](2026-11-22-finite-answers.qmd) | exploratory | not yet |
 | 2026-11-22 | [Payload mass, and why some properties need a stated band](2026-11-22-mass-and-resolution.qmd) | exploratory | not yet |
 | 2026-11-22 | [What the body knows about the stiffness of the ground](2026-11-22-ground-stiffness.qmd) | exploratory | not yet |
 | 2026-11-21 | [What the body knows about the height of the ground](2026-11-21-terrain.qmd) | promoted | @sec-terrain |
