@@ -202,3 +202,93 @@ def check_parts(ks_list=KS_LIST) -> dict:
                         rotor_force_share=pg.information_share(s, pg.ROTOR["sea"]),
                         push_whole=fisher_push(ks), push_rotor=fisher_push(ks, "rotor"))
     return rows
+
+
+# ---------------------------------------------------------------------------------------
+# Payload mass: the link carries an unknown mass, theta = log m_l
+# ---------------------------------------------------------------------------------------
+
+def leg_mass(ks, theta: float):
+    """The rigid leg (ks=None) or an SEA whose link mass is M_L e^theta, on the book's ground."""
+    from passive_info.systems import M_L, proprioceptive, series_elastic
+    zeta = pg.B_CONTACT / (2.0 * np.sqrt(K_I * tr.reference_m_e()))
+    kw = dict(readout="energy", k_i=K_I, zeta_contact=zeta, m_l=M_L * np.exp(theta))
+    return proprioceptive(**kw) if ks is None else series_elastic(ks, **kw)
+
+
+def mass_velocity_snapshot(ks, part: str = "whole") -> dict:
+    """One snapshot of the part's velocity: Fisher about log m_l, numerically and as 1/2 eps^2,
+    with eps the link's share of the kinetic energy when the part is given a unit impulse."""
+    rows = part_rows(ks, part)
+
+    def cov(theta):
+        s = leg_mass(ks, theta)
+        return SIGMA_ENERGY ** 2 * np.linalg.inv(s.H)[np.ix_(rows, rows)]
+
+    S0 = cov(0.0)
+    X = np.linalg.solve(S0, (cov(DTHETA) - cov(-DTHETA)) / (2 * DTHETA))
+    s = leg_mass(ks, 0.0)
+    Hl = (leg_mass(ks, DTHETA).H - leg_mass(ks, -DTHETA).H) / (2 * DTHETA)   # the link's inertia
+    Hi = np.linalg.inv(s.H)
+    if part == "whole":
+        eps = float(np.trace(Hi @ Hl))           # rank one: the link's share of the inertia
+    else:
+        p = np.zeros(s.n)
+        p[rows[0]] = 1.0
+        v = Hi @ p
+        eps = float(v @ Hl @ v / (p @ v))
+    return dict(fisher=0.5 * float(np.trace(X @ X)), half_eps2=0.5 * eps ** 2, eps=eps)
+
+
+def whittle_rate_general(build, rows, fs: float = FS, n_freq: int = 4000,
+                         dtheta: float = DTHETA, velocities: bool = False) -> float:
+    """Long-window Fisher information per second about theta for a system build(theta),
+    observing the positions in `rows` (and their velocities if asked)."""
+    def spectrum(theta, nus):
+        s = build(theta)
+        Ad, _ = zoh(s.A, s.B_F[:, :1], 1.0 / fs)
+        P = SIGMA_ENERGY ** 2 * np.linalg.inv(energy_metric(s.K, s.H))
+        Qd = P - Ad @ P @ Ad.T
+        idx = list(rows) + ([s.n + r for r in rows] if velocities else [])
+        C = np.eye(2 * s.n)[idx]
+        out = []
+        for nu in nus:
+            R = np.linalg.inv(np.exp(1j * nu) * np.eye(2 * s.n) - Ad)
+            out.append(C @ R @ Qd @ R.conj().T @ C.T)
+        return out
+
+    nus = np.linspace(-np.pi, np.pi, n_freq, endpoint=False) + np.pi / n_freq
+    S0, Sp, Sm = spectrum(0.0, nus), spectrum(dtheta, nus), spectrum(-dtheta, nus)
+    vals = []
+    for a, b, c in zip(S0, Sp, Sm):
+        X = np.linalg.solve(a, (b - c) / (2 * dtheta))
+        vals.append(np.real(np.trace(X @ X)))
+    return float(np.mean(vals) / 2 * fs)
+
+
+def check_mass_snapshot(ks_list=(70.0, 1e3, 1e4)) -> dict:
+    worst, rows = 0.0, {}
+    for ks in (None,) + tuple(ks_list):
+        for part in (("whole",) if ks is None else ("whole", "link", "rotor")):
+            r = mass_velocity_snapshot(ks, part)
+            worst = max(worst, abs(r["fisher"] - r["half_eps2"]))
+            rows[("rigid" if ks is None else ks, part)] = r
+    return dict(max_abs_err=worst, rows=rows)
+
+
+def check_resolution(fs_list=(2000.0, 4000.0, 8000.0, 16000.0)) -> dict:
+    """Fisher rate on the rigid leg as the sampling rate grows: payload mass (positions, and
+    positions with velocities) and ground damping, against ground stiffness."""
+    n_of = lambda fs: int(4000 * fs / 4000)       # keep the frequency grid as fine at every rate
+    out = dict(fs=np.asarray(fs_list), mass_pos=[], mass_posvel=[], stiff_posvel=[],
+               damp_posvel=[])
+    damped = lambda t: leg_at(None, 0.0, pg.B_CONTACT * np.exp(t))
+    for fs in fs_list:
+        n = n_of(fs)
+        out["damp_posvel"].append(whittle_rate_general(damped, [0], fs, n, velocities=True))
+        out["mass_pos"].append(whittle_rate_general(lambda t: leg_mass(None, t), [0], fs, n))
+        out["mass_posvel"].append(whittle_rate_general(lambda t: leg_mass(None, t), [0], fs, n,
+                                                       velocities=True))
+        out["stiff_posvel"].append(whittle_rate_general(lambda t: leg_at(None, t), [0], fs, n,
+                                                        velocities=True))
+    return {k: np.asarray(v) for k, v in out.items()}

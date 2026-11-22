@@ -156,8 +156,16 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   spring's share of the stored energy when the part is pushed. The whole body learns
   $\log k_c$ at $k_c/(2b_c)$ per second for every design (proof sketch, confirmed
   numerically). The SEA's rotor learns far less about stiffness than about force.
-- Next step: payload mass, which enters $H$, and whether $\varepsilon$ predicts what parts
-  of chains and trees hold about the ground.
+- Done (2026-11-22, [research note](notes/2026-11-22-mass-and-resolution.qmd)): payload
+  mass. A velocity snapshot follows the same law with kinetic energy. Over time the
+  white-noise body reveals masses and dampings without limit: per sample the information
+  tends to $(\partial_\theta\log\kappa)^2$, with $\kappa$ the strength of the thermal
+  kicks on the velocity, so the rate grows with the sampling rate. Stiffness does not.
+- **Decision needed** before payloads, friction or T7: how to give finite answers for
+  properties that set the thermal kicks (a stated time resolution, a bath with a finite
+  correlation time, or reporting only the remainder). Options are in the note.
+- Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
+  whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
 **T10. Literature.** *Queued.*
 
@@ -168,6 +176,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** The white-noise Langevin body reveals masses and dampings without
+  limit as sampling gets finer: on the rigid leg the link mass's Fisher rate is
+  $4\varepsilon^2 f_s$ plus a remainder that settles near 340 per second
+  ($\varepsilon=0.75$), and the ground damping's is $f_s$ plus a constant. Ground stiffness
+  stays at 833 per second from 2 to 16 kHz. A velocity snapshot carries
+  $\frac12\varepsilon^2$ about the mass, with $\varepsilon$ the payload's kinetic-energy
+  share (`tests/test_parameters.py`;
+  [research note](notes/2026-11-22-mass-and-resolution.qmd)).
 
 - **2026-11-22.** The body learns the ground's stiffness from its own thermal motion. A
   snapshot of a part carries Fisher information $\frac12\varepsilon^2$ about $\log k_c$

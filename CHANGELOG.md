@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T11): payload mass, and where the white-noise body breaks.
+  Masses and dampings, which set how hard the thermal kicks are, are revealed without
+  limit as the time resolution gets finer; stiffness is not. A new open-problems
+  limitation records this.
 - New research note (thread T11): what the body knows about the stiffness of the ground.
   Its thermal motion carries it; the whole body learns it at half the ground's corner
   frequency in every design, and a part in proportion to the ground spring's share of

@@ -41,3 +41,31 @@ def test_parts():
     for k in (70.0, 1e3, 1e4):
         assert r[k]["rotor_share"] < r[k]["rotor_force_share"]        # stiffness reaches it less
         assert r[k]["push_whole"] > 50 * r[k]["whole"]                 # a known push dominates
+
+
+def test_mass_snapshot_law_uses_the_kinetic_energy():
+    r = pm.check_mass_snapshot()
+    assert r["max_abs_err"] < 1e-5
+    assert r["rows"][("rigid", "whole")]["eps"] == pytest.approx(0.75, abs=1e-6)
+    assert r["rows"][(70.0, "rotor")]["fisher"] < 1e-12       # independent velocities
+
+
+@pytest.fixture(scope="module")
+def resolution():
+    return pm.check_resolution()
+
+
+def test_stiffness_information_settles_as_sampling_gets_finer(resolution):
+    r = resolution["stiff_posvel"]
+    assert max(r) - min(r) < 1e-3 * max(r)
+
+
+def test_mass_and_damping_information_grow_with_the_sampling_rate(resolution):
+    fs = resolution["fs"]
+    eps = pm.mass_velocity_snapshot(None)["eps"]
+    rem = resolution["mass_posvel"] - 4 * eps ** 2 * fs        # per sample -> 4 eps^2
+    assert np.all(np.abs(np.diff(rem)) < 10) and abs(rem[-1] - 340) < 5
+    remd = resolution["damp_posvel"] - fs                     # per sample -> 1
+    assert np.all(np.abs(np.diff(remd)) < 2)
+    assert np.all(np.diff(resolution["mass_pos"] / fs) < 0)   # positions only: tends to 2 eps^2
+    assert resolution["mass_pos"][-1] / fs[-1] == pytest.approx(2 * eps ** 2, abs=0.03)

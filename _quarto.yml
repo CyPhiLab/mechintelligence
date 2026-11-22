@@ -34,6 +34,7 @@ book:
     - part: "Research log"
       chapters:
         - notes/index.qmd
+        - notes/2026-11-22-mass-and-resolution.qmd
         - notes/2026-11-22-ground-stiffness.qmd
         - notes/2026-11-21-terrain.qmd
         - notes/2026-11-21-two-contacts.qmd

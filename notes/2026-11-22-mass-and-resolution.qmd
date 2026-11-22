@@ -1,0 +1,172 @@
+# 2026-11-22: Payload mass, and where the white-noise body breaks {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_parameters.py`
+:::
+
+**Question.** The [note on ground stiffness](2026-11-22-ground-stiffness.qmd) found that
+the body learns the stiffness of the ground from its own thermal motion, at a finite rate.
+A payload is the next property of the environment: an unknown mass the leg carries. It
+enters the inertia $H$, the kinetic half of the energy metric, where stiffness entered the
+potential half. Does the same picture hold?
+
+**Short answer.** Half of it does.
+
+- *One snapshot works the same way, with kinetic energy.* A snapshot of a part's velocity
+    carries Fisher information $\frac12\varepsilon^2$ about the log of the mass, where
+    $\varepsilon$ is the payload's share of the kinetic energy after a sharp tap on the
+    part. Positions in a snapshot say nothing about mass.
+- *Over time, the model gives no finite answer.* The thermal motion reveals the mass at a
+    rate that grows in proportion to the sampling rate, without limit. The same holds for
+    damping. Stiffness does not do this: its rate stays at 833 per second from 2 to 16 kHz.
+
+The reason is the white thermal force. Mass and damping set how hard the thermal kicks
+shake the velocity. With white noise, the roughness of the velocity at ever finer time
+scales measures that strength exactly. Stiffness only steers the motion, so it does not
+show up in the roughness. Real thermal forces are not white at arbitrarily fine time
+scales, so this is a limit of the model. Answers about masses and dampings need a stated
+time resolution, and this note ends by asking which one the book should use.
+
+## Setting
+
+The book's rigid leg and SEAs on the clamped bench, with the Langevin body's thermal noise
+at $\sigma_T^2=10^{-4}$ J (@sec-langevin). The payload is the link's mass:
+$\theta=\log m_l$ around $m_l=3$ kg, with the ground's stiffness and damping held at
+$10^6$ N/m and 600 N s/m. On the rigid leg the link carries 75% of the inertia at the joint
+($m_lr^2=0.03$ of $H=0.04$ kg m²); the rotor carries the rest. For comparison the note also
+treats the ground damping $\theta=\log b_c$ and recalls the ground stiffness.
+
+## Results
+
+::: {#prp-mass-snapshot name="One snapshot of the velocities"}
+For a one-coordinate part with velocity $p^\top\dot q$, one snapshot from the Gibbs law
+carries Fisher information $\frac12\varepsilon^2$ about $\theta$, with
+$$
+\varepsilon=\frac{\text{kinetic energy of the payload}}{\text{total kinetic energy}}
+\quad\text{after a unit impulse on the part.}
+$$
+For the velocities of the whole body, $\varepsilon=\operatorname{tr}(H^{-1}\partial_\theta H)$
+when $\partial_\theta H$ has rank one. A snapshot of the positions carries no information
+about $\theta$.
+:::
+
+::: {.proof}
+By the Gibbs law the velocities are Gaussian with covariance $\sigma_T^2H^{-1}$, and the
+positions have covariance $\sigma_T^2K^{-1}$, which does not involve $H$. The rest is the
+proof of @prp-snapshot with $H$ in place of $K$: the variance of $p^\top\dot q$ is
+$v=\sigma_T^2p^\top H^{-1}p$, and $v'/v=-u^\top(\partial_\theta H)u/(p^\top u)$ with $u=H^{-1}p$,
+the velocity after a unit impulse $p$. The kinetic energy is then $\frac12u^\top Hu=\frac12p^\top u$,
+and the payload's part of it is $\frac12u^\top(\partial_\theta H)u$. For the whole body,
+$\frac12\operatorname{tr}\big((H^{-1}\partial_\theta H)^2\big)=\frac12\varepsilon^2$ when
+$\partial_\theta H$ has rank one.
+:::
+
+On the rigid leg $\varepsilon=0.75$, the link's share of the inertia, so a snapshot of the
+velocity carries 0.281. On the SEA the link is its own coordinate and $H$ is diagonal: the
+whole body and the link have $\varepsilon=1$ (0.5), and the rotor's velocity, independent
+of the link's in the Gibbs law, carries nothing. The law matches the numbers to $10^{-7}$
+(`check_mass_snapshot`).
+
+::: {#prp-roughness name="Properties that set the thermal kicks are revealed without limit"}
+Take one coordinate with its whole state sampled every $\Delta t$. Let
+$\kappa=2\sigma_T^2b/H^2$ be the strength of the thermal kicks on its velocity, with $b$ its
+total damping. As $\Delta t\to0$, the Fisher information about $\theta$ per sample tends to
+$$
+\Big(\frac{\partial\log\kappa}{\partial\theta}\Big)^2 .
+$$
+So the rate per second grows like $(\partial_\theta\log\kappa)^2/\Delta t$ whenever $\theta$
+changes $\kappa$. For the payload $\partial_\theta\log\kappa=-2\varepsilon$, giving
+$4\varepsilon^2$ per sample. For the damping $b_c$ it is 1. For the stiffness it is 0.
+:::
+
+::: {.proof name="Proof sketch"}
+*Step 1: one step of the sampled body.* The state moves as $x_{k+1}=A_dx_k+w_k$, with
+$w_k\sim\mathcal N(0,Q_d)$. The Fisher information in one Gaussian step is
+$\E[(\partial A_d\,x)^\top Q_d^{-1}(\partial A_d\,x)]+\frac12\operatorname{tr}\big((Q_d^{-1}\partial Q_d)^2\big)$.
+
+*Step 2: the step's noise for small $\Delta t$.* $Q_d=\int_0^{\Delta t}e^{As}GG^\top e^{A^\top s}ds$,
+with $GG^\top=\diag(0,\kappa)$. To leading order
+$$
+Q_d=\kappa\begin{pmatrix}\Delta t^3/3&\Delta t^2/2\\\Delta t^2/2&\Delta t\end{pmatrix},
+$$
+which is proportional to $\kappa$. So $Q_d^{-1}\partial Q_d\to(\partial_\theta\log\kappa)\,I$, and
+the second term of Step 1 tends to $\frac12\cdot2\,(\partial_\theta\log\kappa)^2$.
+
+*Step 3: the first term.* $\partial A_d$ is of order $\Delta t$, and its effect on the
+position is of order $\Delta t^2$. Against $Q_d^{-1}$, of order $\Delta t^{-3}$ on the
+position and $\Delta t^{-1}$ on the velocity, the first term is of order $\Delta t$ per
+step: a finite rate per second.
+
+*The values.* $\kappa\propto b/H^2$, so $\partial_\theta\log\kappa=-2\,\partial_\theta\log H=-2\varepsilon$
+for the payload and $1$ for $b_c$. Stiffness does not enter $\kappa$.
+
+*What is not proved here.* The corrections beyond leading order, and the case where only
+positions are observed, which the numbers put at half the rate.
+:::
+
+The roughness of a white-noise velocity over each step measures $\kappa$, and with finer
+sampling there are more steps to measure it on. In continuous time $\kappa$ is known
+exactly from any stretch of motion, which makes the mass known exactly too. This is the
+book's opening point (@sec-plain) in a new place: a model with no limit on resolution
+carries unlimited information. Here the missing limit is the white-noise idealization of
+the thermal force, which fails at time scales shorter than the correlation time of the
+real bath.
+
+## Numbers
+
+```{python}
+#| label: fig-resolution
+#| fig-cap: |
+#|   Long-window Fisher information per second on the rigid leg, against the sampling rate.
+#|   The link's mass and the ground damping grow with the rate; the ground stiffness does not.
+#|   Dotted: the leading term $4\varepsilon^2 f_s$ of @prp-roughness for the mass.
+from mibook import figures
+figures.fig_resolution();
+```
+
+| sampling rate | mass, positions and velocities | after removing $4\varepsilon^2 f_s$ | mass, positions only (per sample) | ground damping (per sample) | ground stiffness |
+|--:|--:|--:|--:|--:|--:|
+| 2 kHz | 4,825 | 325 | 1.282 | 0.963 | 833.3 |
+| 4 kHz | 9,334 | 334 | 1.207 | 0.981 | 833.3 |
+| 8 kHz | 18,338 | 338 | 1.167 | 0.991 | 833.3 |
+| 16 kHz | 36,340 | 340 | 1.146 | 0.995 | 833.3 |
+
+: Long-window Fisher information on the rigid leg (`check_resolution`). Mass is the link's, $\varepsilon=0.75$. Per sample, the payload tends to $4\varepsilon^2=2.25$ with velocities observed and to $2\varepsilon^2=1.125$ with positions only; the damping tends to 1. {#tbl-resolution}
+
+- After the leading term is removed, what remains of the mass information settles near
+    340 per second, changing by 2 between 8 and 16 kHz. That remainder is the part that
+    comes from how the mass steers the motion.
+- With positions only, the information per sample falls toward $2\varepsilon^2$, half
+    the rate with velocities, as the sampling gets finer.
+- The ground damping's information per sample tends to 1, as @prp-roughness says.
+- The ground stiffness stays at 833.3 per second at every rate, the value of
+    @prp-stiffness-rate.
+
+## What this changes
+
+For environmental inputs and for the ground's stiffness, the Langevin body gives finite
+answers with no added resolution. For properties that set how hard the thermal kicks are,
+masses and dampings, it does not: any answer depends on how finely the motion is resolved
+in time. That has to be settled before the thread reaches payloads, friction or the
+nonlinear bodies of thread T7.
+
+**A decision for the book.** Three ways to give finite answers:
+
+1. *State a time resolution as part of the question*, such as the book's 4 kHz or a
+    bandwidth, and report the information at that resolution. Simple, but the leading
+    term then depends on a choice.
+2. *Give the bath a finite correlation time*, so the thermal force is smooth at short
+    times (a generalized Langevin equation). Physically the most honest, and it adds a
+    new parameter.
+3. *Report only the remainder*, the information carried by how the property steers the
+    motion, and treat the roughness term as an artifact of white noise.
+
+## Limits of this note
+
+- Checked on the rigid leg, one coordinate. @prp-roughness is a proof sketch.
+- The remainder in option 3 is computed numerically here; no formula for it is derived.
+
+## Next steps
+
+- Decide among the three options above.
+- Then payload on the SEA and on the bodies of @sec-inside.

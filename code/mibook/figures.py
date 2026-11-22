@@ -390,10 +390,33 @@ def fig_ground_stiffness():
     return _save(fig, "ground_stiffness")
 
 
+def fig_resolution():
+    """Fisher rate against sampling rate: stiffness settles, mass and damping do not."""
+    from mibook import parameters as pm
+    r = pm.check_resolution()
+    eps = pm.mass_velocity_snapshot(None)["eps"]
+    fs = r["fs"]
+    fig, ax = plt.subplots(figsize=(4.2, 2.8))
+    ax.loglog(fs, r["mass_posvel"], color=C1, marker="o", markersize=3,
+              label="link mass, positions and velocities")
+    ax.loglog(fs, r["mass_pos"], color=C1, marker="o", markersize=3, ls="--",
+              label="link mass, positions only")
+    ax.loglog(fs, r["damp_posvel"], color=C2, marker="D", markersize=3,
+              label="ground damping")
+    ax.loglog(fs, r["stiff_posvel"], color=C3, marker="s", markersize=3,
+              label="ground stiffness")
+    ax.loglog(fs, 4 * eps ** 2 * fs, color=INK2, ls=":", lw=0.9)
+    ax.set_xlabel("sampling rate (Hz)")
+    ax.set_ylabel("Fisher information per second")
+    ax.legend(loc="upper left", fontsize=6.5)
+    fig.tight_layout()
+    return _save(fig, "resolution")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution):
         f()
