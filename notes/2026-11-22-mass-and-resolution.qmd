@@ -1,7 +1,7 @@
-# 2026-11-22: Payload mass, and where the white-noise body breaks {.unnumbered}
+# 2026-11-22: Payload mass, and why some properties need a stated band {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_parameters.py`
+**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_parameters.py`, `tests/test_bath.py`
 :::
 
 **Question.** The [note on ground stiffness](2026-11-22-ground-stiffness.qmd) found that
@@ -16,16 +16,18 @@ potential half. Does the same picture hold?
     carries Fisher information $\frac12\varepsilon^2$ about the log of the mass, where
     $\varepsilon$ is the payload's share of the kinetic energy after a sharp tap on the
     part. Positions in a snapshot say nothing about mass.
-- *Over time, the model gives no finite answer.* The thermal motion reveals the mass at a
-    rate that grows in proportion to the sampling rate, without limit. The same holds for
-    damping. Stiffness does not do this: its rate stays at 833 per second from 2 to 16 kHz.
+- *Over time, the answer depends on how fast a motion is resolved.* Information about the
+    mass grows by $(2\varepsilon)^2$ per second for every extra hertz of motion resolved,
+    2.25 on the rigid leg, without limit. Damping grows by 1 per hertz. Stiffness does not
+    grow: it settles at 833 per second.
 
-The reason is the white thermal force. Mass and damping set how hard the thermal kicks
-shake the velocity. With white noise, the roughness of the velocity at ever finer time
-scales measures that strength exactly. Stiffness only steers the motion, so it does not
-show up in the roughness. Real thermal forces are not white at arbitrarily fine time
-scales, so this is a limit of the model. Answers about masses and dampings need a stated
-time resolution, and this note ends by asking which one the book should use.
+The reason is inertia. Above a body's modes, how it moves under any force is set by its
+mass, and how hard the thermal force shakes it is set by the damping. So every faster
+band of motion gives another look at both. This is not an artifact of white thermal noise:
+a thermal bath with finite memory, built here and consistent with fluctuation-dissipation,
+gives the same growth. Answers about masses and dampings therefore need a stated band, as
+force profiles already have one. In the book's 100 Hz band, the rigid leg's thermal motion
+holds 205 per second about the link's mass.
 
 ## Setting
 
@@ -67,106 +69,114 @@ whole body and the link have $\varepsilon=1$ (0.5), and the rotor's velocity, in
 of the link's in the Gibbs law, carries nothing. The law matches the numbers to $10^{-7}$
 (`check_mass_snapshot`).
 
-::: {#prp-roughness name="Properties that set the thermal kicks are revealed without limit"}
-Take one coordinate with its whole state sampled every $\Delta t$. Let
-$\kappa=2\sigma_T^2b/H^2$ be the strength of the thermal kicks on its velocity, with $b$ its
-total damping. As $\Delta t\to0$, the Fisher information about $\theta$ per sample tends to
+::: {#prp-inertia-band name="Inertia makes mass information grow with the band"}
+Observe the joint angle of the rigid leg over a long window, resolving its motion up to a
+band of $B$ hertz. Suppose the thermal force's spectrum does not depend on the mass, and
+the leg's response at high frequency is dominated by its inertia. Then, as $B$ grows, the
+Fisher information about $\theta=\log m_l$ grows as
 $$
-\Big(\frac{\partial\log\kappa}{\partial\theta}\Big)^2 .
+\dot I\approx(2\varepsilon)^2\,B\quad\text{per second}.
 $$
-So the rate per second grows like $(\partial_\theta\log\kappa)^2/\Delta t$ whenever $\theta$
-changes $\kappa$. For the payload $\partial_\theta\log\kappa=-2\varepsilon$, giving
-$4\varepsilon^2$ per sample. For the damping $b_c$ it is 1. For the stiffness it is 0.
+For the ground damping, whose thermal force has a spectrum proportional to $b_c$, it grows
+as $B$. For the ground stiffness it settles.
 :::
 
 ::: {.proof name="Proof sketch"}
-*Step 1: one step of the sampled body.* The state moves as $x_{k+1}=A_dx_k+w_k$, with
-$w_k\sim\mathcal N(0,Q_d)$. The Fisher information in one Gaussian step is
-$\E[(\partial A_d\,x)^\top Q_d^{-1}(\partial A_d\,x)]+\frac12\operatorname{tr}\big((Q_d^{-1}\partial Q_d)^2\big)$.
+*Step 1: Whittle's formula.* For a long window, a stationary Gaussian signal with spectrum
+$S_\theta(\omega)$ carries Fisher information about $\theta$ at the rate
+$\frac1{4\pi}\int(\partial_\theta\log S_\theta)^2d\omega$ per second, the integral running
+over the resolved band $|\omega|<2\pi B$.
 
-*Step 2: the step's noise for small $\Delta t$.* $Q_d=\int_0^{\Delta t}e^{As}GG^\top e^{A^\top s}ds$,
-with $GG^\top=\diag(0,\kappa)$. To leading order
-$$
-Q_d=\kappa\begin{pmatrix}\Delta t^3/3&\Delta t^2/2\\\Delta t^2/2&\Delta t\end{pmatrix},
-$$
-which is proportional to $\kappa$. So $Q_d^{-1}\partial Q_d\to(\partial_\theta\log\kappa)\,I$, and
-the second term of Step 1 tends to $\frac12\cdot2\,(\partial_\theta\log\kappa)^2$.
+*Step 2: the spectrum at high frequency.* The angle's spectrum is
+$S=|Y(\omega)|^2S_F(\omega)$, with $S_F$ the thermal force's spectrum and $Y$ the leg's
+response. At frequencies well above its modes the inertia dominates, $Y\approx-1/(\omega^2H)$,
+so $\log S\approx\log S_F-2\log H-4\log\omega$. If $S_F$ does not depend on the mass,
+$\partial_\theta\log S\to-2\,\partial_\theta\log H=-2\varepsilon$.
 
-*Step 3: the first term.* $\partial A_d$ is of order $\Delta t$, and its effect on the
-position is of order $\Delta t^2$. Against $Q_d^{-1}$, of order $\Delta t^{-3}$ on the
-position and $\Delta t^{-1}$ on the velocity, the first term is of order $\Delta t$ per
-step: a finite rate per second.
+*Step 3: the integral.* The integrand tends to the constant $4\varepsilon^2$, so the integral
+over $|\omega|<2\pi B$ grows as $\frac1{4\pi}\cdot4\varepsilon^2\cdot4\pi B=4\varepsilon^2B$.
+For the damping, $S_F\propto b_c$ gives $\partial_\theta\log S\to1$ and a growth of $B$. The
+stiffness drops out of $Y$ at high frequency, so its integrand decays and the integral
+converges.
 
-*The values.* $\kappa\propto b/H^2$, so $\partial_\theta\log\kappa=-2\,\partial_\theta\log H=-2\varepsilon$
-for the payload and $1$ for $b_c$. Stiffness does not enter $\kappa$.
-
-*What is not proved here.* The corrections beyond leading order, and the case where only
-positions are observed, which the numbers put at half the rate.
+*What is not proved here.* The error terms of Whittle's formula, and the low-frequency part,
+which the numbers give.
 :::
 
-The roughness of a white-noise velocity over each step measures $\kappa$, and with finer
-sampling there are more steps to measure it on. In continuous time $\kappa$ is known
-exactly from any stretch of motion, which makes the mass known exactly too. This is the
-book's opening point (@sec-plain) in a new place: a model with no limit on resolution
-carries unlimited information. Here the missing limit is the white-noise idealization of
-the thermal force, which fails at time scales shorter than the correlation time of the
-real bath.
+On the rigid leg the 0 to 100 Hz band holds 205 per second about the link's mass, and each
+further hertz adds 2.25 (@tbl-band). With the whole state sampled at $f_s$, the resolved
+band is the Nyquist band $f_s/2$, which is why the information then grows with the
+sampling rate. From 2 to 16 kHz it approaches 2.25 per sample with positions and
+velocities observed and 1.125 with positions only (`check_resolution`).
+
+### A bath with finite memory does not change this
+
+White thermal noise is an idealization, so a natural suspect is the noise itself. To test
+it, every damper is replaced by a Maxwell element, a damper in series with a spring
+$\lambda/\tau$, so that the damping relaxes in time $\tau$. With the damping matrix written as
+$D=\sum_i\lambda_iu_iu_i^\top$, each element has an internal extension $s_i$, and the thermal
+noise acts on $s_i$ rather than on the velocities:
+$$
+H\ddot q=-Kq-\sum_i\frac{\lambda_i}{\tau}u_is_i,\qquad
+ds_i=\big(u_i^\top\dot q-s_i/\tau\big)dt-dW_i/\lambda_i,\quad\E[dW_i^2]=2\sigma_T^2\lambda_i\,dt .
+$$
+The memory kernel is $De^{-t/\tau}/\tau$ for any choice of elements, so $\tau$ is the only new
+parameter, and $\tau\to0$ gives back the Langevin body.
+
+- The Gibbs law, now including the elements' springs, is exactly the stationary law: the
+    Lyapunov residual is below $10^{-14}$ (`check_bath`). The bath is consistent with
+    fluctuation-dissipation.
+- With $\tau=1\,\mu$s the whole body holds 37.743 bits about a 100 Hz force profile,
+    against 37.742 with white noise.
+- With $\tau=0.1$ ms and 1 ms, the mass information still grows by 2.25 per hertz
+    (@tbl-band). The band below 100 Hz changes little at 0.1 ms (204.8) and more at 1 ms
+    (312.7), where the bath's memory approaches the ground's relaxation time
+    $b_c/k_c=0.6$ ms.
+
+So the growth does not come from white noise. It comes from inertia, as
+@prp-inertia-band says, and any bath whose strength does not depend on the mass gives it.
 
 ## Numbers
 
 ```{python}
 #| label: fig-resolution
 #| fig-cap: |
-#|   Long-window Fisher information per second on the rigid leg, against the sampling rate.
-#|   The link's mass and the ground damping grow with the rate; the ground stiffness does not.
-#|   Dotted: the leading term $4\varepsilon^2 f_s$ of @prp-roughness for the mass.
+#|   Fisher information per second on the rigid leg from its joint angle, resolved up to each
+#|   band. The link's mass (with white noise, and with a bath of 1 ms memory) and the ground
+#|   damping grow with the band; the ground stiffness settles. Dotted: $4\varepsilon^2B$.
 from mibook import figures
 figures.fig_resolution();
 ```
 
-| sampling rate | mass, positions and velocities | after removing $4\varepsilon^2 f_s$ | mass, positions only (per sample) | ground damping (per sample) | ground stiffness |
+| band (Hz) | link mass | link mass, $\tau=0.1$ ms | link mass, $\tau=1$ ms | ground damping | ground stiffness |
 |--:|--:|--:|--:|--:|--:|
-| 2 kHz | 4,825 | 325 | 1.282 | 0.963 | 833.3 |
-| 4 kHz | 9,334 | 334 | 1.207 | 0.981 | 833.3 |
-| 8 kHz | 18,338 | 338 | 1.167 | 0.991 | 833.3 |
-| 16 kHz | 36,340 | 340 | 1.146 | 0.995 | 833.3 |
+| 100 | 205.3 | 204.8 | 312.7 | 63.1 | 708.5 |
+| 400 | 1,176.2 | 1,211.4 | 1,553.3 | 330.8 | 832.3 |
+| 1,600 | 3,926.0 | 4,023.9 | 4,340.2 | 1,526.4 | 833.1 |
+| 3,200 | 7,534.1 | 7,667.6 | 7,954.5 | 3,125.7 | 833.1 |
 
-: Long-window Fisher information on the rigid leg (`check_resolution`). Mass is the link's, $\varepsilon=0.75$. Per sample, the payload tends to $4\varepsilon^2=2.25$ with velocities observed and to $2\varepsilon^2=1.125$ with positions only; the damping tends to 1. {#tbl-resolution}
-
-- After the leading term is removed, what remains of the mass information settles near
-    340 per second, changing by 2 between 8 and 16 kHz. That remainder is the part that
-    comes from how the mass steers the motion.
-- With positions only, the information per sample falls toward $2\varepsilon^2$, half
-    the rate with velocities, as the sampling gets finer.
-- The ground damping's information per sample tends to 1, as @prp-roughness says.
-- The ground stiffness stays at 833.3 per second at every rate, the value of
-    @prp-stiffness-rate.
+: Fisher information per second on the rigid leg from its joint angle, sampled at 64 kHz and resolved up to each band (`check_band`). From 1,600 to 3,200 Hz the mass gains 2.26, 2.28 and 2.26 per hertz, against $4\varepsilon^2=2.25$; the damping gains 1.00 per hertz. {#tbl-band}
 
 ## What this changes
 
-For environmental inputs and for the ground's stiffness, the Langevin body gives finite
-answers with no added resolution. For properties that set how hard the thermal kicks are,
-masses and dampings, it does not: any answer depends on how finely the motion is resolved
-in time. That has to be settled before the thread reaches payloads, friction or the
-nonlinear bodies of thread T7.
+For environmental inputs and for the ground's stiffness, the book's answers are finite
+with no added choice: forces come with their own band, and stiffness information settles
+by itself. For masses and dampings they are not, and the cause is physical rather than a
+modelling shortcut: the faster the motion that is resolved, the more it says about inertia
+and about how hard the thermal force shakes the body.
 
-**A decision for the book.** Three ways to give finite answers:
-
-1. *State a time resolution as part of the question*, such as the book's 4 kHz or a
-    bandwidth, and report the information at that resolution. Simple, but the leading
-    term then depends on a choice.
-2. *Give the bath a finite correlation time*, so the thermal force is smooth at short
-    times (a generalized Langevin equation). Physically the most honest, and it adds a
-    new parameter.
-3. *Report only the remainder*, the information carried by how the property steers the
-    motion, and treat the roughness term as an artifact of white noise.
+**Proposal for the book.** Give information about masses and dampings for a stated band,
+the band of the question, as force profiles already are. The book's 100 Hz band is the
+natural default. A body that could follow its own motion at ever higher frequencies would
+learn its masses ever better; a lumped model is valid only below its first neglected mode,
+which bounds the band anyway.
 
 ## Limits of this note
 
-- Checked on the rigid leg, one coordinate. @prp-roughness is a proof sketch.
-- The remainder in option 3 is computed numerically here; no formula for it is derived.
+- Checked on the rigid leg, one coordinate. @prp-inertia-band is a proof sketch.
+- The bath has one memory time for every damper.
+- Fisher information is local, as in the stiffness note.
 
 ## Next steps
 
-- Decide among the three options above.
-- Then payload on the SEA and on the bodies of @sec-inside.
+- Settle the band rule, then payload on the SEA and on the bodies of @sec-inside.

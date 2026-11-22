@@ -157,13 +157,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   $\log k_c$ at $k_c/(2b_c)$ per second for every design (proof sketch, confirmed
   numerically). The SEA's rotor learns far less about stiffness than about force.
 - Done (2026-11-22, [research note](notes/2026-11-22-mass-and-resolution.qmd)): payload
-  mass. A velocity snapshot follows the same law with kinetic energy. Over time the
-  white-noise body reveals masses and dampings without limit: per sample the information
-  tends to $(\partial_\theta\log\kappa)^2$, with $\kappa$ the strength of the thermal
-  kicks on the velocity, so the rate grows with the sampling rate. Stiffness does not.
-- **Decision needed** before payloads, friction or T7: how to give finite answers for
-  properties that set the thermal kicks (a stated time resolution, a bath with a finite
-  correlation time, or reporting only the remainder). Options are in the note.
+  mass. A velocity snapshot follows the same law with kinetic energy. Over time,
+  information about masses and dampings grows with the band of motion resolved,
+  $(2\varepsilon)^2$ per hertz for the link mass and 1 per hertz for the ground damping;
+  stiffness settles. A thermal bath with finite memory (Maxwell elements, consistent with
+  fluctuation-dissipation, `mibook.bath`) gives the same growth, so the cause is inertia,
+  not white noise.
+- **Decision pending:** give information about masses and dampings for a stated band,
+  defaulting to the book's 100 Hz (proposed in the note).
 - Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
   whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
@@ -177,14 +178,17 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
-- **2026-11-22.** The white-noise Langevin body reveals masses and dampings without
-  limit as sampling gets finer: on the rigid leg the link mass's Fisher rate is
-  $4\varepsilon^2 f_s$ plus a remainder that settles near 340 per second
-  ($\varepsilon=0.75$), and the ground damping's is $f_s$ plus a constant. Ground stiffness
-  stays at 833 per second from 2 to 16 kHz. A velocity snapshot carries
-  $\frac12\varepsilon^2$ about the mass, with $\varepsilon$ the payload's kinetic-energy
-  share (`tests/test_parameters.py`;
+- **2026-11-22.** Information about masses and dampings grows with the band of motion
+  resolved, because inertia sets the motion above a body's modes: on the rigid leg the
+  link mass gains $(2\varepsilon)^2=2.25$ per second per hertz ($\varepsilon=0.75$) and the
+  ground damping 1 per hertz, with white noise or with a bath of 0.1 or 1 ms memory. The
+  0 to 100 Hz band holds 205 per second about the mass. Ground stiffness settles at 833
+  per second. A velocity snapshot carries $\frac12\varepsilon^2$ about the mass
+  (`tests/test_parameters.py`, `tests/test_bath.py`;
   [research note](notes/2026-11-22-mass-and-resolution.qmd)).
+- **2026-11-22.** Correction before release: the first draft of the mass note blamed white
+  thermal noise and proposed a bath with finite memory as the fix. Building that bath
+  showed the growth is unchanged, and the note now gives the inertia explanation.
 
 - **2026-11-22.** The body learns the ground's stiffness from its own thermal motion. A
   snapshot of a part carries Fisher information $\frac12\varepsilon^2$ about $\log k_c$

@@ -69,8 +69,8 @@ threads with concrete next steps, and research notes record progress on them.
     (@prp-snr(c)), so ranks should be reported alongside bits.
 6. *Two metrics, two questions.* $I(W;X)$ measures transmission and $\mathrm{MC}_W$
     measures retention (@prp-mcw), so the two should not be expected to agree.
-7. *White thermal noise.* The Langevin body's thermal force is white. Properties that
-    set how hard it shakes the velocities, masses and dampings, are then revealed without
-    limit as the motion is resolved more finely in time
-    ([research note](../notes/2026-11-22-mass-and-resolution.qmd)). Answers about them need
-    a stated time resolution or a bath with a finite correlation time.
+7. *Masses and dampings need a band.* Above a body's modes its motion is set by its
+    inertia and by how hard the thermal force shakes it. Information about masses and
+    dampings therefore grows with the band of motion resolved, whatever the thermal bath
+    ([research note](../notes/2026-11-22-mass-and-resolution.qmd)). Answers about them are
+    given for a stated band.
