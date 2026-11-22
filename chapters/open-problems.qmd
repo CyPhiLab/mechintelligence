@@ -56,6 +56,8 @@ threads with concrete next steps, and research notes record progress on them.
     SEA-rigid comparison (the analysis library shows this in
     `test_the_ground_decides_whether_series_compliance_helps_or_hurts`). That is
     physically right, since the ground does store energy, but any result should say so.
+    When the ground's stiffness is itself unknown, the body's thermal motion carries it
+    ([research note on ground stiffness](../notes/2026-11-22-ground-stiffness.qmd)).
 3. *Dissipation is not stored energy.* $D$ is absent from $\Em$, as it should be.
     Materials with internal variables, such as viscoelastic Maxwell elements, add states
     whose stored energy has to be defined first.

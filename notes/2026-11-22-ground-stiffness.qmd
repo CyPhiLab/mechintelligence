@@ -1,0 +1,208 @@
+# 2026-11-22: What the body knows about the stiffness of the ground {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_parameters.py`
+:::
+
+**Question.** The contact force and the ground's height are *inputs*: they push the body.
+The ground's stiffness is different. It is a property of the environment that changes the
+body's dynamics, and it sits inside the energy metric itself, since $K$ contains the ground
+spring (@sec-capture, and limitation 2 of @sec-limits). How much does the body hold about
+the stiffness of the ground it stands on, and where?
+
+**Short answer.** The body learns about the ground even when nothing pushes on it, from
+its own thermal jiggling, because how it jiggles depends on the ground.
+
+- *One snapshot.* A single snapshot of a part carries Fisher information $\frac12\varepsilon^2$
+    about $\log k_c$, where $\varepsilon$ is the share of the stored energy that sits in the
+    ground spring when the part is pushed. For the whole body, held to the world only by
+    the ground, $\varepsilon=1$.
+- *Over time.* The whole body learns $\log k_c$ at the rate $k_c/(2b_c)$ per second, half
+    the ground's corner frequency, whatever the design of the body. On the book's ground
+    that is 833 per second: after 85 ms the body knows the ground's stiffness to about 12%.
+- *Inside the body.* Stiffness reaches the rotor far less than force does: 0.02% of the
+    body's information at $k_s=70$, against 6% for force. The soft series spring dominates
+    the rotor's own jiggling, so a change in the ground barely changes it.
+- *With a push.* A known 100 N step at the foot adds about 100 times more information
+    than the thermal motion over the same window, bringing the stiffness to about 1%.
+
+The unknown sits in the metric, and that changes one thing in the framework: the thermal
+noise, a nuisance when the question is a force, is here the signal.
+
+## Setting
+
+The leg designs of the book, rigid and SEA, on the clamped bench, with the Langevin body's
+thermal noise at a fixed temperature $\sigma_T^2=10^{-4}$ J (@sec-langevin). The unknown is
+$\theta=\log k_c$ around the book's ground, $k_c=10^6$ N/m, with the ground damping held at
+$b_c=600$ N s/m. Nothing pushes on the body unless stated. A part is a set of the body's
+position coordinates; by @prp-share-basic(e), velocities add nothing.
+
+The measure is the Fisher information $I$ about $\theta$. Its inverse bounds how well
+$\theta$ can be estimated, so $1/\sqrt{1+I}$ is roughly the relative precision on $k_c$
+after the window, starting from a prior that knows $k_c$ to within a factor $e$. In bits,
+the Gaussian approximation $\frac12\log_2(1+I)$ applies to the same prior; it is an
+approximation and is labelled as one where used.
+
+## Results
+
+::: {#prp-snapshot name="One snapshot: the ground spring's share of the energy"}
+For a one-coordinate part $y=p^\top q$, one snapshot from the Gibbs law carries the Fisher
+information
+$$
+I_{\rm snap}=\tfrac12\,\varepsilon^2,\qquad
+\varepsilon=\frac{\text{energy in the ground spring}}{\text{total stored energy}}
+\quad\text{when the part is pushed statically.}
+$$
+For the positions of the whole body, $I_{\rm snap}=\frac12\varepsilon^2$ with the body pushed
+at the foot, and $\varepsilon=1$ when the body is held to the world only by the ground.
+:::
+
+::: {.proof}
+*Step 1: the snapshot.* By the Gibbs law the positions are Gaussian with covariance
+$\sigma_T^2K^{-1}$, so $y$ has variance $v=\sigma_T^2\,p^\top K^{-1}p$.
+
+*Step 2: the derivative.* The ground spring enters as $K=K_{\rm struct}+k_cJ^\top J$, so
+$\partial K/\partial\theta=k_cJ^\top J$. With $x=K^{-1}p$,
+$\partial v/\partial\theta=-\sigma_T^2\,p^\top K^{-1}(k_cJ^\top J)K^{-1}p=-\sigma_T^2k_c(Jx)^2$.
+
+*Step 3: Fisher information of a variance.* For $y\sim\mathcal N(0,v(\theta))$ the Fisher
+information is $\frac12(v'/v)^2$. Here $v'/v=-k_c(Jx)^2/(p^\top x)$.
+
+*Step 4: energies.* $x$ is the static deflection under a unit push at the part, since
+$Kx=p$. The total stored energy is $\frac12x^\top Kx=\frac12p^\top x$, and the ground spring
+stores $\frac12k_c(Jx)^2$. So $v'/v=-\varepsilon$.
+
+*The whole body.* The positions have covariance $\Sigma=\sigma_T^2K^{-1}$, and the Fisher
+information is $\frac12\operatorname{tr}\big((\Sigma^{-1}\Sigma')^2\big)
+=\frac12\operatorname{tr}\big((K^{-1}k_cJ^\top J)^2\big)=\frac12(k_cJK^{-1}J^\top)^2$, because
+$J^\top J$ has rank one. Pushing at the foot gives $x=K^{-1}J^\top$, and the same energy
+count gives $\varepsilon=k_cJK^{-1}J^\top$. If the body is held only by the ground, a static
+push at the foot moves the rest of the body with the foot and stretches no internal spring,
+so $\varepsilon=1$.
+:::
+
+The energy metric shows up on its own here. For the SEA, pushing the link stretches only
+the ground spring (the rotor is free), so the link has $\varepsilon=1$. Pushing the rotor
+stretches the series spring and the ground spring in series, so
+$\varepsilon_{\rm rotor}=k_s/(k_s+k_cr^2)$: 0.007 at $k_s=70$, 0.091 at $10^3$ and 0.5 at
+$10^4$. A soft series spring takes almost all the energy, and with it almost all of the
+rotor's thermal variance, so the rotor's jiggling hardly depends on the ground. The law
+matches the numerical snapshot information to $10^{-6}$ for every design and part
+(`check_snapshot_law`).
+
+::: {#prp-stiffness-rate name="The whole body learns the ground at half its corner frequency"}
+With the whole state observed, the body accumulates Fisher information about $\log k_c$
+at the rate
+$$
+\dot I=\varepsilon\,\frac{k_c}{2b_c}\quad\text{per second},
+$$
+with $\varepsilon=k_cJK^{-1}J^\top$ as in @prp-snapshot. For a body held only by the ground
+this is $k_c/(2b_c)$, whatever its design.
+:::
+
+::: {.proof name="Proof sketch"}
+*Step 1: a change in stiffness acts like a contact force.* Changing $\theta$ by $d\theta$
+changes the ground spring's force by $-k_c(Jq)\,d\theta$. It enters through $J^\top$, like a
+contact force whose size is set by the foot's own displacement $Jq$.
+
+*Step 2: Fisher information of a drift.* In continuous time, with the whole state
+observed and noise $G\,dW$ that does not depend on $\theta$, the Fisher information rate
+about a parameter of the drift is $\E\big[(\partial f)^\top(GG^\top)^+(\partial f)\big]$
+(Girsanov's theorem). Here $\partial f=[0;\,-H^{-1}k_cJ^\top Jq]$ and
+$GG^\top=\diag(0,\,2\sigma_T^2H^{-1}DH^{-1})$, so, with the same algebra as in
+@prp-contact, the rate is $k_c^2\,\E[(Jq)^2]\,JD^{-1}J^\top/(2\sigma_T^2)$.
+
+*Step 3: the two factors.* $JD^{-1}J^\top=1/b_c$ (@thm-whole-two with one contact), and by
+the Gibbs law $\E[(Jq)^2]=\sigma_T^2JK^{-1}J^\top=\sigma_T^2\varepsilon/k_c$. The product is
+$\varepsilon k_c/(2b_c)$.
+
+*What is not proved here.* As for @prp-contact, the discrete-time terms (the dependence of
+the sampled noise covariance on $\theta$) and the window's start are not treated. The
+numbers below confirm the rate.
+:::
+
+$k_c/b_c$ is the corner frequency of the ground's spring and damper, the inverse of their
+relaxation time. Roughly, the body gets a fresh independent look at the ground every
+$2b_c/k_c$ seconds. On the book's ground the rate is 833 per second. The long-window
+(Whittle) Fisher rate of the sampled process matches $k_c/(2b_c)$ to $10^{-4}$ for four
+values of $b_c$ from 300 to 2400 N s/m, and is the same for the rigid leg and the SEAs at
+$k_s=70$, $10^3$ and $10^4$ (`check_rate_law`). Over finite windows of 85, 170 and 340 ms
+the rigid leg holds 71.21, 142.05 and 283.71: the information grows at 833.3 per second, plus
+a constant of 0.17 (`check_window`).
+
+::: {#rem-parameter-parts name="Why a part learns less about a parameter than about a force"}
+By Step 1 above, information about $\theta$ is information about an extra contact force
+$-k_c(Jq)\,d\theta$. The whole body observes $Jq$, so it knows the size of that force up
+to the factor $d\theta$, and learns at the rate of @prp-stiffness-rate. A part that does not
+see the foot has to infer $\theta$ from how its own fluctuations change, and if its
+fluctuations are dominated by something else, such as a soft series spring, they change
+very little. This is the dynamic version of @prp-snapshot. A force, in contrast, adds to
+the part's motion whatever that motion is doing. Checked here only on the SEA; the
+frequency content of the information is not the explanation, since 85% of the whole body's
+information about $\theta$ lies below 100 Hz.
+:::
+
+## Numbers
+
+```{python}
+#| label: fig-ground-stiffness
+#| fig-cap: |
+#|   (a) Fisher information about $\log k_c$ held by the whole body, the link and the rotor
+#|   over an 85 ms window of thermal motion, against the series stiffness. (b) The rotor's
+#|   share of the body's information about the ground's stiffness and about the contact force.
+from mibook import figures
+figures.fig_ground_stiffness();
+```
+
+| $k_s$ (N m/rad) | whole body | link | rotor | rotor share, stiffness | rotor share, force |
+|--:|--:|--:|--:|--:|--:|
+| 70 | 71.21 | 68.73 | 0.014 | 0.0002 | 0.060 |
+| 300 | 71.21 | 64.60 | 0.263 | 0.004 | 0.210 |
+| $10^3$ | 71.21 | 54.25 | 3.35 | 0.047 | 0.494 |
+| $3\times10^3$ | 71.21 | 48.83 | 18.50 | 0.260 | 0.770 |
+| $10^4$ | 71.21 | 64.03 | 48.07 | 0.675 | 0.930 |
+| $10^5$ | 71.21 | 70.31 | 68.28 | 0.959 | 0.988 |
+| $10^6$ | 71.20 | 70.98 | 70.59 | 0.992 | 0.995 |
+
+: Fisher information about $\log k_c$ in 85 ms of thermal motion, for the whole body, the link and the rotor of the SEA (positions), and the rotor's share next to its share of force information (`check_parts`). The rigid leg holds 71.21. {#tbl-ground-stiffness}
+
+- *Every design holds the same.* The whole body holds 71.21 in every design, as
+    @prp-stiffness-rate says. In the Gaussian approximation that is 3.1 bits, or the
+    stiffness known to about $1/\sqrt{72}\approx12\%$.
+- *The link holds most of it, the rotor holds it only when the spring is stiff.* The
+    rotor's share climbs from 0.0002 at $k_s=70$ to 0.99 at $10^6$, always below its
+    share of force information.
+- *A known push dominates.* A 100 N step at the foot adds Fisher information through the
+    mean response: 7,281 on the rigid leg and 7,168 to 7,281 on the SEAs, about 100 times
+    the thermal 71. Together they give $1/\sqrt{7350}\approx1.2\%$. The rotor of the soft
+    SEA still gets little, 17 at $k_s=70$.
+- *The numerics are stable.* Central differences with steps $10^{-3}$ and $3\times10^{-3}$
+    agree to $10^{-4}$, and the rotor values do not change when the conditioning jitter
+    goes from $10^{-9}$ to $10^{-8}$.
+
+## What this changes
+
+Two kinds of environmental quantity now sit side by side. An input, like a force or the
+ground's height, adds to the body's motion, and internal dampers erode it on the way to a
+part (@sec-inside). A parameter, like the ground's stiffness, changes how the body moves,
+including how it jiggles on its own, so the thermal noise carries it. The whole body still
+learns it at a rate set only by the contact, but parts learn it in proportion to how much
+of their own motion the ground controls, which the energy share $\varepsilon$ measures.
+Because the stiffness sits in the energy metric, the metric is no longer fixed in advance:
+here the temperature sets the noise, and the metric is part of what the body learns.
+
+## Limits of this note
+
+- The contact is always engaged and linear; the ground damping is held fixed while the
+    stiffness varies.
+- Fisher information is a local measure: it describes how well $\log k_c$ is known near
+    its true value. The bits quoted use a Gaussian approximation.
+- @prp-stiffness-rate is a proof sketch, confirmed numerically, with the same gap as
+    @prp-contact.
+- The comparison of parts is on the SEA only.
+
+## Next steps
+
+- Payload mass, which enters $H$ rather than $K$, and so the kinetic part of the metric.
+- Whether the energy share $\varepsilon$ predicts what parts of chains and trees hold about
+    the ground, as the push-on-the-part rule does for forces.

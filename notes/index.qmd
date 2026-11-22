@@ -5,6 +5,7 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-22 | [What the body knows about the stiffness of the ground](2026-11-22-ground-stiffness.qmd) | exploratory | not yet |
 | 2026-11-21 | [What the body knows about the height of the ground](2026-11-21-terrain.qmd) | promoted | @sec-terrain |
 | 2026-11-21 | [Two feet on the ground](2026-11-21-two-contacts.qmd) | promoted | @sec-two-feet |
 | 2026-11-21 | [Parts with several coordinates, and branching bodies](2026-11-21-branching.qmd) | promoted | @sec-push, @sec-chains |

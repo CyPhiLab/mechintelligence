@@ -150,8 +150,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   Stiffer ground helps for height and not for force; damping always hurts for force and
   hurts for height only up to $b_c=k_c/\omega$.
 - Folded into @sec-terrain.
-- Next step: ground stiffness as an unknown parameter of the dynamics, including what the
-  body's thermal motion alone reveals about it.
+- Done (2026-11-22, [research note](notes/2026-11-22-ground-stiffness.qmd)): ground
+  stiffness as an unknown parameter. One thermal snapshot of a part carries Fisher
+  information $\frac12\varepsilon^2$ about $\log k_c$, with $\varepsilon$ the ground
+  spring's share of the stored energy when the part is pushed. The whole body learns
+  $\log k_c$ at $k_c/(2b_c)$ per second for every design (proof sketch, confirmed
+  numerically). The SEA's rotor learns far less about stiffness than about force.
+- Next step: payload mass, which enters $H$, and whether $\varepsilon$ predicts what parts
+  of chains and trees hold about the ground.
 
 **T10. Literature.** *Queued.*
 
@@ -162,6 +168,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** The body learns the ground's stiffness from its own thermal motion. A
+  snapshot of a part carries Fisher information $\frac12\varepsilon^2$ about $\log k_c$
+  ($\varepsilon$: the ground spring's energy share under a push at the part); the whole
+  body learns at $k_c/(2b_c)=833$ per second in every design (71.2 in 85 ms, the
+  stiffness to about 12%). The SEA's rotor holds 0.02% of that at $k_s=70$, against 6% of
+  the force information (`tests/test_parameters.py`;
+  [research note](notes/2026-11-22-ground-stiffness.qmd)).
 
 - **2026-11-21.** Terrain height reaches the body as the force $k_cz+b_c\dot z$. Every
   design holds 38.21 bits about it, and each part's share matches its share of force

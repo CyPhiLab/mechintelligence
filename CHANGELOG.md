@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T11): what the body knows about the stiffness of the ground.
+  Its thermal motion carries it; the whole body learns it at half the ground's corner
+  frequency in every design, and a part in proportion to the ground spring's share of
+  its stored energy.
 - The live book now changes only through reviewed releases: work goes to a `drafts`
   branch that tests and renders without deploying, and a release is a pull request to
   `main` with a quality-control checklist. Roadmap thread T7 now covers nonlinear bodies

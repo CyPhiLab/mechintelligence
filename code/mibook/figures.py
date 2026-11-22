@@ -363,10 +363,37 @@ def fig_terrain():
     return _save(fig, "terrain")
 
 
+def fig_ground_stiffness():
+    """Fisher information about log k_c by part, and the rotor's share next to force."""
+    from mibook import parameters as pm
+    r = pm.check_parts()
+    ks = np.array([k for k in r if k != "rigid"])
+    get = lambda key: np.array([r[k][key] for k in ks])
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    a.loglog(ks, get("whole"), color=INK2, ls="-.", label="whole body")
+    a.loglog(ks, get("link"), color=C3, marker="s", markersize=3, label="link")
+    a.loglog(ks, get("rotor"), color=C1, marker="o", markersize=3, label="rotor")
+    a.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
+    a.set_ylabel(r"Fisher information about $\log k_c$")
+    a.set_title("(a) thermal motion, 85 ms", loc="left")
+    a.legend(loc="lower right", fontsize=7)
+    b.semilogx(ks, get("rotor_share"), color=C1, marker="o", markersize=3,
+               label="ground stiffness")
+    b.semilogx(ks, get("rotor_force_share"), color=C2, marker="D", markersize=3,
+               label="contact force")
+    b.set_ylim(0, 1.05)
+    b.set_xlabel(r"series stiffness $k_s$ (N m/rad)")
+    b.set_ylabel("rotor / whole body")
+    b.set_title("(b) share held by the rotor", loc="left")
+    b.legend(loc="lower right", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "ground_stiffness")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness):
         f()
