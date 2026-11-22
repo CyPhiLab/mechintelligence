@@ -409,10 +409,42 @@ def fig_resolution():
     return _save(fig, "resolution")
 
 
+def fig_bistable():
+    """How long a bit lasts: a bistable element against a harmonic one."""
+    from mibook import bistable as bs
+    g = bs.GAMMA
+    t = np.geomspace(0.05, 2e4, 300)
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    for beta, col in ((4.0, C2), (6.0, C4), (8.0, C1)):
+        a.semilogx(t, bs.bit_information(t, bs.kramers_rate(beta, g)), color=col,
+                   label=rf"bistable, $\Delta E={beta:g}\,\sigma_T^2$")
+        a.semilogx(t, bs.linear_information(t, g, beta), color=col, ls="--", lw=0.9)
+    a.set_ylim(0, 1.05)
+    a.set_xlabel(r"time ($\sqrt{m a^2/\sigma_T^2}$)")
+    a.set_ylabel("bits about the push")
+    a.set_title("(a) solid: bistable; dashed: harmonic", loc="left")
+    a.legend(loc="lower left", fontsize=6.5)
+    r = bs.check_lifetimes()
+    b.semilogy(r["betas"], r["bistable"], color=C1, marker="o", markersize=3, label="bistable")
+    b.semilogy(r["betas"], r["linear"], color=C3, marker="s", markersize=3, label="harmonic")
+    k = bs.check_kramers()
+    from scipy.optimize import brentq
+    p = brentq(lambda q: bs.binary_entropy(q) - 0.5, 1e-6, 0.5 - 1e-9)
+    sim = {beta: -np.log(1 - 2 * p) / (2 * v["simulated"]) for beta, v in k.items()}
+    b.semilogy(list(sim), list(sim.values()), ls="none", marker="x", color=INK2,
+               label="bistable, simulated")
+    b.set_xlabel(r"barrier $\Delta E/\sigma_T^2$")
+    b.set_ylabel("half-life of the bit")
+    b.set_title("(b) time to fall to half a bit", loc="left")
+    b.legend(loc="upper left", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "bistable")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable):
         f()

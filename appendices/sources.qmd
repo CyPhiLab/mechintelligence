@@ -36,3 +36,4 @@ text. This table is updated as sources are read in full (thread T10 of the
 | @duncan1970calculation | secondary | mutual information for signals in white Gaussian noise |
 | @whittle1953analysis | secondary | the large-window Fisher information of a stationary Gaussian process from its spectrum |
 | @ibragimov1978gaussian | secondary | equivalence and singularity of Gaussian processes with rational spectra on a finite interval |
+| @kramers1940brownian; @hanggi1990reaction | secondary | the escape rate over a barrier at moderate to strong damping, and its accuracy |

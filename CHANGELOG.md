@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T7, nonlinear bodies): a mechanical bit. A barrier keeps a
+  record of an event exponentially longer than a linear body can, and a window of history
+  holds what its first state holds about the past.
 - New research note (thread T11): what a part's history can say without limit. One
   coefficient of the part's high-frequency motion decides whether its information about
   a property of the environment is finite; a part learns without limit only about its

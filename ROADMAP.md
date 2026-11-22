@@ -110,7 +110,7 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Options: keep velocities only; regularize with $\omega_{\rm ref}^2H$ and sweep
   $\omega_{\rm ref}$; use gravity and contact stiffness at the operating point.
 
-**T7. Nonlinear bodies.** *Queued.*
+**T7. Nonlinear bodies.** *Active.*
 
 - Question: what carries over when the body is nonlinear? Everything so far is linear,
   and the energy metric is a fixed quadratic form.
@@ -121,9 +121,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   non-quadratic potential, so noise is no longer Gaussian; the energy metric becomes
   local, along a trajectory (@rem-scope); and information has to be estimated without
   the Gaussian formulas, for example by simulation with a neural estimator (as in T5).
-- First steps, when the thread starts: a bistable element with an energy barrier (bits
-  stored against barrier height and noise energy), and a stiffening ground spring, to
-  see how far the linear results of @sec-inside hold.
+- Done (2026-11-22, [research note](notes/2026-11-22-mechanical-bit.qmd)): a bistable
+  element keeps a bit written by the environment for a time growing like
+  $e^{\Delta E/\sigma_T^2}$ (Kramers; simulated rates 7% to 15% below the formula), while a
+  harmonic element forgets the same push in a few relaxation times. For a Markov body, a
+  window of history holds exactly what its first state holds about a past event.
+- Next steps: writing the bit (the smallest push, and its energy cost); a bistable element
+  inside a body, and what the rest of the body holds about it; a stiffening ground
+  spring.
 
 **T8. Latency.** *Queued.*
 
@@ -189,6 +194,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** A mechanical bit: from a barrier of 2 to 10 $\sigma_T^2$ the half-life of
+  a bit in a bistable element grows 1,100-fold, while the same push in a harmonic element
+  is forgotten after 1.3 to 2.2 time units. A window of a Markov body's history holds
+  exactly what its first state holds about a past event (checked to $10^{-9}$ on the rigid
+  leg) (`tests/test_bistable.py`; [research note](notes/2026-11-22-mechanical-bit.qmd)).
 
 - **2026-11-22.** A part's history holds a finite amount per second about a property
   exactly when the property leaves the part's leading high-frequency coefficient

@@ -1,0 +1,191 @@
+# 2026-11-22: A mechanical bit {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T7 · **Checked by:** `tests/test_bistable.py`
+:::
+
+**Question.** Everything in the book so far is linear. Computation needs memory: a body
+has to keep a record of something the environment did, long after it happened. How long
+can a body hold a record of a single event, such as whether it was pushed, against its own
+thermal noise? And what does a stretch of the body's history hold about that event?
+
+**Short answer.**
+
+- *A linear body forgets on its relaxation time.* A push leaves the body displaced, the
+    displacement relaxes, and the record is gone after a few relaxation times. A larger
+    push only buys time logarithmically.
+- *A barrier keeps the record exponentially longer.* An element with two wells keeps
+    which well it is in until thermal noise carries it over the barrier, which takes a
+    time that grows like $e^{\Delta E/\sigma_T^2}$. With the barrier at 10 times the thermal
+    energy, the bit lasts about 1,000 times longer than the same push in a harmonic
+    element.
+- *History and state agree.* For a body whose future depends only on its present state, a
+    window of its history holds exactly what the state at the start of the window holds
+    about a past event. The information can only fall as the window moves later. So the
+    history view of the book and the idea of memory fit together: memory is the state
+    carrying the past forward.
+
+## Setting
+
+One coordinate $x$ of mass $m$ in the double well
+$$
+V(x)=\Delta E\big((x/a)^2-1\big)^2 ,
+$$
+with wells at $x=\pm a$ and a barrier $\Delta E$ at $x=0$, damping rate $\gamma=b/m$, and the
+Langevin body's thermal force, so that the Gibbs law is $\propto\exp\!\big(-(V+\tfrac12m\dot x^2)/\sigma_T^2\big)$
+(@sec-langevin). Lengths are in $a$, energies in $\sigma_T^2$ and times in
+$\sqrt{ma^2/\sigma_T^2}$; the barrier is $\beta=\Delta E/\sigma_T^2$ and $\gamma=2$. Near a
+well the energy metric is the local quadratic one, with stiffness $V''(\pm a)=8\Delta E/a^2$.
+
+The environment writes one bit $E$: at $t=0$ it either pushed the element into the right
+well or did not, with equal odds. The write is taken to be perfect. The comparison is a
+harmonic element with the stiffness of one well, $k=8\Delta E/a^2$, and the same damping,
+pushed by the same displacement $2a$.
+
+## Results
+
+::: {#prp-bit-decay name="How a bit in a well decays"}
+Treat the well, left or right, as a two-state record that flips at rate $r$ in each
+direction. After a time $t$ it holds
+$$
+I(t)=1-h\Big(\tfrac12\big(1-e^{-2rt}\big)\Big)\ \text{bits}
+$$
+about the written bit, where $h$ is the binary entropy. It falls to half a bit at
+$t_{1/2}=0.124/r$.
+:::
+
+::: {.proof}
+For a two-state chain that flips at rate $r$ each way, the probability of being in the
+other state after time $t$ is $p(t)=\frac12(1-e^{-2rt})$: the difference of the two
+occupation probabilities decays at rate $2r$. The record is the written bit passed through
+a binary symmetric channel with crossover $p(t)$, which carries $1-h(p)$ bits. Half a bit
+is reached at $h(p)=\frac12$, so $p=0.110$ and $t_{1/2}=-\log(1-2p)/(2r)=0.124/r$.
+:::
+
+The two-state picture holds when flips are rare compared with the motion inside a well,
+which is true for barriers of a few $\sigma_T^2$ and more. The well is a coarse record:
+the full state $(x,\dot x)$ can hold slightly more, mainly during a crossing, so $I(t)$ is a
+lower bound on what the state holds.
+
+For the flip rate, Kramers' formula for moderate to strong damping
+[@kramers1940brownian; @hanggi1990reaction] gives
+$$
+r=\frac{\omega_0}{2\pi\omega_b}\Big(\sqrt{\gamma^2/4+\omega_b^2}-\gamma/2\Big)e^{-\Delta E/\sigma_T^2},
+\qquad\omega_0^2=\frac{8\Delta E}{ma^2},\ \ \omega_b^2=\frac{4\Delta E}{ma^2}.
+$$
+It is an approximation that becomes exact as the barrier grows. Simulations of 4,000
+elements, started in the right well and integrated with a standard Langevin scheme
+(BAOAB), give rates 7% to 15% below the formula for barriers of 3 to 8 $\sigma_T^2$
+(@tbl-kramers).
+
+::: {#prp-linear-forgets name="A linear element forgets on its relaxation time"}
+For the harmonic element, the push is recorded by the shift $\mu(t)$ of the state's mean,
+measured against the Gibbs covariance as the separation $d(t)$. The record holds
+$$
+I(t)=1-\E\big[\log_2(1+e^{-L})\big],\qquad L\sim\mathcal N\big(d^2/2,\;d^2\big),
+$$
+bits, which depends only on $d(t)$. The separation decays with the element's relaxation,
+so the time to fall to half a bit grows only like the logarithm of the initial separation.
+:::
+
+::: {.proof name="Proof sketch"}
+With and without the push, the state at time $t$ is Gaussian with the same covariance (the
+Gibbs law) and means that differ by $\mu(t)=e^{At}(2a,0)^\top$. For two equally likely
+Gaussians with a common covariance, the log-likelihood ratio $L$ is Gaussian with mean
+$d^2/2$ and variance $d^2$ under the hypothesis that holds, with $d^2=\mu^\top\Sigma^{-1}\mu$, and
+the information is $1-\E[\log_2(1+e^{-L})]$. The mean decays with envelope $e^{-\gamma t/2}$,
+so $d(t)\approx d(0)e^{-\gamma t/2}$, and $d$ reaches the value that gives half a bit after a
+time $\frac2\gamma\log\big(d(0)/d_{1/2}\big)$. Here $d(0)=\sqrt{32\beta}$ grows only like
+$\sqrt\beta$. The element oscillates, so $I(t)$ wiggles as it falls; the half-life is taken
+at the first time it reaches half a bit.
+:::
+
+::: {#prp-markov-window name="A window of history holds what its first state holds"}
+Let the body's state $X_t$ (positions and velocities) be a Markov process, and let an event
+$E$ happen at time 0. For any $0<s<t$, the history on $[s,t]$ holds
+$$
+I\big(E;\,X_{[s,t]}\big)=I(E;\,X_s),
+$$
+and $I(E;X_s)$ cannot increase with $s$.
+:::
+
+::: {.proof}
+The window contains $X_s$, so by the chain rule
+$I(E;X_{[s,t]})=I(E;X_s)+I(E;X_{(s,t]}\mid X_s)$. Given $X_s$, the later states do not
+depend on anything before $s$, the event included (Markov property), so the second term is
+zero. For $s<s'$ the chain $E\to X_s\to X_{s'}$ and data processing give
+$I(E;X_{s'})\le I(E;X_s)$.
+:::
+
+On the rigid leg, with a force impulse of Gaussian amplitude at $t=0$, a 20 ms window of
+the whole state holds 0.5146, 0.2368 and 0.0148 bits when it starts 2, 10 and 30 ms after
+the impulse. The state at the start of each window holds the same, to $10^{-9}$
+(`check_window`). The proposition needs the whole state. If only some coordinates are
+observed, or the thermal bath has its own hidden state, as in the bath with memory of the
+mass note, a window can hold more than the observed coordinates at its start.
+
+## Numbers
+
+```{python}
+#| label: fig-bistable
+#| fig-cap: |
+#|   (a) Bits held about the push by the bistable element (solid, the well as the record,
+#|   with Kramers' rate) and by the harmonic element with the stiffness of one well (dashed),
+#|   for barriers of 4, 6 and 8 $\sigma_T^2$. (b) Time for the record to fall to half a bit,
+#|   against the barrier. Crosses: from the simulated flip rates.
+from mibook import figures
+figures.fig_bistable();
+```
+
+| barrier $\Delta E/\sigma_T^2$ | Kramers rate | simulated rate | simulated / Kramers |
+|--:|--:|--:|--:|
+| 3 | $2.92\times10^{-2}$ | $2.47\times10^{-2}$ | 0.845 |
+| 4 | $1.29\times10^{-2}$ | $1.12\times10^{-2}$ | 0.873 |
+| 5 | $5.43\times10^{-3}$ | $4.64\times10^{-3}$ | 0.854 |
+| 6 | $2.23\times10^{-3}$ | $2.08\times10^{-3}$ | 0.933 |
+| 8 | $3.58\times10^{-4}$ | $3.24\times10^{-4}$ | 0.904 |
+
+: Flip rate of the bistable element, $\gamma=2$, in units of $\sqrt{\sigma_T^2/(ma^2)}$; 4,000 elements per barrier (`check_kramers`). {#tbl-kramers}
+
+| barrier $\Delta E/\sigma_T^2$ | 2 | 3 | 4 | 5 | 6 | 8 | 10 |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| bistable | 2.04 | 4.26 | 9.65 | 22.9 | 55.7 | 347 | 2,251 |
+| harmonic | 1.32 | 1.62 | 1.80 | 1.81 | 1.99 | 2.12 | 2.23 |
+
+: Half-life of the record, in units of $\sqrt{ma^2/\sigma_T^2}$ (`check_lifetimes`). The bistable half-life uses Kramers' rate. {#tbl-half-life}
+
+- From a barrier of 2 to 10 $\sigma_T^2$, the bistable record's half-life grows by a factor
+    of 1,100, close to $e^8\approx3{,}000$ divided by the slow change of Kramers'
+    prefactor. The harmonic record's grows by 1.7.
+- At a barrier of 10 $\sigma_T^2$ the bistable record lasts 1,000 times longer than the
+    harmonic one.
+- The simulated half-lives (crosses in @fig-bistable(b)) sit 7% to 18% above the curve,
+    because the simulated rates are slower than Kramers' formula.
+
+## What this changes
+
+A passive linear body cannot keep a record of an event for longer than a few of its
+relaxation times, whatever its design; the information in its state decays with its slowest
+mode. A barrier changes that: the bit survives for a time exponential in the barrier over
+the thermal energy. This is the first place in the book where the body does something a
+linear body cannot, and it is the basic ingredient of memory, and so of computation. By
+@prp-markov-window, the history view and memory are consistent: what any later stretch of
+the body's history holds about the event is what the state carries forward.
+
+## Limits of this note
+
+- One coordinate, a symmetric double well, and a perfect write. How large a push writes
+    the bit reliably, and what writing and erasing cost in energy (Landauer's bound
+    [@landauer1961irreversibility]), are not treated.
+- The well is used as the record, a lower bound on what the full state holds.
+- Kramers' rate is an approximation; the simulated rates are the reference.
+- The noise is non-Gaussian in the double well, so the Gaussian formulas of the earlier
+    notes do not apply; the information here comes from the two-state record.
+
+## Next steps
+
+- Writing: the smallest push, or force profile, that writes the bit with a given
+    reliability, and the energy it dissipates.
+- A bistable element inside a body, for example in series with the SEA's spring: what
+    the rest of the body holds about the bit, using the propagation results of @sec-inside.
+- A stiffening ground spring, the other first step of T7.
