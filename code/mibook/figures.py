@@ -470,10 +470,44 @@ def fig_write():
     return _save(fig, "write")
 
 
+def fig_bitbody():
+    """What the rest of the body reads about a stored bit."""
+    from mibook import bitbody as bb
+    r = bb.check_reading(windows=(0.0, 0.001, 0.002, 0.005, 0.01, 0.015, 0.02))
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    styles = {("latch", "link"): (C1, "-", "latch: link"), ("latch", "rotor"): (C1, ":", "latch: rotor"),
+              ("series", "link"): (C3, "-", "series: link"), ("series", "rotor"): (C3, ":", "series: rotor")}
+    for key, (col, ls, lab) in styles.items():
+        v = r[key]
+        a.plot(1e3 * v["windows"], v["bits"], color=col, ls=ls, marker="o", markersize=3, label=lab)
+    a.set_ylim(-0.03, 1.05)
+    a.set_xlabel("window of history (ms)")
+    a.set_ylabel("bits about the stored bit")
+    a.set_title("(a) reading the bit", loc="left")
+    a.legend(loc="center right", fontsize=7)
+    up, su = bb.simulate_window_means("latch", "link", +1, 0.002, n=2000, seed=0)
+    dn, sd = bb.simulate_window_means("latch", "link", -1, 0.002, n=2000, seed=1)
+    shift = bb.static_reading("latch", "link")["shift"]
+    sdev = np.sqrt(bb.window_mean_variance("latch", "link", 0.002))
+    bins = np.linspace(-0.5 * shift - 5 * sdev, 0.5 * shift + 5 * sdev, 50)
+    b.hist(1e3 * up[su], bins=1e3 * bins, density=True, color=C1, alpha=0.5, label="bit = 1")
+    b.hist(1e3 * dn[sd], bins=1e3 * bins, density=True, color=C3, alpha=0.5, label="bit = 0")
+    xs = np.linspace(bins[0], bins[-1], 400)
+    for m, col in ((0.5 * shift, C1), (-0.5 * shift, C3)):
+        g = np.exp(-(xs - m) ** 2 / (2 * sdev ** 2)) / np.sqrt(2 * np.pi) / sdev / 1e3
+        b.plot(1e3 * xs, g, color=col, lw=1.0)
+    b.set_xlabel(r"link angle averaged over 2 ms ($10^{-3}$ rad)")
+    b.set_ylabel("density")
+    b.set_title("(b) latch: the link's view, simulated", loc="left")
+    b.legend(loc="upper right", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "bitbody")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write, fig_bitbody):
         f()

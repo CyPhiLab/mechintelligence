@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T7): a mechanical bit inside a body. A part reads a stored
+  bit only if the element is in its load path, and the push-back that makes it readable
+  also lowers its barrier.
 - New research note (thread T7): writing a mechanical bit. A steady push beyond a
   critical force writes reliably; a sharp kick bounces back. The bit note now says what
   the wells are physically.

@@ -130,9 +130,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   bit. A sharp kick bounces back and records at most 0.72 bits (barrier $8\sigma_T^2$); a
   steady push beyond the critical force $8\Delta E/(3\sqrt3a)$ records 0.93 to 0.96 bits at
   3.6 to 4.3 barriers of work, so the cost grows with the log of the bit's lifetime.
-- Next steps: a bistable element inside a body, and what the rest of the body holds about
-  it; erasure and the write-read-erase cycle against Landauer's bound; a stiffening ground
-  spring.
+- Done (2026-11-22, [research note](notes/2026-11-22-bit-in-a-body.qmd)): a bit inside
+  a body. The bit shifts the body's static shape; a part reads it only if the element sits
+  in its load path (on the SEA, a bistable series element is invisible to the link); the
+  body's push-back $k_{\rm eff}$ makes the bit readable and lowers its barrier by
+  $(1-2k_{\rm eff}/k_w)^2$; reading a small shift takes a window, at the zero-frequency
+  push-on-the-part rate.
+- Next steps: erasure and the write-read-erase cycle against Landauer's bound; a part
+  watching a bit being written; a stiffening ground spring.
 
 **T8. Latency.** *Queued.*
 
@@ -198,6 +203,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** A bit inside a body: a part reads it only through a load path. A
+  bistable series element on the SEA moves the rotor by its full stroke and the link by
+  exactly zero; a bistable motor latch is read by the link at 0.38 bits from a snapshot
+  and 0.98 bits from 10 ms, and needs a barrier of 12 thermal energies to keep 8 inside the
+  body. A nonlinear simulation matches the link's predicted shift to 3% and spread to 1%
+  (`tests/test_bitbody.py`; [research note](notes/2026-11-22-bit-in-a-body.qmd)).
 
 - **2026-11-22.** Writing a mechanical bit: a steady push at 1.1 to 1.3 times the critical
   force writes 98.5% to 99.4% of the time (0.93 to 0.96 bits) for 3.6 to 4.3 barriers of
