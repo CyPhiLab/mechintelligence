@@ -169,8 +169,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   about a property is finite exactly when it leaves $c$ unchanged, and otherwise grows by
   $(\partial_\theta\log c)^2$ per hertz. A part learns without limit only about what it
   touches: its own mass and the dampers attached to it.
-- **Decision pending:** state a band (default 100 Hz) for the masses and dampers a part
-  touches, and for every mass and damping question about the whole body.
+- Decided (2026-11-22): answers about the masses and dampers a part touches, and every
+  mass or damping question about the whole body, are given for a stated band, 100 Hz by
+  default.
+- To settle before these notes go into a chapter, since the reviewer is not yet
+  convinced: confirm Whittle (1953) and Ibragimov and Rozanov (1978) against the sources;
+  check the finite-window version directly (exact Gaussian Fisher information over longer
+  windows, not only Whittle's formula); check the several-coordinate form and a chain;
+  and ask whether a part's own mass and dampers belong to "the environment" at all.
 - Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
   whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
@@ -318,6 +324,10 @@ written up.
 - **2026-11-22.** The book keeps the history view: what a part holds is what its whole
   trajectory holds, because computation over time will need it. Defining "holding" by the
   instantaneous state was considered and set aside.
+
+- **2026-11-22.** Masses and dampings are reported for a stated band, 100 Hz by default,
+  where the criterion of the finite-answers note says a band is needed. Accepted with
+  reservations; the checks listed under T11 come first.
 
 ## Paper candidates
 
