@@ -1,8 +1,11 @@
 name: Publish
 
+# main is the live book and deploys. drafts holds work in progress: pushes there run the
+# tests and the render (the rendered site is kept as a downloadable artifact) but never
+# deploy. A release is a pull request from drafts to main, merged after review.
 on:
   push:
-    branches: [main]
+    branches: [main, drafts]
   pull_request:
   workflow_dispatch:
 
@@ -12,7 +15,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -41,7 +44,7 @@ jobs:
           path: _book
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

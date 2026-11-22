@@ -22,8 +22,13 @@ the findings recorded here.
 - **Prose.** All text (chapters, notes, this page, the changelog and commit messages)
   is written and edited with the humanizer skill: no staged contrasts, closers or
   inflated claims, no em dashes in prose, plain verbs.
-- **Releases.** Dated tags (`v0.1`, `v0.2`, ...) with a changelog entry. Before a result
-  goes to a venue, check that venue's preprint policy.
+- **Releases.** The live book changes only through a reviewed release. Work in progress
+  goes to the `drafts` branch, where every push runs the tests and renders the site
+  without deploying. A release is a pull request from `drafts` to `main`; it carries the
+  quality-control checklist in `.github/pull_request_template.md` and is merged only
+  after the reviewer approves it. Merging deploys the site. Releases get dated tags
+  (`v0.1`, `v0.2`, ...) and a changelog entry. Before a result goes to a venue, check that
+  venue's preprint policy.
 - **Scope.** The subject is information in the mechanism: what the body holds about the
   world, how it moves through the body, and what dissipation does to it. The world is
   more than forces: terrain geometry, ground stiffness and damping, payload mass,
@@ -31,9 +36,9 @@ the findings recorded here.
   running example, and results should say which quantity they are about. Sensors,
   readout noise and controllers come later, as their own threads. Results are stated
   for the body and its parts.
-- **Branches.** Book content goes straight to `main`, which deploys the site. Changes to
-  other repositories, such as the lab website, go through pull requests. This is a
-  default and can change.
+- **Branches.** `main` is the live book and is changed only by merging a release pull
+  request. All other book work goes to `drafts`. Changes to other repositories, such as
+  the lab website, go through pull requests.
 
 ## Threads
 
@@ -105,12 +110,20 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Options: keep velocities only; regularize with $\omega_{\rm ref}^2H$ and sweep
   $\omega_{\rm ref}$; use gravity and contact stiffness at the operating point.
 
-**T7. Nonlinear and multistable bodies.** *Queued.*
+**T7. Nonlinear bodies.** *Queued.*
 
-- Question: what does the framework say about mechanical memory, where the noise law is
-  the Gibbs law on a non-quadratic potential?
-- Next step: a bistable element with an energy barrier; bits stored against barrier
-  height and noise energy.
+- Question: what carries over when the body is nonlinear? Everything so far is linear,
+  and the energy metric is a fixed quadratic form.
+- Kinds to treat: nonlinear springs (stiffening, softening), configuration-dependent
+  inertia $H(q)$ at large motions, contact that switches on and off (lift-off, impacts,
+  friction), and multistable elements that store bits (mechanical memory).
+- What changes in the framework: the Gibbs law becomes $\exp(-V/\sigma_T^2)$ on a
+  non-quadratic potential, so noise is no longer Gaussian; the energy metric becomes
+  local, along a trajectory (@rem-scope); and information has to be estimated without
+  the Gaussian formulas, for example by simulation with a neural estimator (as in T5).
+- First steps, when the thread starts: a bistable element with an energy barrier (bits
+  stored against barrier height and noise energy), and a stiffening ground spring, to
+  see how far the linear results of @sec-inside hold.
 
 **T8. Latency.** *Queued.*
 
@@ -245,6 +258,14 @@ written up.
   "Information inside the body" (@sec-inside), rather than into the Langevin chapter:
   the material is about where information sits, not about whether energy is the right
   metric. Promoted notes become short dated records so theorem labels stay unique.
+
+- **2026-11-22.** The live book is no longer updated as results come in. Work goes to
+  the `drafts` branch, which tests and renders but does not deploy; the live book changes
+  only when the reviewer approves a release pull request from `drafts` to `main`, with a
+  quality-control checklist.
+- **2026-11-22.** Nonlinear bodies are in scope for later: thread T7 widened from
+  multistable elements to nonlinear springs, configuration-dependent inertia, switching
+  contact and mechanical memory.
 
 ## Paper candidates
 

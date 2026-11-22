@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- The live book now changes only through reviewed releases: work goes to a `drafts`
+  branch that tests and renders without deploying, and a release is a pull request to
+  `main` with a quality-control checklist. Roadmap thread T7 now covers nonlinear bodies
+  in general.
 - The book's subject is now stated as information in the mechanism. Sensor, encoder and
   readout language is gone from the text; Part I's noise is called static noise.
 - New research note: how information about the contact propagates through the body. A

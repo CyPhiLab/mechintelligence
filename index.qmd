@@ -29,8 +29,9 @@ log holds dated notes, the roadmap and the changelog.
 The book is not planned in advance. New results first appear as dated research notes in
 the research log. A note moves into a chapter once its result is checked, its proofs are
 labelled, and it connects to the existing material; the note stays as the dated record.
-The [roadmap](ROADMAP.md) lists the open threads and what happens next on each, and the
-[changelog](CHANGELOG.md) lists what changed in each release.
+This site changes in reviewed releases: new material is collected and checked before it
+is published. The [roadmap](ROADMAP.md) lists the open threads and what happens next on
+each, and the [changelog](CHANGELOG.md) lists what changed in each release.
 
 Every page opens with its status:
 
