@@ -126,8 +126,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   $e^{\Delta E/\sigma_T^2}$ (Kramers; simulated rates 7% to 15% below the formula), while a
   harmonic element forgets the same push in a few relaxation times. For a Markov body, a
   window of history holds exactly what its first state holds about a past event.
-- Next steps: writing the bit (the smallest push, and its energy cost); a bistable element
-  inside a body, and what the rest of the body holds about it; a stiffening ground
+- Done (2026-11-22, [research note](notes/2026-11-22-writing-a-bit.qmd)): writing the
+  bit. A sharp kick bounces back and records at most 0.72 bits (barrier $8\sigma_T^2$); a
+  steady push beyond the critical force $8\Delta E/(3\sqrt3a)$ records 0.93 to 0.96 bits at
+  3.6 to 4.3 barriers of work, so the cost grows with the log of the bit's lifetime.
+- Next steps: a bistable element inside a body, and what the rest of the body holds about
+  it; erasure and the write-read-erase cycle against Landauer's bound; a stiffening ground
   spring.
 
 **T8. Latency.** *Queued.*
@@ -194,6 +198,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-22.** Writing a mechanical bit: a steady push at 1.1 to 1.3 times the critical
+  force writes 98.5% to 99.4% of the time (0.93 to 0.96 bits) for 3.6 to 4.3 barriers of
+  work; the best sharp kick records 0.72 bits because the element bounces back. At a
+  barrier of $4\sigma_T^2$, 8% flip on their own and no write beats 0.57 bits
+  (`tests/test_bistable.py`; [research note](notes/2026-11-22-writing-a-bit.qmd)).
 
 - **2026-11-22.** A mechanical bit: from a barrier of 2 to 10 $\sigma_T^2$ the half-life of
   a bit in a bistable element grows 1,100-fold, while the same push in a harmonic element

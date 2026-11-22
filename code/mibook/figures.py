@@ -441,10 +441,39 @@ def fig_bistable():
     return _save(fig, "bistable")
 
 
+def fig_write():
+    """Writing the bit: a sharp kick against a steady push."""
+    from mibook import bistable as bs
+    r = bs.check_writes()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.4, 2.6))
+    for beta, col in ((4.0, C2), (8.0, C1)):
+        v = r[beta]
+        a.plot(v["step"]["energy"], v["step"]["bits"], color=col, marker="o", markersize=3,
+               label=rf"steady push, $\Delta E={beta:g}\,\sigma_T^2$")
+        a.plot(v["kick"]["energy"], v["kick"]["bits"], color=col, marker="s", markersize=3,
+               ls="--", label=rf"sharp kick, $\Delta E={beta:g}\,\sigma_T^2$")
+        b.plot(v["step"]["size"], v["step"]["q"], color=col, marker="o", markersize=3,
+               label=rf"$\Delta E={beta:g}\,\sigma_T^2$")
+    a.set_xlabel(r"energy put in by the push / $\Delta E$")
+    a.set_ylabel("bits recorded")
+    a.set_ylim(0, 1.35)
+    a.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
+    a.set_title("(a) bits per write", loc="left")
+    a.legend(loc="upper center", fontsize=5.5, ncol=2, frameon=False)
+    b.axvline(1.0, color=INK2, lw=0.6, ls=":")
+    b.set_xlabel(r"steady push / critical force $F_c$")
+    b.set_ylabel("chance of landing in the right well")
+    b.set_ylim(0, 1.05)
+    b.set_title("(b) steady push", loc="left")
+    b.legend(loc="lower right", fontsize=7)
+    fig.tight_layout()
+    return _save(fig, "write")
+
+
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use("Agg")
     OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "figures")
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
-              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable):
+              fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write):
         f()

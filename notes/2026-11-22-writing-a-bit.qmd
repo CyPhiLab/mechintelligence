@@ -1,0 +1,156 @@
+# 2026-11-22: Writing a mechanical bit {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T7 · **Checked by:** `tests/test_bistable.py`
+:::
+
+**Question.** The [note on a mechanical bit](2026-11-22-mechanical-bit.qmd) assumed the
+environment writes the bit perfectly: a push puts the element in the other well. How hard
+must the environment push for that to happen, how reliable is the write, and how much
+energy does it cost?
+
+**Short answer.**
+
+- *A sharp kick is unreliable.* A kick must give the element at least the barrier energy,
+    but a kick strong enough to cross usually carries it to the far side, where it bounces
+    back over the barrier. With the barrier at 8 thermal energies, the best kick records
+    0.72 bits.
+- *A steady push beyond a critical force writes reliably.* Above the force
+    $F_c=8\Delta E/(3\sqrt3\,a)$ the starting well disappears, and the element is carried
+    into the other one. Pushing at 1.1 to 1.3 times $F_c$ for 3 time units writes the bit
+    98.5% to 99.4% of the time, 0.93 to 0.96 bits.
+- *It costs about 3.5 to 4.5 barriers of work,* all of it dissipated. Since the bit's
+    lifetime grows like $e^{\Delta E/\sigma_T^2}$, the energy to write a bit grows only like the
+    logarithm of how long it must last.
+- *A low barrier leaks.* At 4 thermal energies, 8% of elements flip on their own during
+    the time it takes to read the result, and no push records more than 0.57 bits.
+
+## Setting
+
+The element of the bit note: one coordinate in the double well $V(x)=\Delta E((x/a)^2-1)^2$,
+damping rate $\gamma=2$, the Langevin body's thermal noise, units of $a$, $\sigma_T^2$ and
+$\sqrt{ma^2/\sigma_T^2}$. Elements start in the left well, drawn from the Gibbs law. The
+environment either does nothing or pushes toward the right well, with equal odds. Two kinds
+of push:
+
+- a *sharp kick*, an impulse $J$ that adds $J/m$ to the velocity, given in units of
+    $\sqrt{2m\Delta E}$, the impulse whose kinetic energy equals the barrier;
+- a *steady push*, a constant force $F$ held for 3 time units and then released, given in
+    units of $F_c$.
+
+The element is read 8 time units after the push ends, long compared with the motion inside
+a well and short compared with spontaneous flips at high barriers. The result is the chance
+$q_1$ of finding it in the right well after a push, and $q_0$ without one. The bits the well
+records about the push are
+$$
+I=h\big(\tfrac12(q_0+q_1)\big)-\tfrac12\big(h(q_0)+h(q_1)\big),
+$$
+the information through a binary channel with equal priors, where $h$ is the binary
+entropy.
+
+## Results
+
+::: {#prp-kick-threshold name="A kick needs the barrier's energy"}
+Without thermal noise, a kick of impulse $J$ on an element resting at the bottom of a well
+can carry it into the other well only if $J^2/(2m)\ge\Delta E$.
+:::
+
+::: {.proof}
+Right after the kick the element's energy is $J^2/(2m)$, since the bottom of the well has
+$V=0$. Without noise, damping can only remove energy. Reaching the top of the barrier at
+$x=0$ needs energy at least $V(0)=\Delta E$.
+:::
+
+Noise blurs this threshold: at 8 thermal energies a kick with exactly the barrier's energy
+succeeds 21% of the time. Damping makes it worse than the bound suggests, because energy is
+lost on the way up, and a stronger kick overshoots: the element crosses with energy to spare,
+reaches the far wall of the right well and comes back. The chance of success peaks near 89%
+for a kick carrying 4 barriers of energy and falls to 31% at 9.
+
+::: {#prp-critical-force name="Above a critical force the starting well disappears"}
+Under a steady force $F>0$ toward the right well, the left well survives only while
+$$
+F<F_c=\frac{8\,\Delta E}{3\sqrt3\,a}.
+$$
+:::
+
+::: {.proof}
+With the force, the potential is $V(x)-Fx$, and its stationary points solve $V'(x)=F$. On
+the left, between the left well's bottom and the barrier, $V'(x)=4\beta x(x^2-1)$ in the
+book's units. It is positive there and largest at $x=-1/\sqrt3$, where it equals
+$8\beta/(3\sqrt3)$. For $F$ below that value, $V'(x)=F$ has a solution with
+$V''>0$ on the left: a well. Above it there is none, and the element slides to the right.
+:::
+
+Without noise, a steady push just above $F_c$ held long enough writes the bit every time.
+With noise, the chance rises steeply around $F_c$ (@fig-write(b)): at 8 thermal energies it
+is 12% at half the critical force, 96% at $F_c$ and 98.5% to 99.4% from 1.1 to 1.6 times
+$F_c$. Far above $F_c$ the element is pushed so far that, on release, it falls back with
+enough energy to recross sometimes (98% at $2F_c$).
+
+::: {#rem-write-cost name="The cost grows with the log of the lifetime"}
+A reliable write takes about $c\,\Delta E$ of work, with $c\approx3.6$ at 98.5% reliability
+here, and all of it is dissipated, since the element ends in a well at the same energy as it
+started. The bit's lifetime grows like $e^{\Delta E/\sigma_T^2}$ (@prp-bit-decay with
+Kramers' rate). So, to keep a bit $e$ times longer, the barrier rises by $\sigma_T^2$ and the
+write costs about $3.6\,\sigma_T^2$ more. This is a measured constant, not a bound. Landauer's
+bound of $\sigma_T^2\ln2$ [@landauer1961irreversibility] concerns erasing a bit whose value is
+unknown, which this element needs before it can record the next event; writing into a known
+starting state, as here, is not bounded by it.
+:::
+
+## Numbers
+
+```{python}
+#| label: fig-write
+#| fig-cap: |
+#|   (a) Bits recorded about a push against the energy the push puts in, for a steady push
+#|   (solid) and a sharp kick (dashed), at barriers of 4 and 8 $\sigma_T^2$. (b) Chance of
+#|   ending in the right well after a steady push held for 3 time units, against the push
+#|   over the critical force.
+from mibook import figures
+figures.fig_write();
+```
+
+| push | size | right well | bits | work / $\Delta E$ |
+|:--|--:|--:|--:|--:|
+| none | | 0.003 | | |
+| kick | $1.0\sqrt{2m\Delta E}$ | 0.208 | 0.102 | 1.00 |
+| kick | $2.0\sqrt{2m\Delta E}$ | 0.887 | 0.723 | 4.00 |
+| kick | $3.0\sqrt{2m\Delta E}$ | 0.305 | 0.161 | 9.00 |
+| steady | $0.5\,F_c$ | 0.122 | 0.055 | 0.27 |
+| steady | $1.0\,F_c$ | 0.962 | 0.869 | 3.15 |
+| steady | $1.1\,F_c$ | 0.985 | 0.928 | 3.58 |
+| steady | $1.3\,F_c$ | 0.994 | 0.958 | 4.30 |
+| steady | $2.0\,F_c$ | 0.980 | 0.913 | 6.96 |
+
+: Writing the bit at a barrier of $8\,\sigma_T^2$, 3,000 elements per row (`check_writes`). For a kick the work is $J^2/(2m)$; for a steady push it is the mean of $\int F\,dx$ over the push. {#tbl-write}
+
+- At a barrier of $4\,\sigma_T^2$, 8% of elements end in the right well without any push,
+    and the best write, a steady push at $1.3\,F_c$, records 0.57 bits; the best kick
+    records 0.42.
+- At $8\,\sigma_T^2$, a steady push records up to 0.96 bits and a kick up to 0.72.
+
+## What this changes
+
+The environment has to do real work to leave a lasting mark on a body, and the form of the
+push matters as much as its energy. A brief kick, however strong, is an unreliable writer,
+because the energy that carries the element over the barrier also carries it back. A push
+that lasts long enough to remove the starting well writes reliably, at a cost of a few
+barriers. For the book's thread on computation this sets the price of a mechanical record:
+a few times the barrier per bit, growing only logarithmically with how long the record must
+last.
+
+## Limits of this note
+
+- One damping rate ($\gamma=2$), one push duration (3 time units) and one reading time.
+    Heavier damping would reduce the bounce; a longer push near $F_c$ would raise the
+    success rate at lower force. Neither is explored here.
+- The well is the record, a lower bound on what the full state holds.
+- Erasing the bit, and its cost, are not treated.
+
+## Next steps
+
+- A bistable element inside a body, and what the rest of the body holds about the bit.
+- Erasure and the full write-read-erase cycle, against Landauer's bound.
+- A stiffening ground spring.

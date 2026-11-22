@@ -37,6 +37,20 @@ Langevin body's thermal force, so that the Gibbs law is $\propto\exp\!\big(-(V+\
 $\sqrt{ma^2/\sigma_T^2}$; the barrier is $\beta=\Delta E/\sigma_T^2$ and $\gamma=2$. Near a
 well the energy metric is the local quadratic one, with stiffness $V''(\pm a)=8\Delta E/a^2$.
 
+**What the wells are.** The double well is the simplest form of any snap-through element
+near the point where it becomes bistable. A thin strip squeezed from its ends bows up or
+down; $x$ is the midpoint deflection, the wells are the two bowed shapes, and the barrier
+is the extra strain energy of the straight, compressed shape the strip must pass through,
+set by how hard the ends are squeezed. Shallow domes (a jumping-popper toy, a vacuum lid),
+two-bar snap-through linkages, latches and detents, snap-through grippers and the bistable
+cells of mechanical metamaterials behave the same way. The book's $\sigma_T^2=10^{-4}$ J is
+an effective temperature standing for mechanical disturbances such as vibration and
+impacts, not molecular motion, which carries about $4\times10^{-21}$ J; against that, a
+macroscopic strip would keep its bit indefinitely. On the book's scale a barrier of
+$10\,\sigma_T^2$ is 1 mJ, about the snap-through energy of a small buckled steel strip. The
+question here is therefore how long such an element keeps a record against a given level
+of disturbance.
+
 The environment writes one bit $E$: at $t=0$ it either pushed the element into the right
 well or did not, with equal odds. The write is taken to be perfect. The comparison is a
 harmonic element with the stiffness of one well, $k=8\Delta E/a^2$, and the same damping,

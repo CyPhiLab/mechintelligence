@@ -172,3 +172,112 @@ def check_window(s_list=(0.002, 0.01, 0.03), window: float = 0.02) -> dict:
         I_state = 0.5 * np.log2(1 + SIGMA_A ** 2 * m0 @ np.linalg.solve(P, m0))
         rows[t0] = dict(window=float(I_win), state=float(I_state))
     return rows
+
+
+# ---------------------------------------------------------------------------------------
+# Writing the bit: a sharp push of impulse J on an element resting in the left well
+# ---------------------------------------------------------------------------------------
+
+def write_probability(beta: float, J, gamma: float = GAMMA, n: int = 4000, t_settle: float = 8.0,
+                      dt: float = 0.005, seed: int = 0) -> np.ndarray:
+    """Probability of ending in the right well after a push of impulse J at t = 0.
+
+    Elements start in the left well from the Gibbs law (positions thermalised for a while
+    with x kept on the left), receive v += J, and are read t_settle later, long compared with
+    the motion inside a well and short compared with spontaneous flips.
+    """
+    rng = np.random.default_rng(seed)
+    c = np.exp(-gamma * dt)
+    s = np.sqrt(1.0 - c * c)
+
+    def run(x, v, steps):
+        F = force(x, beta)
+        for _ in range(steps):
+            v += 0.5 * dt * F
+            x += 0.5 * dt * v
+            v = c * v + s * rng.normal(0.0, 1.0, x.size)
+            x += 0.5 * dt * v
+            F = force(x, beta)
+            v += 0.5 * dt * F
+        return x, v
+
+    x0, v0 = -np.ones(n), rng.normal(0.0, 1.0, n)
+    x0, v0 = run(x0, v0, int(round(4.0 / dt)))           # thermalise inside the left well
+    x0 = -np.abs(x0)                                     # keep the rare escapees on the left
+    out = []
+    for j in np.atleast_1d(J):
+        x, v = run(x0.copy(), v0.copy() + j, int(round(t_settle / dt)))
+        out.append(float(np.mean(x > 0.0)))
+    return np.array(out)
+
+
+def write_information(q1, q0):
+    """Bits the well records about a push (equal priors), when a push puts the element in the
+    right well with probability q1 and no push with probability q0 (spontaneous flips):
+    I = h((q0 + q1) / 2) - (h(q0) + h(q1)) / 2."""
+    q1, q0 = np.asarray(q1, float), np.asarray(q0, float)
+    return binary_entropy(0.5 * (q0 + q1)) - 0.5 * (binary_entropy(q0) + binary_entropy(q1))
+
+
+def critical_force(beta: float) -> float:
+    """The steady force at which the left well disappears: max V'(x) = 8 beta / (3 sqrt 3)."""
+    return 8.0 * beta / (3.0 * np.sqrt(3.0))
+
+
+def write_probability_step(beta: float, F, t_push: float = 3.0, gamma: float = GAMMA,
+                           n: int = 4000, t_settle: float = 8.0, dt: float = 0.005,
+                           seed: int = 0):
+    """A steady push F held for t_push, then released. Returns (probability of ending in the
+    right well, mean work done by the push)."""
+    rng = np.random.default_rng(seed)
+    c = np.exp(-gamma * dt)
+    s = np.sqrt(1.0 - c * c)
+
+    def run(x, v, steps, f_ext, work):
+        F_ = force(x, beta) + f_ext
+        for _ in range(steps):
+            v += 0.5 * dt * F_
+            x_old = x.copy()
+            x += 0.5 * dt * v
+            v = c * v + s * rng.normal(0.0, 1.0, x.size)
+            x += 0.5 * dt * v
+            work += f_ext * (x - x_old)
+            F_ = force(x, beta) + f_ext
+            v += 0.5 * dt * F_
+        return x, v, work
+
+    x0, v0 = -np.ones(n), rng.normal(0.0, 1.0, n)
+    x0, v0, _ = run(x0, v0, int(round(4.0 / dt)), 0.0, np.zeros(n))
+    x0 = -np.abs(x0)
+    probs, works = [], []
+    for f in np.atleast_1d(F):
+        w = np.zeros(n)
+        x, v, w = run(x0.copy(), v0.copy(), int(round(t_push / dt)), f, w)
+        x, v, w = run(x, v, int(round(t_settle / dt)), 0.0, w)
+        probs.append(float(np.mean(x > 0.0)))
+        works.append(float(np.mean(w)))
+    return np.array(probs), np.array(works)
+
+
+KICKS = (0.6, 0.8, 1.0, 1.2, 1.4, 1.7, 2.0, 2.5, 3.0)          #: impulses / sqrt(2 m dE)
+STEPS = (0.5, 0.8, 0.9, 1.0, 1.1, 1.3, 1.6, 2.0)               #: steady forces / F_c
+
+
+def check_writes(betas=(4.0, 8.0), kicks=KICKS, steps=STEPS, n: int = 3000,
+                 seed: int = 0) -> dict:
+    """Writing the bit with a sharp kick or a steady push held for 3 time units: the chance of
+    ending in the right well, the bits recorded (against the no-push baseline), and the energy
+    the push puts in, in units of the barrier."""
+    out = {}
+    for beta in betas:
+        q0 = float(write_probability(beta, [0.0], n=n, seed=seed)[0])
+        J = np.sqrt(2.0 * beta) * np.asarray(kicks)
+        qk = write_probability(beta, J, n=n, seed=seed)
+        F = critical_force(beta) * np.asarray(steps)
+        qs, ws = write_probability_step(beta, F, n=n, seed=seed)
+        out[beta] = dict(q0=q0,
+                         kick=dict(size=np.asarray(kicks), q=qk, bits=write_information(qk, q0),
+                                   energy=J ** 2 / 2.0 / beta),
+                         step=dict(size=np.asarray(steps), q=qs, bits=write_information(qs, q0),
+                                   energy=ws / beta))
+    return out

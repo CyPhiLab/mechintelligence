@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (thread T7): writing a mechanical bit. A steady push beyond a
+  critical force writes reliably; a sharp kick bounces back. The bit note now says what
+  the wells are physically.
 - New research note (thread T7, nonlinear bodies): a mechanical bit. A barrier keeps a
   record of an event exponentially longer than a linear body can, and a window of history
   holds what its first state holds about the past.

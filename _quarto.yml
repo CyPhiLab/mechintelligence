@@ -34,6 +34,7 @@ book:
     - part: "Research log"
       chapters:
         - notes/index.qmd
+        - notes/2026-11-22-writing-a-bit.qmd
         - notes/2026-11-22-mechanical-bit.qmd
         - notes/2026-11-22-finite-answers.qmd
         - notes/2026-11-22-mass-and-resolution.qmd
