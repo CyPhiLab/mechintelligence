@@ -566,3 +566,51 @@ def fig_compare(res=None):
         ax.set_title(titles.get(fam, fam))
     fig.tight_layout()
     return _save(fig, "compare")
+
+
+def fig_regimes(s=None):
+    """Where compliance helps or hurts: ratio of each quantity to the stiffest design, as
+    log10, signed so that blue always means the compliant design does better."""
+    from matplotlib.colors import LinearSegmentedColormap
+    from mibook.bench import regimes as R
+    s = R.summary() if s is None else s
+    cmap = LinearSegmentedColormap.from_list("div", [C2, "#ffffff", C1])
+    fig, axes = plt.subplots(2, 3, figsize=(7.0, 5.0), sharey="row")
+    fig.subplots_adjust(hspace=0.55, wspace=0.12, right=0.82)
+    leg, bird = s["leg"], s["bird"]
+    panels = [
+        (axes[0, 0], leg, "percep", "higher", 0, "rotor perception"),
+        (axes[0, 1], leg, "action", "higher", 0, "ground force per torque"),
+        (axes[0, 2], leg, "shock", "lower", 0, "shock at the rotor"),
+        (axes[1, 0], bird, "percep", "higher", -1, "shoulder perception"),
+        (axes[1, 1], bird, "gust", "lower", -1, "gust reaching the body"),
+        (axes[1, 2], bird, "action", "higher", -1, "stroke authority"),
+    ]
+    for ax, M, key, better, ref, title in panels:
+        X = M[key]
+        rows = X[1:] if ref == 0 else X[:-1]
+        k = M["ks"] if ref == 0 else M["ks"][:-1]
+        r = np.log10(rows / X[ref])
+        if better == "lower":
+            r = -r
+        im = ax.pcolormesh(M["f"], k, np.clip(r, -2, 2), cmap=cmap, vmin=-2, vmax=2,
+                           shading="nearest", rasterized=True)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.grid(False)
+        ax.set_title(title)
+        if ref == 0:
+            ax.plot([R.sea_resonance_hz(x) for x in k], k, color=INK, lw=0.8, ls="--")
+            ax.set_xlim(M["f"][0], M["f"][-1])
+    axes[1, 0].text(0.5, 0.5, "the same for\nevery stiffness", transform=axes[1, 0].transAxes,
+                    ha="center", va="center", color=INK2, fontsize=7.5)
+    axes[0, 0].set_ylabel("series stiffness $k_s$ (N m/rad)")
+    axes[1, 0].set_ylabel("shoulder stiffness $k_s$ (N/m)")
+    for ax in axes[1]:
+        ax.set_xlabel("frequency (Hz)")
+    for ax in axes[0]:
+        ax.set_xlabel("frequency (Hz)")
+    cax = fig.add_axes([0.85, 0.2, 0.015, 0.6])
+    cb = fig.colorbar(im, cax=cax)
+    cb.set_label("log$_{10}$ advantage over the stiffest design")
+    return _save(fig, "regimes")

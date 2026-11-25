@@ -1,0 +1,160 @@
+# 2026-11-25: Where compliance helps, and where it hurts {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T12 · **Checked by:** `tests/test_bench_regimes.py`
+:::
+
+**Question.** A compliant element changes what a body can perceive, what it can do and what
+it costs. The literature has examples both ways: compliance hides the environment from a
+motor, but it also stores and returns energy, protects against shocks and lets a body
+conform to the ground. Rather than assume a trade-off, this note maps, across stiffness and
+frequency, where compliance helps or hurts each, on two bodies: the book's leg with a
+series spring, and a bird whose wings ride on a compliant shoulder.
+
+**Short answer.** There is no single trade-off. What decides is the frequency band of the
+task, measured against the resonance of the compliant element, and which part of the body
+is asked.
+
+- *Acting.* A series spring raises the ground force the motor can produce per unit torque
+  in a band from about a third of the spring's resonance up to the resonance, by up to five
+  times. Above the resonance it lowers it, sharply.
+- *Withstanding.* The same spring amplifies shocks at the rotor in that band and isolates the
+  rotor above it. A soft shoulder does the same for gusts reaching the bird's body: worse
+  near its resonance, much better above.
+- *Perceiving.* The rotor of a series-elastic leg never perceives the ground better than the
+  rigid leg's rotor, at any frequency. The bird's shoulder perceives the gust equally well
+  at every shoulder stiffness: its view depends on the shoulder's damping, not its
+  stiffness.
+- *Paying.* Whether compliance saves energy depends on what is paid for. Motor heat per unit
+  ground force falls in the resonance band. Mechanical work per unit ground force never
+  falls: the spring's damper only adds losses.
+
+## Setting
+
+*The leg.* The book's rigid leg and series-elastic legs with $k_s$ from 30 to $10^6$ N m/rad
+on the ground of @sec-setup ($k_c=10^6$ N/m, $b_c=600$ N s/m), with the Langevin body's
+thermal noise. The series spring's resonance, rotor against spring with the link held, is
+$f_r=\sqrt{k_s/I_{\rm rot}}/2\pi$. At each frequency the study computes, for each design:
+
+- *perception*: the information density (bits per second per hertz) that the rotor's motion
+  holds about the ground force;
+- *action*: the ground force per unit motor torque;
+- *shock*: the rotor's acceleration per unit ground force;
+- *heat*: motor heat per unit squared ground force, for losses proportional to torque
+  squared;
+- *work*: mechanical power from the motor per unit squared ground force.
+
+*The bird.* The `bird` benchmark: body and wings joined by a shoulder spring $k_s$ (1 to
+$10^4$ N/m) with damper $b_s$, lift on the wings with an unsteady gust response, thermal
+noise through the shoulder damper. The study computes the shoulder deflection's information
+density about the gust, the body's acceleration per unit gust velocity, and the body's
+acceleration per unit force of a stroke actuator between wings and body.
+
+Code: `mibook.bench.regimes`.
+
+```{python}
+#| label: fig-regimes
+#| fig-cap: "Advantage of each compliant design over the stiffest one, at each frequency (log$_{10}$ of the ratio, signed so that blue means the compliant design does better). Top: the leg; the dashed line is the series spring's resonance. Bottom: the bird."
+from mibook import figures
+figures.fig_regimes();
+```
+
+## Results
+
+**The resonance band.** Along the dashed line of @fig-regimes, everything transmitted between
+motor and ground is amplified in both directions. The motor gets more ground force per unit
+torque (up to 5.1 times the rigid leg's), and a ground impact shakes the rotor harder.
+Above the line the spring isolates: little torque reaches the ground and little shock
+reaches the rotor. Below about a third of the resonance the spring barely matters for
+either. For the soft designs ($k_s\le10^3$) the band where action improves by more than 10%
+runs from about $f_r/3$ to $1.1f_r$, and shocks fall by more than 10% from about
+$1.25f_r$ upward.
+
+**Perception at the rotor.** Here compliance never helps.
+
+::: {#prp-rotor-never name="A series spring never improves the rotor's view"}
+At every frequency, the information density that the rotor of any series-elastic leg holds
+about the ground force is at most that of the rigid leg's rotor.
+:::
+
+::: {.proof}
+The rotor's motion is a function of the whole body's motion, so its information density is at
+most the whole body's. In the frequency domain the whole body's density is
+$\log_2(1+\text{level}\cdot JD^{-1}J^\top/2\sigma_T^2)$ (the spectral form of @prp-contact),
+the same for every design, since $JD^{-1}J^\top=1/b_c$ for all of them. The rigid leg has one
+coordinate, so its rotor is its whole body and reaches that value.
+:::
+
+The resonance amplifies the rotor's response to the ground force, but it amplifies the
+thermal noise reaching the rotor through the series damper by the same or more, so the
+signal-to-noise ratio does not rise (@sec-push).
+
+**Paying.** The answer depends on the loss that is paid.
+
+::: {#prp-work-never name="A series spring never saves mechanical work per unit ground force"}
+At every frequency, the mechanical power a motor delivers per unit squared ground force is
+at least the rigid leg's.
+:::
+
+::: {.proof}
+For a passive body driven at one port, the mean power delivered equals the mean power
+dissipated. The ground dissipates $\frac12b_c\omega^2|y|^2$ for foot motion $y$, and the ground
+force is $F_c=(k_c+i\omega b_c)y$, so the ground's share is
+$\frac12b_c\omega^2|F_c|^2/|k_c+i\omega b_c|^2$, fixed by $F_c$. The rigid leg has no other
+damper. A series-elastic leg adds the series damper's dissipation, which is never negative.
+:::
+
+Motor heat per unit ground force behaves like the inverse square of action, so it falls in
+the resonance band. A motor whose losses are mostly resistive gains from the spring there.
+The mechanical work done on the leg does not.
+
+**The bird's shoulder.** A soft shoulder protects the body from gusts above its resonance
+(at 100 Hz a 1 N/m shoulder lets through less than 1% of what the stiffest does) and makes
+gusts worse near its resonance. The stroke actuator's authority over the body follows the
+same pattern with the opposite sign of benefit: better near resonance, much worse above. At
+each frequency, withstanding gusts and acting through the shoulder move together, in
+opposite directions of benefit. That is a trade-off, but one that holds band by band, not
+across the board.
+
+::: {#prp-shoulder name="The shoulder's view of a gust does not depend on its stiffness"}
+In the `bird` model, the information density that the shoulder deflection holds about the
+gust depends on the shoulder's damping and on the masses and aerodynamics, not on the
+shoulder's stiffness.
+:::
+
+::: {.proof}
+At frequency $\omega$, write the shoulder's impedance as $Z_s=k_s+i\omega b_s$, the wing's as
+$Z_w=-\omega^2m_w+i\omega c$, and let $d$ be the shoulder deflection. The gust acts as a force
+$F$ on the wings. The thermal noise of the shoulder damper acts as a pair of forces, $\xi$ on
+the wings and $-\xi$ on the body. The equations of motion of body and wings give
+$$
+  d\,\Delta=\frac{F}{Z_w}+\xi\Big(\frac1{Z_w}-\frac1{\omega^2m_b}\Big),\qquad
+  \Delta=1+\frac{Z_s}{Z_w}-\frac{Z_s}{\omega^2m_b}.
+$$
+(From the body, $-\omega^2m_by_b=Z_sd-\xi$; from the wings, $Z_wy_w=-Z_sd+F+\xi$; and
+$d=y_w-y_b$.) The stiffness enters only through $\Delta$, which multiplies signal and noise
+alike, so the signal-to-noise ratio at $d$ is
+$|F|^2/\big(\E|\xi|^2\,|1-Z_w/\omega^2m_b|^2\big)$ with $\E|\xi|^2=2\sigma_T^2b_s$.
+It contains $b_s$ but not $k_s$.
+:::
+
+This mirrors the leg's whole-body result, where the information is set by the contact damper
+alone (@prp-contact). In both cases a spring changes how strongly the signal and the noise
+reach a coordinate, but changes both by the same factor.
+
+## What this means
+
+Compliance is neither good nor bad for action or perception. For action, it helps in a band
+set by its resonance and hurts above it. For withstanding the environment, the reverse. For
+perception at a part beyond the spring, it can only hurt or leave things unchanged, because
+it adds a noisy path. A spring that only adds stiffness, as in the shoulder, changes nothing
+about what that coordinate perceives. Whether it saves energy depends on whether the losses
+are in the motor or in the mechanism. A design question about compliance therefore needs the
+task's band, the part asked, and the loss model stated.
+
+*What is not settled here.* The models are linear. Compliance in real legs also matters
+through nonlinear effects this study cannot see: energy return over a stance phase, impact
+transients beyond linear response, and terrain conformation (the many-legged and tentacle
+benchmarks are the places to look). Empowerment over a finite horizon, computed in the
+[comparison note](2026-11-25-comparison.qmd), gives the same answer as the action map here:
+on the leg it peaks at an intermediate stiffness.

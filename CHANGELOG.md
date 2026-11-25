@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (T12): where compliance helps and hurts action, withstanding,
+  perception and cost, on the leg and the bird, with a figure (`fig_regimes`) and code
+  `mibook.bench.regimes`.
 - New research note (T12): the measures of different approaches compared on the same linear
   bodies, with a figure (`fig_compare`) and the comparison code `mibook.bench.compare`. The
   legs gain a motor channel and a foot part.

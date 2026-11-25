@@ -58,7 +58,11 @@ the findings recorded here.
    shoulder. Framed as an open question, not a trade-off assumed in advance: compliance can
    help action (energy storage and return, impact protection, smoother force, conforming to
    terrain) as well as hurt it, and likewise for perception. Map the regimes where it helps
-   or hurts each, and find what decides.
+   or hurts each, and find what decides. *First pass done 2026-11-25*
+   ([note](notes/2026-11-25-holding-acting-paying.qmd)): the band relative to the compliant
+   element's resonance decides action and withstanding; perception beyond a spring never
+   improves; the loss model decides cost. To do: nonlinear effects (stance energy return,
+   impacts, conformation).
 4. The checks owed under T11 before the parameter notes enter a chapter.
 5. Nonlinear comparisons: memory capacity against information on the soft arm; hysteron
    networks at finite temperature (T7, T12).
@@ -298,6 +302,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-25.** Compliance mapped across stiffness and frequency on the leg and the bird.
+  A series spring raises ground force per torque from about $f_r/3$ to $1.1f_r$ (up to
+  5.1 times) and lowers it above; it amplifies shocks at the rotor in that band and isolates
+  above $1.25f_r$. The rotor never perceives the ground better than the rigid leg's rotor,
+  and the spring never saves mechanical work per unit ground force (both proved); motor heat
+  per unit force falls in the resonance band. The bird's shoulder perceives gusts equally at
+  every stiffness (proved). `tests/test_bench_regimes.py`;
+  [note](notes/2026-11-25-holding-acting-paying.qmd).
 - **2026-11-25.** Measures compared on four families of linear benchmarks: measures about
   the contact force rank leg designs identically while $\mathrm{MC}_W$ reverses them; memory
   capacity ranks network nodes unlike window information (0.35); the nodes that hold the
