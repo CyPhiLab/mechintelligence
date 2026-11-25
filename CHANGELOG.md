@@ -4,6 +4,8 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (T7, T12): transforming and storing in nonlinear bodies, with a figure
+  (`fig_nonlinear`) and code `mibook.bench.nonlinear_study`.
 - The checks owed for the parameter notes (T11): exact finite-window Fisher information in
   linear time (`linear.window_fisher`, `mibook.bench.t11`), agreement with the spectral
   rates, the several-coordinate form of the leading-coefficient theorem, and the formula

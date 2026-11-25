@@ -67,7 +67,9 @@ the findings recorded here.
    2026-11-25*, except the question of definition below (see the
    [finite-answers note](notes/2026-11-22-finite-answers.qmd), "Checks of 2026-11-25").
 5. Nonlinear comparisons: memory capacity against information on the soft arm; hysteron
-   networks at finite temperature (T7, T12).
+   networks at finite temperature (T7, T12). *First pass done 2026-11-25*
+   ([note](notes/2026-11-25-nonlinear-comparisons.qmd)); to do: other readouts and input
+   periods for the arm, lifetimes fitted for the chain, heat separated from stored energy.
 6. The classification frame in the opening chapter, and the targeted links into
    chapters, once 2 and 3 have tested the axes.
 7. Release, on the reviewer's polishing timeline: QC pass and release pull request.
@@ -316,6 +318,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-25.** Nonlinear comparisons: the soft arm's degree-2 capacity comes mainly from
+  large deflections (0.37 at 0.1 N with linear springs, 0.51 with strong stiffening, about
+  0.03 at 0.02 N) and costs a little linear memory; the bistable chain keeps 1.38 of 1.46 bits
+  about its peak force for 800 time units behind a 12 $\sigma_T^2$ barrier and 0.10 of 1.20 behind
+  6 $\sigma_T^2$, for 50 to 97 $\sigma_T^2$ of work per write. `tests/test_bench_nonlinear_study.py`;
+  [note](notes/2026-11-25-nonlinear-comparisons.qmd).
 - **2026-11-25.** The T11 checks: exact finite-window Fisher information (linear time, no
   Whittle formula) matches the spectral rates on the leg to four digits; the link's mass
   grows by 4.00 per hertz, the rotor's stays at 31.1 per second; the several-coordinate

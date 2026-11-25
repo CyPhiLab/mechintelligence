@@ -5,6 +5,7 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-25 | [Transforming and storing in nonlinear bodies](2026-11-25-nonlinear-comparisons.qmd) | exploratory | not yet |
 | 2026-11-25 | [Where compliance helps, and where it hurts](2026-11-25-holding-acting-paying.qmd) | exploratory | not yet |
 | 2026-11-25 | [The same bodies, many measures](2026-11-25-comparison.qmd) | exploratory | not yet |
 | 2026-11-25 | [How other approaches to mechanical intelligence relate to this book](2026-11-25-landscape.qmd) | exploratory | not yet |

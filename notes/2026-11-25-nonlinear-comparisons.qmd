@@ -1,0 +1,99 @@
+# 2026-11-25: Transforming and storing in nonlinear bodies {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T7, T12 · **Checked by:** `tests/test_bench_nonlinear_study.py`
+:::
+
+**Question.** Two of the five meanings of mechanical intelligence in the
+[landscape note](2026-11-25-landscape.qmd) need nonlinear bodies: *transforming* (the body
+computes functions of its input, the reservoir view) and *storing* (the body keeps a record
+of a past event). In linear bodies the first reduces to linear memory and the second fades
+on the relaxation time. On two nonlinear benchmarks, what do these look like, and what do
+they cost?
+
+**Short answer.**
+
+- *Transforming needs large motion more than stiff springs.* A soft arm whose snapshot is read
+  linearly reconstructs squares and products of past inputs only when it is driven hard.
+  The main source is geometry: a large deflection turns the springs, so the arm becomes
+  nonlinear even when every spring is linear. Material stiffening adds a little more. What
+  the arm gains in nonlinear capacity it loses, slightly, in linear memory.
+- *Storing has a lifetime set by the barrier and a cost that grows with it.* A chain of
+  bistable elements records the largest force it has felt, as the set of elements that have
+  switched. Behind a barrier of $12\,\sigma_T^2$ it keeps 1.38 of its 1.46 bits for 800 time
+  units. Behind $6\,\sigma_T^2$ it keeps 0.10 bits after the same wait. Writing costs the
+  drive 50 to 97 $\sigma_T^2$ of work, roughly in proportion to the barrier, while the record's
+  lifetime grows much faster.
+
+## Setting
+
+*Soft arm* (`soft_arm`): a ladder truss of 20 point masses with springs that stiffen as
+$ks(1+\alpha s^2)$, anchored at its base. The tip receives a force sample every 0.04 s, drawn
+uniformly from $[-A,A]$. After 30 samples, a linear readout of the positions of every node
+(40 numbers) tries to reconstruct functions of the past samples. Following the
+information-processing capacity of reservoir computing, the *degree-1 capacity* sums the
+held-out $R^2$ for reconstructing each past sample, over 30 lags. The *degree-2 capacity*
+sums it for the second Legendre polynomial of each past sample and for products of pairs,
+over 12 lags. Neither can exceed the 40 numbers read.
+
+*Bistable chain* (`bistable_chain`): six double wells in series, fixed at one end and driven
+by a force at the other, with barriers spread by $\pm25\%$ around a nominal value, at
+temperature $\sigma_T^2=1$. Each trajectory ramps the force up to a random peak, drawn
+uniformly up to 1.3 times the largest critical force, and back to zero, then waits with no
+force. The study measures the information between the peak (in 14 bins) and the mesostate
+(which elements have switched), with the Miller–Madow correction. It also measures the net
+work the drive does over the ramp. Without thermal noise, the mesostate would be the number
+of critical forces below the peak.
+
+Code: `mibook.bench.nonlinear_study`.
+
+```{python}
+#| label: fig-nonlinear
+#| fig-cap: "Left: the soft arm's degree-1 (linear memory) and degree-2 capacities as its springs stiffen, for two input amplitudes. Right: the bistable chain's information about the peak force it saw, while it waits, for three barriers; the dotted line is the value without thermal noise."
+from mibook import figures
+figures.fig_nonlinear();
+```
+
+## Results
+
+**The arm transforms when it moves far.** With small inputs ($A=0.02$ N) the degree-2 capacity
+is close to zero (0.035) at every stiffening, and the arm acts as a linear filter with a
+degree-1 capacity of 4.0. With large inputs ($A=0.1$ N) the degree-2 capacity is 0.37 even with
+linear springs ($\alpha=0$), and rises to 0.51 with strong stiffening ($\alpha=3\times10^4$). The
+degree-1 capacity falls from 4.09 to 3.87 over the same range. Both effects are what the
+reservoir literature reports: nonlinear processing grows with drive amplitude and takes room
+from linear memory, because the readout has a fixed number of dimensions. The geometric
+source is worth stating for the book. A body built entirely from linear springs is still a
+nonlinear mechanism once it deflects far enough to turn them.
+
+**The chain stores, and the barrier sets how long.** Right after the ramp, the chain holds 1.20,
+1.37 and 1.46 bits about the peak at barriers of 6, 8 and 12 $\sigma_T^2$ (@fig-nonlinear). The
+noiseless value is 1.78 bits. The gap is thermal activation during the ramp: elements switch
+a little before their critical forces, at random, which blurs which peak caused which
+mesostate. Waiting erodes the record. After 800 time units the chain keeps 0.10, 0.88 and
+1.38 bits. That ordering is what the Kramers law of @sec-bit predicts for a body with several
+interacting elements, where each extra $\sigma_T^2$ of barrier multiplies an element's lifetime
+by about $e$; the study does not fit lifetimes.
+
+**The cost of a write.** The drive does 50, 66 and 97 $\sigma_T^2$ of net work over the ramp, on
+average. Per bit stored, that is 60 to 96 times Landauer's $\sigma_T^2\ln2$. As in the
+write-read-erase note, the cost of writing against a fixed barrier, not the erasure bound,
+dominates. The cost grows about linearly with the barrier, and the lifetime exponentially.
+So a longer-lived record costs only logarithmically more per unit of lifetime, as
+@rem-write-cost found for a single element.
+
+## What this means for the map
+
+- *Transforming* is not a property of a body alone. It depends on how hard the body is
+  driven, which joins the input's band (from the
+  [comparison note](2026-11-25-comparison.qmd)) as a property of the ensemble of
+  environments.
+- *Storing* in a multi-element body behaves like the single bit of @sec-memory, with
+  interactions that blur the record when it is written. The finite-temperature hysteron
+  picture predicts information, lifetime and cost together, which none of the mechanical
+  memory papers in the survey report.
+
+*What is not settled here.* The arm's capacities use one readout (all node positions) and one
+input period; capacities depend on both. The chain uses one random set of barriers. The
+work counts the drive's net work and does not separate the heat of switching from the
+energy left stored in the springs at the end.
