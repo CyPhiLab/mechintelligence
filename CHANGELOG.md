@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New benchmark library `mibook.bench` (thread T12): fourteen benchmark bodies across
+  linear, nonlinear, contact, fluid and collective tiers, an exact linear engine that runs
+  in time linear in the window, a sampling engine for nonlinear bodies, and the shared
+  measures. Code only; nothing in the book's text uses it yet.
 - @prp-contact is now proved, not only checked (thread T3), with a remark (@rem-kl) that
   reads the bound as relative entropy and links it to KL control.
 - New research note (threads T10 and T12): how other approaches to mechanical intelligence

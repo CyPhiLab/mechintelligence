@@ -412,3 +412,93 @@ def empowerment(body: LinearBody, actuator: str, part: str | np.ndarray = "whole
             break
     p = np.clip(nu - 1.0 / g2, 0.0, None)
     return float(0.5 * np.sum(np.log2(1.0 + p * g2)))
+
+
+# ---------------------------------------------------------------------------------------
+# General state-space bodies (mechanics plus first-order states, such as aerodynamic lags)
+# ---------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class StateSpaceBody:
+    """x' = A x + sum_c B_c u_c + G xi. Same interface as `LinearBody` for every measure.
+
+    Use it when the body has states that are not mechanical positions and velocities, such
+    as the lag states of unsteady aerodynamics or a shaping filter for turbulence. `positions`
+    selects the rows used for spectral rates of the whole body (rows whose noise spectrum is
+    not singular). The noise intensity GG must be declared.
+    """
+    A_: np.ndarray
+    Bs: Mapping[str, np.ndarray]
+    GG_: np.ndarray
+    parts: Mapping[str, np.ndarray] = field(default_factory=dict)
+    positions: np.ndarray | None = None
+    sigma_T2: float = 1e-4
+    name: str = "state-space body"
+    params: Mapping[str, float] = field(default_factory=dict)
+    build: Callable[..., "StateSpaceBody"] | None = None
+
+    @property
+    def A(self) -> np.ndarray:
+        return self.A_
+
+    @property
+    def GG(self) -> np.ndarray:
+        return self.GG_
+
+    @property
+    def dim(self) -> int:
+        return self.A_.shape[0]
+
+    def B(self, channel: str) -> np.ndarray:
+        return np.atleast_2d(self.Bs[channel]).reshape(self.dim, -1)
+
+    def stationary_cov(self) -> np.ndarray:
+        P = sla.solve_continuous_lyapunov(self.A_, -self.GG_)
+        return 0.5 * (P + P.T)
+
+    def part(self, name: str) -> np.ndarray:
+        if name == "whole":
+            return np.eye(self.dim)
+        return np.atleast_2d(self.parts[name])
+
+    def spectral_part(self, name: str) -> np.ndarray:
+        if name == "whole":
+            if self.positions is None:
+                raise ValueError(f"{self.name}: declare `positions` for whole-body spectra")
+            return np.atleast_2d(self.positions)
+        return self.part(name)
+
+    def with_params(self, **changes) -> "StateSpaceBody":
+        if self.build is None:
+            raise ValueError(f"{self.name}: no build function, so parameters cannot change")
+        return self.build(**{**self.params, **changes})
+
+    def discretize(self, dt: float, channel: str | None = None) -> Sampled:
+        return Sampled.of(self, dt, channel)
+
+
+def simulate_linear(body, n_t: int, dt: float, batch: int, u: np.ndarray | None = None,
+                    channel: str | None = None, parts=("whole",), rng=None,
+                    stationary: bool = True) -> dict:
+    """Exact sampled simulation of any linear body: x_{k+1} = Ad x_k + Bd u_k + w_k.
+
+    `u` has shape (n_t, batch, n_u). Starts from the stationary law (or rest). Returns
+    {part: (n_t, batch, m)} with the readout taken before each input sample acts.
+    """
+    rng = np.random.default_rng() if rng is None else rng
+    s = body.discretize(dt, channel)
+    d = s.Ad.shape[0]
+    lam, V = np.linalg.eigh(s.Qd)
+    Lq = V * np.sqrt(np.clip(lam, 0.0, None))
+    lam, V = np.linalg.eigh(s.P)
+    Lp = V * np.sqrt(np.clip(lam, 0.0, None))
+    x = rng.standard_normal((batch, d)) @ Lp.T if stationary else np.zeros((batch, d))
+    Cs = {p: body.part(p) for p in parts}
+    out = {p: np.empty((n_t, batch, C.shape[0])) for p, C in Cs.items()}
+    for k in range(n_t):
+        for p, C in Cs.items():
+            out[p][k] = x @ C.T
+        x = x @ s.Ad.T + rng.standard_normal((batch, d)) @ Lq.T
+        if u is not None:
+            x = x + u[k] @ s.Bd.T
+    return out
