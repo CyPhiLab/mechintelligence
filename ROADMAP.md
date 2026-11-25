@@ -44,7 +44,10 @@ the findings recorded here.
 
 1. Close the open checks: verify or refute the unchecked links in the
    [landscape note](notes/2026-11-25-landscape.qmd) with `mibook.bench`; confirm the
-   *secondary* citations now available in full text (T10, T1).
+   *secondary* citations now available in full text (T10, T1). *Done 2026-11-25* for four
+   links (two corrected) and for Zahedi and Ay (2013); the others marked secondary in T1
+   are not in the collection. The Ljung-Whittle link moves to item 4; the D-optimal
+   correspondence needs only a careful statement.
 2. First comparison study (T12): every measure, at the book's resolution, on the linear
    benchmarks (legs, network, whisker, swarm). Where do the measures rank designs and parts
    alike, and where do they part? Test the draft axes against the results.
@@ -293,6 +296,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-25.** Four links from the literature checked: with the whole state observed, the
+  book's information about a white force is accumulated one-step transfer entropy and equals
+  directed information; for a part, one-step transfer entropy misses nearly everything
+  ($9\times10^{-7}$ against 0.093 bits per sample on the SEA rotor). Zahedi and Ay's measures
+  coincide for a passive body and separate under random actions; feedback raised
+  $\mathrm{MC}_W$ on the SEA, against the reading notes' guess. Empowerment bounds the
+  information at equal power (5.10 against 1.69 bits). A part's effective contact damping is
+  the dissipation, hence the entropy production, per squared contact speed when the part is
+  shaken. `tests/test_bridges.py`; [landscape note](notes/2026-11-25-landscape.qmd).
 - **2026-11-25.** The constant in @prp-contact is proved: $g\le\Delta t\,JD^+J^\top/(2\sigma_T^2)$
   at every sampling step, with equality to first order as $\Delta t\to0$. The information
   held about a force equals the KL control cost of applying it (@rem-kl). Four further links

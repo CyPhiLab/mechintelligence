@@ -4,6 +4,11 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- The landscape note gains four checked links (transfer entropy and directed information,
+  Zahedi and Ay's measures in closed form, empowerment as a bound, and effective damping as
+  dissipation per squared contact speed), with two corrections to the literature's guesses.
+- Zahedi and Ay (2013) confirmed against the full text; the attribution chapter now states
+  their normalization.
 - New benchmark library `mibook.bench` (thread T12): fourteen benchmark bodies across
   linear, nonlinear, contact, fluid and collective tiers, an exact linear engine that runs
   in time linear in the window, a sampling engine for nonlinear bodies, and the shared

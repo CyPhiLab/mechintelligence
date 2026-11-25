@@ -1,7 +1,7 @@
 # Status of the literature claims {#sec-sources}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** stable · **Updated:** 2026-11-21
+**Status:** stable · **Updated:** 2026-11-25
 :::
 
 Each citation in the book is marked by how it was checked. *Full text* means the primary
@@ -24,7 +24,7 @@ text. This table is updated as sources are read in full (thread T10 of the
 | @moore1981principal | secondary | Gramians, coordinate dependence, balancing |
 | @li2007connection | secondary | the EfI and MKE connection, via iteration and re-orthonormalization |
 | @lee2020geometric | secondary | affine-invariant metric on inertial parameters (parameter space, not state space) |
-| @zahedi2013quantifying | secondary | discrete $\mathrm{MC}_W=I(W';W\mid A)$ on empirical distributions |
+| @zahedi2013quantifying | full text | Definition 2, p. 1894: $\mathrm{MC}_W=I(W';W\mid A)/\ln\lvert W\rvert$ on empirical distributions |
 | @patterson2026quantifying | own work | the leg models, settings and quadruped experiments that the book starts from |
 | @wensing2017proprioceptive | secondary | model parameters, as reproduced in @patterson2026quantifying [Sec. III] |
 | @cover2006elements | secondary | Ch. 12, maximum entropy; colored-noise channels |

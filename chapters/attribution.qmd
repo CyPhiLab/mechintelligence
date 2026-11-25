@@ -106,9 +106,10 @@ figures.fig_shapley();
 
 ## Morphological computation $\mathrm{MC}_W$ {#sec-mcw}
 
-@zahedi2013quantifying define $\mathrm{MC}_W=I(W';W\mid A)$ for discrete variables
-estimated from visited states. They do not assume an equilibrium distribution (we could
-read this only through secondary sources; @sec-sources).
+@zahedi2013quantifying [Definition 2, p. 1894] define $\mathrm{MC}_W=I(W';W\mid A)/\ln|W|$
+for discrete variables estimated from visited states, normalized by the number of world
+states $|W|$. They do not assume an equilibrium distribution. The normalization has no
+counterpart for continuous states, so here $\mathrm{MC}_W$ means $I(W';W\mid A)$ itself.
 
 The linear version in the analysis library (`channel.morphological_bits`) adds a
 modelling assumption of its own. It takes the state law to be the Gibbs law $\Em^{-1}$ and chooses the one-step

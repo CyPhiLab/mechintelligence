@@ -24,8 +24,8 @@ design, empowerment, and terrain estimation on legged robots.
   linear body is lossless and a part holds as much as the whole, so all of @sec-inside is an
   effect of noise and dissipation.
 - *A common meeting point.* For linear bodies with Gaussian noise, most approaches reduce to
-  a log-determinant of one noise-whitened Gram matrix. Four such links are proved below and
-  checked in code. A fifth, between the information held about a force and the KL price of
+  a log-determinant of one noise-whitened Gram matrix. Eight such links are proved below and
+  checked in code, two of them with corrections to what the literature suggested. A fifth, between the information held about a force and the KL price of
   applying it, is proved in @rem-kl. Its proof also settles the constant in @prp-contact
   (thread T3).
 
@@ -198,27 +198,109 @@ $F^2/2k_l$, so the ground's share is $(1/k_g)/(1/k_g+1/k_l)=K_S/k_g$.
 terrain papers: a ground much stiffer than the leg holds a small share of the energy and is
 hard to identify, which is why softer contacts help.
 
-## Links found but not yet checked
+## Links checked after the survey
 
-The reading notes propose these. Each needs a proof or a computation before it goes into
-a chapter.
+The reading notes proposed six more links. Four are now checked, with corrections to two
+of them. Each is computed with the benchmark library (`mibook.bench`) and pinned by
+`tests/test_bridges.py`. Throughout, the body is the SEA at $k_s=10^3$, sampled at 4 kHz.
 
-- **Zahedi and Ay's other measures.** For a passive linear body without feedback, their
-  other measures equal $\mathrm{MC}_W$ or vanish, and differences appear only through
-  feedback.
-- **Transfer entropy and directed information.** For a force that does not react to the
-  body, the book's trajectory information is the accumulated transfer entropy from force to
-  state, which equals directed information. When the contact force reacts to the body,
-  directed information is the quantity to use.
-- **Experiment design.** The book's log-determinant is Bayesian D-optimal design
-  [@alexanderian2021optimal], with the body as the design variable.
-- **System identification.** Ljung's information from the noise model equals the Whittle
-  rate of the parameter notes [@ljung1999system]. Active excitation adds a separate term.
-- **Empowerment.** With actuator and contact at the same port, empowerment is the capacity
-  of the book's channel. The book's value is the information at the environment's force
-  law, so it cannot exceed empowerment at equal power.
-- **Entropy production.** The entropy production of a driven linear body is a sum over
-  dampers with the same form as the per-damper cost in @sec-push.
+### Transfer entropy and directed information
+
+::: {#prp-te-whole name="Whole state: directed information is accumulated one-step transfer entropy"}
+Let an i.i.d. force $u_k\sim\mathcal N(0,q)$ drive the body, and let the whole state be
+observed. Over $n$ samples, the information about the force sequence equals the directed
+information from force to state, and equals $(n-1)$ times the one-step transfer entropy
+$I(u_k;x_{k+1}\mid x_k)=\frac12\log(1+q\,g)$, with $g$ the per-sample gain of @prp-innov.
+:::
+
+::: {.proof}
+The force does not depend on the body, so by Massey's theorem the information and the
+directed information are equal. By the chain rule, the information is the sum over $k$ of
+$I(u_{<n};x_{k+1}\mid x_{\le k})$. Given $x_k$, the next state is
+$x_{k+1}=A_dx_k+B_du_k+w_k$, which depends on the force only through $u_k$ and on the past
+only through $x_k$. So each term is $I(u_k;x_{k+1}\mid x_k)$, a scalar Gaussian channel
+whose signal-to-noise ratio is $q\,B_d^\top Q_d^{-1}B_d=q\,g$. The first sample, $x_0$, is
+independent of the force.
+:::
+
+**A correction for parts.** For a part, the one-step transfer entropy
+$I(u_{k-1};y_k\mid y_{k-1})$, the version used in sensorimotor studies, is not the right
+quantity. The rotor holds 0.093 bits per sample about the force (the directed-information
+rate, from the slope of the window information). The one-step transfer entropy gives
+$9\times10^{-7}$. At 4 kHz, consecutive samples of a part are almost equal, so
+conditioning on one past sample explains away nearly everything. A part's information
+needs its whole past, which is the history view of the book.
+
+### Zahedi and Ay's measures in closed form
+
+For a linear body with an actuator on the force channel, a sensor $S=CW+v$ and a linear
+policy $A=-\kappa S+\eta$, the joint law of $(W,S,A,W')$ is Gaussian, so every measure is
+a log-determinant (`zahedi_ay_linear`).
+
+- *Passive* (no action): $\mathrm{MC}_W$, $\mathrm{MI}_{MI}$ and $\mathrm{MI}_{CA}$ all equal
+  $I(W';W)$, the closed form of @prp-mcw (12.75 nats), and $\mathrm{MC}_A=0$.
+- *Random actions without feedback* ($\kappa=0$): the measures separate,
+  $\mathrm{MC}_W=12.93>\mathrm{MI}_{MI}=12.85>\mathrm{MI}_{CA}=12.84$ nats, and
+  $\mathrm{MC}_A=\frac12\log\det(I+Q_d^{-1}B_d\sigma_\eta^2B_d^\top)$, as the reading notes
+  derived.
+- *Feedback:* the reading notes proposed that $\mathrm{MC}_W$ falls as the policy becomes
+  more informative about the state. On the SEA it rises slightly with the gain (12.934 to
+  12.936 nats from $\kappa=0$ to 800). So the claim is not general. Feedback changes the
+  body's dynamics, and that can move $\mathrm{MC}_W$ either way.
+
+### Empowerment bounds the information at equal power
+
+With actuator and force at the same port and the whole state read at a horizon of $n$
+steps, empowerment is the capacity of the channel from the input sequence to that state
+under total power $nq$. The information about an i.i.d. $\mathcal N(0,q)$ force is that
+channel's information at one admissible input law, so it cannot be larger. At $n=30$:
+1.69 bits against 5.10 (`check_empowerment_bound`). The bound is far from tight because an
+i.i.d. force spreads its power over directions the body barely feels, while the capacity
+puts it where the body responds.
+
+### Entropy production and the effective contact damping
+
+::: {#prp-beff-dissipation name="The effective damping is dissipation per squared contact speed"}
+Shake the body at a part with a sinusoidal force pattern $p$ at frequency $\omega$, and let
+$v_c$ be the resulting contact velocity amplitude. Then
+$$
+  b_{\rm eff}(\omega)=\frac{2\,\langle P_{\rm diss}\rangle}{|v_c|^2},
+$$
+where $\langle P_{\rm diss}\rangle$ is the mean power dissipated by all dampers, the
+contact damper included. For a body with thermal noise, $\langle P_{\rm diss}\rangle/\sigma_T^2$
+is the mean entropy production rate of the shaken body above its equilibrium value.
+:::
+
+::: {.proof}
+*The identity.* The mean power of a sinusoid with velocity amplitude $\dot s$ in a damper
+$b$ is $\frac12b|\dot s|^2$. Summing over the contact damper and the internal dampers,
+$2\langle P_{\rm diss}\rangle=b_c|v_c|^2+\sum_jb_j|\dot s_j|^2$. Divide by $|v_c|^2$.
+Stretch rates are $i\omega$ times stretches, so the ratio equals
+$b_c+\sum_jb_j|a_j^\top w|^2/|Jw|^2$, the reciprocity formula of @sec-push.
+
+*The entropy production.* A deterministic force shifts the mean of a linear body and leaves
+its covariance at the Gibbs law, so the body's own entropy does not change. Write the
+velocity as its mean $\bar v$ plus a fluctuation. The heat given to the surroundings has
+mean rate $\E[\dot q^\top D\dot q]-\sigma_T^2\operatorname{tr}(DH^{-1})=\bar v^\top D\bar v$,
+since the fluctuation contributes $\sigma_T^2\operatorname{tr}(DH^{-1})$, which the thermal
+forces put back. Dividing by the temperature $\sigma_T^2$ gives the entropy production rate.
+:::
+
+**What it means.** The book's measure of how well a part holds the contact force has a
+thermodynamic reading. Shake the part. Count the entropy produced per unit of squared
+contact speed. The fewer internal dampers stretch, the closer that number is to the contact
+damper alone, and the more the part holds. A part sees the contact well exactly when
+shaking it wastes little energy away from the contact. The check on random chains agrees
+to $10^{-14}$ (`check_dissipation`).
+
+### Still to check
+
+- **Experiment design.** Under the definitions of @alexanderian2021optimal, the book's
+  log-determinant is Bayesian D-optimal design, with the body as the design variable. This
+  is a correspondence of definitions and needs only a careful statement.
+- **System identification.** Ljung's information from the noise model should equal the
+  Whittle rate of the parameter notes [@ljung1999system], with active excitation adding a
+  separate term. This goes with the checks owed for the parameter notes (thread T11).
 
 ## Points of tension
 

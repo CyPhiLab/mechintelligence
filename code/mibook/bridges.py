@@ -245,3 +245,142 @@ def check_series_rule(kg: float = 1e6, kl_grid=(1e3, 1e4, 1e5, 1e6, 1e7), h: flo
         share = (1.0 / kg) / (1.0 / kg + 1.0 / kl)            # energy F^2/2k in the ground spring
         rows.append(dict(kl=kl, slope=float(slope), share=float(share)))
     return dict(rows=rows)
+
+
+# ---------------------------------------------------------------------------------------
+# Item 1 of the 2026-11-25 priorities: links listed as unchecked in the landscape note
+# ---------------------------------------------------------------------------------------
+
+def _gauss_cond_mi(S: np.ndarray, ia, ib, ic=()) -> float:
+    """I(a; b | c) in nats for a zero-mean Gaussian with covariance S (index lists)."""
+    ld = lambda idx: np.linalg.slogdet(S[np.ix_(idx, idx)])[1] if len(idx) else 0.0
+    ia, ib, ic = list(ia), list(ib), list(ic)
+    return 0.5 * (ld(ia + ic) + ld(ib + ic) - ld(ia + ib + ic) - ld(ic))
+
+
+def check_directed_information(ks: float = 1e3, q: float = 1e4, n_t=(200, 400)) -> dict:
+    """Transfer entropy, directed information and the book's information about a white force.
+
+    Whole state: the information about an i.i.d. force over n samples is (n-1) times the
+    one-step transfer entropy 1/2 log(1 + q g). A part: the one-step transfer entropy
+    I(u_{k-1}; y_k | y_{k-1}) falls short of the directed-information rate, which needs the
+    whole past of the part.
+    """
+    from mibook.bench import make, linear as L
+    body = make("sea", ks=ks)
+    s = body.discretize(1 / 4000.0, "force")
+    g = (s.Bd.T @ np.linalg.solve(s.Qd, s.Bd)).item()
+    whole = {n: L.white_input_bits(body, "whole", q=q, n_t=n) for n in n_t}
+    per_step_te = 0.5 * np.log2(1 + q * g)
+    # The rotor: DI rate from the slope of the window information; one-step TE in closed form.
+    rot = {n: L.white_input_bits(body, "rotor", q=q, n_t=n, eps=1e-9) for n in n_t}
+    di_rate = (rot[n_t[1]] - rot[n_t[0]]) / (n_t[1] - n_t[0])
+    W = sla.solve_discrete_lyapunov(s.Ad, s.Bd @ s.Bd.T)
+    Sx = s.P + q * W
+    C = body.part("rotor")
+    # Joint covariance of (u_{k-1}, y_{k-1}, y_k), stationary.
+    Syy = C @ Sx @ C.T + 1e-18
+    Sy1y0 = C @ s.Ad @ Sx @ C.T
+    Suy1 = q * (C @ s.Bd).T
+    S = np.block([[np.array([[q]]), np.zeros((1, 1)), Suy1],
+                  [np.zeros((1, 1)), Syy, Sy1y0.T],
+                  [Suy1.T, Sy1y0, Syy]])
+    te1 = _gauss_cond_mi(S, [0], [2], [1]) / np.log(2)
+    return dict(whole=whole, per_step_te=per_step_te, n_t=n_t, rotor_di_rate=di_rate,
+                rotor_te1=te1)
+
+
+def zahedi_ay_linear(body, gain: float = 0.0, sigma_a: float = 0.0, sensor: str = "rotor",
+                     fs: float = 4000.0, eps: float = 1e-6) -> dict:
+    """Zahedi and Ay's measures for a linear body in closed loop, in nats.
+
+    World W = the whole state, sensor S = C W + v (variance eps^2), action
+    A = -gain S + eta (variance sigma_a^2) applied on the force channel, next state
+    W' = A_d W + B_d A + w. With the stationary joint Gaussian law of (W, S, A, W'):
+    MC_W = I(W'; W | A), MC_A = I(W'; A | W), MI_MI = I(W'; W) - I(A; S),
+    MI_CA = I(W'; W) - I(W'; A).
+    """
+    s = body.discretize(1 / fs, "force")
+    C = body.part(sensor)
+    m = C.shape[0]
+    Fb = -gain * s.Bd @ C                                 # closed-loop feedback
+    Acl = s.Ad + Fb
+    if np.max(np.abs(np.linalg.eigvals(Acl))) >= 1:
+        raise ValueError("closed loop unstable at this gain")
+    Qcl = s.Qd + s.Bd @ s.Bd.T * sigma_a ** 2 + gain ** 2 * eps ** 2 * s.Bd @ s.Bd.T
+    Sw = sla.solve_discrete_lyapunov(Acl, Qcl)
+    d = Sw.shape[0]
+    # Stack z = (W, S, A, W'), linear in independent (W, v, eta, w).
+    nW, nv, ne, nw = d, m, 1, d
+    T = np.zeros((d + m + 1 + d, nW + nv + ne + nw))
+    T[:d, :d] = np.eye(d)
+    T[d:d + m, :d] = C
+    T[d:d + m, d:d + m] = np.eye(m)
+    T[d + m, :d] = -gain * C.ravel() if m == 1 else -gain * C.sum(0)
+    T[d + m, d:d + m] = -gain
+    T[d + m, d + m] = 1.0
+    T[d + m + 1:, :] = s.Ad @ T[:d] + s.Bd @ T[d + m:d + m + 1]
+    T[d + m + 1:, d + m + 1:] += np.eye(d)
+    Sigma_src = sla.block_diag(Sw, eps ** 2 * np.eye(m), np.array([[max(sigma_a, 1e-30) ** 2]]), s.Qd)
+    S = T @ Sigma_src @ T.T
+    iW, iS, iA, iW1 = (range(d), range(d, d + m), [d + m], range(d + m + 1, 2 * d + m + 1))
+    I = lambda a, b, c=(): _gauss_cond_mi(S, a, b, c)
+    return dict(MC_W=I(iW1, iW, iA), MC_A=I(iW1, iA, iW),
+                MI_MI=I(iW1, iW) - I(iA, iS), MI_CA=I(iW1, iW) - I(iW1, iA),
+                I_WW=I(iW1, iW))
+
+
+def check_zahedi_ay(gains=(0.0, 50.0, 200.0, 800.0)) -> dict:
+    from mibook.bench import make, linear as L
+    body = make("sea", ks=1e3)
+    passive = zahedi_ay_linear(body, 0.0, 0.0)
+    open_loop = zahedi_ay_linear(body, 0.0, 10.0)
+    s = body.discretize(1 / 4000.0, "force")
+    mc_a_formula = 0.5 * np.linalg.slogdet(np.eye(s.Qd.shape[0])
+                                           + np.linalg.solve(s.Qd, 100.0 * s.Bd @ s.Bd.T))[1]
+    closed = {g: zahedi_ay_linear(body, g, 10.0) for g in gains}
+    return dict(passive=passive, mcw_book=L.mc_w(body) * np.log(2), open_loop=open_loop,
+                mc_a_formula=mc_a_formula, closed=closed)
+
+
+def check_empowerment_bound(horizon: int = 30, q: float = 1e3) -> dict:
+    """Empowerment at total power n q against the information about an i.i.d. N(0, q) force
+    over the same n steps, read at the horizon, with actuator and force at the same port."""
+    from mibook.bench import make, linear as L
+    body = make("sea", ks=1e3)
+    s = body.discretize(1 / 4000.0, "force")
+    cols, M = [], s.Bd
+    Pn = np.zeros_like(s.Qd)
+    for _ in range(horizon):
+        cols.append(M)
+        M = s.Ad @ M
+        Pn = s.Ad @ Pn @ s.Ad.T + s.Qd
+    Gn = np.hstack(cols[::-1])
+    info = 0.5 * np.linalg.slogdet(np.eye(Pn.shape[0]) + q * np.linalg.solve(Pn, Gn @ Gn.T))[1] / np.log(2)
+    emp = L.empowerment(body, "force", "whole", horizon=horizon, power=horizon * q)
+    return dict(info=float(info), empowerment=emp)
+
+
+def check_dissipation(n_chains: int = 6, f_hz=(1.0, 10.0, 60.0), seed: int = 3) -> dict:
+    """A part's effective contact damping is the dissipation per squared contact speed when
+    the part is shaken: b_eff = (b_c |v_c|^2 + sum_j b_j |s_j'|^2) / |v_c|^2."""
+    from mibook import chain
+    rng = np.random.default_rng(seed)
+    rows = []
+    for _ in range(n_chains):
+        sys, b_c, _, _, _, dampers = chain.random_chain(rng)
+        part = int(rng.integers(0, sys.n))
+        p = np.zeros(sys.n)
+        p[part] = 1.0
+        D = -sys.H @ sys.A[sys.n:, sys.n:]
+        for f in f_hz:
+            w = 2 * np.pi * f
+            Z = sys.K - w ** 2 * sys.H + 1j * w * D
+            x = np.linalg.solve(Z, p.astype(complex))
+            vel = 1j * w * x
+            vc = (np.atleast_2d(sys.J) @ vel).item()
+            # Average dissipated power of a sinusoid: (1/2) v^* D v. Contact damper included in D.
+            P_diss = 0.5 * np.real(vel.conj() @ D @ vel)
+            beff = chain.reciprocity_beff(sys, p, dampers, b_c, [w])[0]
+            rows.append(dict(beff=float(beff), from_power=float(2 * P_diss / abs(vc) ** 2)))
+    return dict(rows=rows)
