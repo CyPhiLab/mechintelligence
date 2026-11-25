@@ -225,9 +225,44 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   other approaches agree with the book's, and with each other, and where do they part?
   Measures: information held (the book), memory capacity, Zahedi and Ay's measures,
   transfer entropy, empowerment, control effort, and energy cost.
-- Bodies: the rigid and SEA legs, plus benchmark bodies to be chosen with the reviewer.
-- First steps: choose the benchmarks; compute the measures; test the draft axes against
-  the results.
+- Principle: every benchmark is *ready to go*, not fully studied. Ready means a model, a
+  simulator with a declared noise, a connection to the shared measures, a test, and one
+  baseline number. Studies are run when a question needs them.
+- Code (`mibook.bench`), in three layers, so each body and each measure is written once:
+  1. *Bodies.* One small interface: state, a stochastic step with declared noise, named
+     environment channels (inputs such as forces, gusts and terrain; properties such as
+     stiffness, mass and flow speed), and a linearization at an operating point where one
+     exists.
+  2. *Engines.* An exact engine for linear bodies with Gaussian noise, using the filtering
+     (innovations) form so the cost grows linearly with the window, and frequency-domain
+     formulas for rates. A sampling engine that simulates batches of trajectories for
+     nonlinear and contact bodies, checked against the exact engine on linear ones.
+  3. *Measures.* Information held about an input or a property, Fisher information, memory
+     capacity, Zahedi and Ay's measures, transfer entropy, empowerment, energy cost and
+     entropy production; control effort later.
+- Benchmarks, in tiers:
+  - *Linear, closed forms:* the rigid and SEA legs (ported first; must reproduce the
+    book's numbers), random mass-spring-damper networks (the standard body of
+    morphological and reservoir computing), a whisker-like beam touched along its length.
+  - *Nonlinear, smooth:* a soft arm with stiffening springs; a chain of bistable elements
+    (hysterons at finite temperature).
+  - *Contact and switching:* a spring-loaded hopper; a compliant gripper holding objects of
+    unknown mass or stiffness; a passive walker on an unknown slope; a soft tentacle
+    grasping (planar discretized rod with contact); a hyper-redundant many-legged robot on
+    rough terrain.
+  - *Fluids:* a foil in a flow, including a vortex street (reduced-order unsteady
+    thin-airfoil model with the street as a travelling disturbance; a point-vortex model as
+    an upgrade; no CFD); gust rejection in a bird (longitudinal flight dynamics with a
+    compliant wing root, a gust-response filter and a turbulence spectrum).
+  - *Collectives:* a swarm of simple robots coupled physically or by local sensing.
+- Open modeling question for the fluid benchmarks: turbulence is naturally part of the
+  environment, so the resolution must come from the body's own dissipation. Settle it when
+  those benchmarks are first used.
+- Order: interface and engines; legs (regression against the book); linear tier;
+  nonlinear tier; contact, fluid and collective tiers. Several sessions; the foil and the
+  bird need the most care.
+- Then: compute the measures on chosen benchmarks and test the draft axes against the
+  results.
 
 ## Findings log
 
