@@ -61,16 +61,23 @@ class MechSim:
         Lc = V * np.sqrt(np.clip(lam, 0.0, None))
         return Hi, E, Lc
 
-    def step(self, q, v, u, rng, dt, cache):
+    def accel(self, q, u, Hi):
+        return (self.force(q, self.params) + np.einsum("bun,bu->bn", self.J(q), u)) @ Hi.T
+
+    def step(self, q, v, u, rng, dt, cache, a=None):
+        """One BAOAB step. `a` is the acceleration at (q, u) if already known; the
+        acceleration at the new position is returned for reuse by the next step (the
+        input is held over a step, so this is exact when u does not change)."""
         Hi, E, Lc = cache
-        acc = lambda qq: (self.force(qq, self.params)
-                          + np.einsum("bun,bu->bn", self.J(qq), u)) @ Hi.T
-        v = v + 0.5 * dt * acc(q)
+        if a is None:
+            a = self.accel(q, u, Hi)
+        v = v + 0.5 * dt * a
         q = q + 0.5 * dt * v
         v = v @ E.T + rng.standard_normal(v.shape) @ Lc.T
         q = q + 0.5 * dt * v
-        v = v + 0.5 * dt * acc(q)
-        return q, v
+        a = self.accel(q, u, Hi)
+        v = v + 0.5 * dt * a
+        return q, v, a
 
     def simulate(self, n_steps: int, dt: float, batch: int, u=None, rng=None,
                  parts=("whole",), q_init=None, v_init=None, burn_in: int = 0):
@@ -86,14 +93,18 @@ class MechSim:
         cache = self._ou(dt)
         n_u = self.J(q).shape[1]
         zero = np.zeros((batch, n_u))
+        a = None
         for _ in range(burn_in):
-            q, v = self.step(q, v, zero, rng, dt, cache)
+            q, v, a = self.step(q, v, zero, rng, dt, cache, a)
         out = {p: np.empty((n_steps, batch, self.readout(p, q, v).shape[-1])) for p in parts}
+        u_prev = zero
         for k in range(n_steps):
             for p in parts:
                 out[p][k] = self.readout(p, q, v)
             uk = zero if u is None else (u(k, q, v) if callable(u) else u[k])
-            q, v = self.step(q, v, uk, rng, dt, cache)
+            reuse = a if (a is not None and np.array_equal(uk, u_prev)) else None
+            q, v, a = self.step(q, v, uk, rng, dt, cache, reuse)
+            u_prev = uk
         return out, (q, v)
 
 
