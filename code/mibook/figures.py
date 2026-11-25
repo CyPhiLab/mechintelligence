@@ -614,3 +614,35 @@ def fig_regimes(s=None):
     cb = fig.colorbar(im, cax=cax)
     cb.set_label("log$_{10}$ advantage over the stiffest design")
     return _save(fig, "regimes")
+
+
+def fig_nonlinear(res=None):
+    """Left: degree-1 and degree-2 capacities of the soft arm against spring stiffening.
+    Right: bits about the peak force held by the bistable chain while it waits."""
+    from mibook.bench import nonlinear_study as N
+    res = N.summary() if res is None else res
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(6.6, 2.6))
+    arm = res["arm"]
+    amps = sorted({r["amp"] for r in arm})
+    for A, ls in zip(amps, ("-", "--")):
+        rows = sorted([r for r in arm if r["amp"] == A], key=lambda r: r["alpha"])
+        x = [max(r["alpha"], 1e2) for r in rows]
+        a1.plot(x, [r["deg1"] for r in rows], ls, color=C1, marker="o",
+                label=f"degree 1, {A:g} N")
+        a1.plot(x, [r["deg2"] for r in rows], ls, color=C2, marker="s",
+                label=f"degree 2, {A:g} N")
+    a1.set_xscale("log")
+    a1.set_xlabel(r"stiffening $\alpha$ (1/m$^2$; 0 plotted at $10^2$)")
+    a1.set_ylabel("capacity (sum of $R^2$)")
+    a1.legend(fontsize=6.5, ncol=1)
+    for r, c in zip(res["chain"], (C3, C1, C4)):
+        waits = sorted(r["info"])
+        a2.plot(waits, [r["info"][w] for w in waits], color=c, marker="o",
+                label=fr"barrier {r['barrier']:g} $\sigma_T^2$")
+    a2.axhline(res["chain"][0]["ideal"], color=INK2, lw=0.8, ls=":", label="no thermal noise")
+    a2.set_xlabel("waiting time after the ramp")
+    a2.set_ylabel("bits about the peak force")
+    a2.set_ylim(bottom=0)
+    a2.legend(fontsize=6.5)
+    fig.tight_layout()
+    return _save(fig, "nonlinear")
