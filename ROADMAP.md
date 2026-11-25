@@ -379,6 +379,15 @@ written up.
   work continues on `drafts`, and the next release republishes it. The nonlinear notes
   are folded into a new Part IV, "Nonlinear bodies".
 
+- **2026-11-25.** The book's goal is a map of mechanical intelligence: a way to classify
+  it, and the relationships between the different ways people have thought about it. Other
+  approaches are treated as other views of the same subject, not as rivals, and they are
+  woven into the chapters where they bear on the question rather than kept in a separate
+  related-work section. Where two approaches overlap, the book should say how they relate:
+  when one reduces to the other, what each assumes, and what each can see that the other
+  cannot. The literature informs the map but does not limit it; new ideas are welcome
+  where the map has gaps.
+
 ## Paper candidates
 
 - **The energy metric is unique, and free motion cannot create information under it.**
