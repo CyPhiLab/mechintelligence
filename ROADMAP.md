@@ -40,6 +40,30 @@ the findings recorded here.
   request. All other book work goes to `drafts`. Changes to other repositories, such as
   the lab website, go through pull requests.
 
+## Priorities (agreed 2026-11-25)
+
+1. Close the open checks: verify or refute the unchecked links in the
+   [landscape note](notes/2026-11-25-landscape.qmd) with `mibook.bench`; confirm the
+   *secondary* citations now available in full text (T10, T1).
+2. First comparison study (T12): every measure, at the book's resolution, on the linear
+   benchmarks (legs, network, whisker, swarm). Where do the measures rank designs and parts
+   alike, and where do they part? Test the draft axes against the results.
+3. Holding, acting and paying on one body (T12): information about the environment,
+   empowerment, controller effort and energy cost on the SEA stiffness sweep and the bird's
+   shoulder. Framed as an open question, not a trade-off assumed in advance: compliance can
+   help action (energy storage and return, impact protection, smoother force, conforming to
+   terrain) as well as hurt it, and likewise for perception. Map the regimes where it helps
+   or hurts each, and find what decides.
+4. The checks owed under T11 before the parameter notes enter a chapter.
+5. Nonlinear comparisons: memory capacity against information on the soft arm; hysteron
+   networks at finite temperature (T7, T12).
+6. The classification frame in the opening chapter, and the targeted links into
+   chapters, once 2 and 3 have tested the axes.
+7. Release, on the reviewer's polishing timeline: QC pass and release pull request.
+
+Parked until a study needs them: the fluid-noise question, closed-loop contact through
+directed information, T5, T6, compiled force kernels, T4.
+
 ## Threads
 
 Order is chosen together at the start of a session. Status is one of *active*, *queued*,
