@@ -105,9 +105,12 @@ def soft_arm(n_seg: int = 10, length: float = 0.3, width: float = 0.03, mass: fl
         return C
     parts = {"base_x": sel(2 * L(1)), "mid_x": sel(2 * L(N // 2)), "tip_x": sel(2 * L(N)),
              "base_strain": sel(2 * L(1) + 1, 2 * R(1) + 1)}
-    return MechSim(H=H, D=D, force=force,
-                   J=lambda q: np.broadcast_to(Jtip, (q.shape[0], 1, n)),
-                   sigma_T2=sigma_T2, params=params, parts=parts, name="soft arm")
+    sim = MechSim(H=H, D=D, force=force,
+                  J=lambda q: np.broadcast_to(Jtip, (q.shape[0], 1, n)),
+                  sigma_T2=sigma_T2, params=params, parts=parts, name="soft arm")
+    sim.rest, sim.n_seg, sim.base = rest, N, base   # geometry, for bodies built on the arm
+    sim.left = [L(i) for i in range(1, N + 1)]
+    return sim
 
 
 @register("bistable_chain", "2-nonlinear",

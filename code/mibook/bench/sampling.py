@@ -39,6 +39,9 @@ class MechSim:
     parts: Mapping[str, np.ndarray] = field(default_factory=dict)
     name: str = "sim"
     q0: np.ndarray | None = None
+    # Optional velocity-dependent force (q, v, params) -> (batch, n), e.g. contact damping.
+    # It is deterministic: the thermal noise comes only from D.
+    velocity_force: Callable | None = None
 
     @property
     def n(self) -> int:
@@ -61,21 +64,27 @@ class MechSim:
         Lc = V * np.sqrt(np.clip(lam, 0.0, None))
         return Hi, E, Lc
 
-    def accel(self, q, u, Hi):
-        return (self.force(q, self.params) + np.einsum("bun,bu->bn", self.J(q), u)) @ Hi.T
+    def total_force(self, q, v, u):
+        F = self.force(q, self.params) + np.einsum("bun,bu->bn", self.J(q), u)
+        if self.velocity_force is not None:
+            F = F + self.velocity_force(q, v, self.params)
+        return F
+
+    def accel(self, q, u, Hi, v=None):
+        return self.total_force(q, v, u) @ Hi.T
 
     def step(self, q, v, u, rng, dt, cache, a=None):
         """One BAOAB step. `a` is the acceleration at (q, u) if already known; the
         acceleration at the new position is returned for reuse by the next step (the
         input is held over a step, so this is exact when u does not change)."""
         Hi, E, Lc = cache
-        if a is None:
-            a = self.accel(q, u, Hi)
+        if a is None or self.velocity_force is not None:
+            a = self.accel(q, u, Hi, v)
         v = v + 0.5 * dt * a
         q = q + 0.5 * dt * v
         v = v @ E.T + rng.standard_normal(v.shape) @ Lc.T
         q = q + 0.5 * dt * v
-        a = self.accel(q, u, Hi)
+        a = self.accel(q, u, Hi, v)
         v = v + 0.5 * dt * a
         return q, v, a
 
@@ -153,7 +162,8 @@ def lmmse_bits(U: np.ndarray, Y: np.ndarray, ridge: float = 0.0, unbiased: bool 
 
 
 def path_fisher(sim: MechSim, param: str, n_steps: int, dt: float, batch: int,
-                rel_step: float = 1e-4, rng=None, log: bool = True, burn_in: int = 0):
+                rel_step: float = 1e-4, rng=None, log: bool = True, burn_in: int = 0,
+                u=None, q_init=None, v_init=None):
     """Fisher information about a force parameter from the whole state path (Girsanov).
 
     With the state observed, the score is sum_k dF^T (2 sigma_T^2 D)^+ (H dv_k - (F - D v) dt),
@@ -161,31 +171,66 @@ def path_fisher(sim: MechSim, param: str, n_steps: int, dt: float, batch: int,
     position), for which this score is exact. Plain Euler-Maruyama pumps energy into
     oscillators and biases the result. Returns the Monte Carlo mean of
     the squared score and its standard error. dF must lie in the range of D.
+
+    `u` is a known input: None, or a callable (k, q, v) -> (batch, n_u). The parameter may
+    enter the position force, the velocity force, or both.
     """
     rng = np.random.default_rng() if rng is None else rng
     theta = sim.params[param]
     h = rel_step if log else rel_step * max(abs(theta), 1e-12)
 
-    def F_at(q, val):
-        return sim.force(q, {**sim.params, param: val})
+    def F_at(q, v, val):
+        p = {**sim.params, param: val}
+        F = sim.force(q, p)
+        if sim.velocity_force is not None:
+            F = F + sim.velocity_force(q, v, p)
+        return F
 
     up = theta * np.exp(h) if log else theta + h
     dn = theta * np.exp(-h) if log else theta - h
     Dp = np.linalg.pinv(2.0 * sim.sigma_T2 * sim.D)
     Hm, Dm = sim.H, sim.D
     q, v = gibbs_start(sim, batch, rng)
+    if q_init is not None:
+        q = q_init.copy()
+    if v_init is not None:
+        v = v_init.copy()
+    n_u = sim.J(q).shape[1]
     lamD, VD = np.linalg.eigh(2.0 * sim.sigma_T2 * Dm * dt)
     LD = VD * np.sqrt(np.clip(lamD, 0.0, None))
     Hi = np.linalg.inv(Hm)
     score = np.zeros(batch)
     for k in range(burn_in + n_steps):
-        F = sim.force(q, sim.params)
+        uk = np.zeros((batch, n_u)) if u is None else u(k, q, v)
+        F = sim.total_force(q, v, uk)
         xi = rng.standard_normal(v.shape) @ LD.T             # impulse of the thermal force
         dv = ((F - v @ Dm.T) * dt + xi) @ Hi.T
         if k >= burn_in:
-            dF = (F_at(q, up) - F_at(q, dn)) / (2 * h)
+            dF = (F_at(q, v, up) - F_at(q, v, dn)) / (2 * h)
             score += np.einsum("bi,ij,bj->b", dF, Dp, dv @ Hm.T - (F - v @ Dm.T) * dt)
         v = v + dv
         q = q + v * dt                 # semi-implicit Euler: no energy drift for oscillators
     fi = score ** 2
     return float(fi.mean()), float(fi.std(ddof=1) / np.sqrt(batch))
+
+
+def feature_fisher(run: Callable[[dict, np.random.Generator], np.ndarray], params: dict,
+                   param: str, rel_step: float = 0.05, seed: int = 0, log: bool = True):
+    """Lower bound on the Fisher information about `param` from summary features.
+
+    `run(params, rng) -> (batch, d)` simulates a batch and returns features. With mean mu and
+    covariance Sigma of the features, d_mu^T Sigma^-1 d_mu is a lower bound on the Fisher
+    information of the features, hence of the whole data (Cramer-Rao for a statistic). The
+    derivative uses common random numbers (the same seed at theta +- h) to cut its variance.
+    Works for any body, including hybrid ones and parameters of the mass matrix.
+    """
+    theta = params[param]
+    h = rel_step if log else rel_step * max(abs(theta), 1e-12)
+    up = {**params, param: theta * np.exp(h) if log else theta + h}
+    dn = {**params, param: theta * np.exp(-h) if log else theta - h}
+    Fu = run(up, np.random.default_rng(seed))
+    Fd = run(dn, np.random.default_rng(seed))
+    F0 = run(params, np.random.default_rng(seed + 1))
+    dmu = (Fu.mean(0) - Fd.mean(0)) / (2 * h)
+    S = np.atleast_2d(np.cov(F0, rowvar=False))
+    return float(dmu @ np.linalg.solve(S, dmu))
