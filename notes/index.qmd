@@ -5,6 +5,7 @@ found, what checks it, and where it now lives in the chapters, if anywhere.
 
 | Date | Note | Status | Now in |
 |:--|:--|:--|:--|
+| 2026-11-25 | [How other approaches to mechanical intelligence relate to this book](2026-11-25-landscape.qmd) | exploratory | not yet |
 | 2026-11-22 | [Erasing a mechanical bit, and the cost of a cycle](2026-11-22-erasing-a-bit.qmd) | promoted | @sec-erase |
 | 2026-11-22 | [A mechanical bit inside a body](2026-11-22-bit-in-a-body.qmd) | promoted | @sec-bit-body |
 | 2026-11-22 | [Writing a mechanical bit](2026-11-22-writing-a-bit.qmd) | promoted | @sec-write |

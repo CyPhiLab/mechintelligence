@@ -1,7 +1,7 @@
 # A thermodynamically consistent body: Langevin noise {#sec-langevin}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** draft · **Updated:** 2026-11-21 · **Checked by:** `tests/test_energy_whitening.py`
+**Status:** draft · **Updated:** 2026-11-25 · **Checked by:** `tests/test_energy_whitening.py`, `tests/test_bridges.py`
 :::
 
 The noise of Part I is static: a fresh draw from $\mathcal N(0,\sigma^2\Em^{-1})$ laid over
@@ -50,48 +50,114 @@ row $k$ of $\bar\Phi$. Since $g$ is a scalar, this equals $\sigma_w^2g\,\bar\Phi
 :::
 
 ::: {#prp-contact name="Only the dissipation at the contact matters"}
-Suppose $J^\top$ lies in the range of $D$. As $\Delta t\to0$,
+Suppose $J^\top$ lies in the range of $D$, and write $\kappa=JD^+J^\top$. Then, at every
+sampling step $\Delta t>0$,
 $$
-  g\;\to\;\frac{\Delta t}{2\sigma_T^2}\,J D^+J^\top .
+  g\;\le\;\frac{\Delta t}{2\sigma_T^2}\,\kappa ,
 $$
-With the full state observed, the information therefore depends only on $JD^+J^\top$: the
-damping seen at the point where the force acts. For the ground model used here, $JD^+J^\top=1/b_i$
-for the rigid transmission and for every SEA, so every design gives the same bits.
+and as $\Delta t\to0$,
+$$
+  g\;=\;\frac{\Delta t}{2\sigma_T^2}\,\kappa\,\big(1+O(\Delta t)\big).
+$$
+With the full state observed, the information therefore depends only on $\kappa$: the
+damping seen at the point where the force acts. For the ground model used here,
+$\kappa=1/b_i$ for the rigid transmission and for every SEA, so every design gives the
+same bits.
 :::
 
-::: {.proof name="Proof sketch"}
-*Continuous time.* In the continuous-time limit, observing the state exactly is a
-white-Gaussian-noise channel for the drift $Bf$, with noise intensity
-$GG^\top=\diag(0,\,2\sigma_T^2H^{-1}DH^{-1})$. In the low-signal limit, where the causal
-estimate of the signal is negligible, Duncan's theorem [@duncan1970calculation] gives
-the information rate $\frac12\E[(Bf)^\top(GG^\top)^+(Bf)]$ nats per second.
-
-*The rate.* Substituting $B=[0;H^{-1}J^\top]$ gives
+::: {.proof}
+*Setting.* Write the continuous-time model as $\dot x=Ax+Bf+G\xi$ with $\xi$ unit white
+noise, so that $B=[0;\,H^{-1}J^\top]$ and
+$GG^\top=\diag(0,\,2\sigma_T^2H^{-1}DH^{-1})$. Sampling with the force held over each step
+gives
 $$
-  \tfrac12\E[f^2]\,JH^{-1}\big(2\sigma_T^2H^{-1}DH^{-1}\big)^+H^{-1}J^\top
-  =\frac{\E[f^2]}{4\sigma_T^2}\,JD^+J^\top .
+  B_d=\int_0^{\Delta t}e^{As}B\,ds,\qquad
+  Q_d=\int_0^{\Delta t}e^{As}GG^\top e^{A^\top s}\,ds .
 $$
+The second integral equals $P-A_dPA_d^\top$: by @prp-fdt,
+$AP+PA^\top+GG^\top=0$, so $\frac{d}{ds}\big(e^{As}Pe^{A^\top s}\big)=-e^{As}GG^\top
+e^{A^\top s}$, and integrating from $0$ to $\Delta t$ gives the identity. We assume
+$Q_d\succ0$, which is what `gibbs_pair` checks.
 
-*Matching to the discrete channel.* Over one sample, the discrete channel carries
-$\frac12\log(1+g\,\E[f^2])\approx\frac12g\,\E[f^2]$ nats about a force sample. The
-continuous rate gives $\Delta t\,\E[f^2]\,JD^+J^\top/(4\sigma_T^2)$ over the same
-interval. Equating the two gives the stated limit for $g$, which does not depend on the
-signal amplitude.
+*Step 1: $g$ as a best ratio.* For $Q_d\succ0$, the Cauchy–Schwarz inequality in the inner
+product $\langle a,b\rangle=a^\top Q_d^{-1}b$ gives
+$$
+  g=B_d^\top Q_d^{-1}B_d=\sup_{y\neq0}\frac{(y^\top B_d)^2}{y^\top Q_d\,y},
+$$
+with the supremum reached at $y=Q_d^{-1}B_d$.
 
-*The design-independence.*
+*Step 2: the force enters through the noise channel.* Let $u=D^+J^\top$. Because $J^\top$
+lies in the range of $D$, $Du=J^\top$. Put $m=[0;\,Hu]$. Then
+$$
+  GG^\top m=\big[0;\;2\sigma_T^2H^{-1}DH^{-1}Hu\big]=\big[0;\;2\sigma_T^2H^{-1}J^\top\big]=2\sigma_T^2B,
+$$
+and two numbers follow directly:
+$$
+  m^\top B=u^\top J^\top=\kappa,\qquad
+  m^\top GG^\top m=2\sigma_T^2\,u^\top Du=2\sigma_T^2\,\kappa .
+$$
+Since $D\succeq0$, $\kappa=u^\top Du\ge0$, with $\kappa=0$ only if $J^\top=0$.
+
+*Step 3: the upper bound, at every $\Delta t$.* Fix $y$. By Step 2,
+$$
+  y^\top B_d=\frac1{2\sigma_T^2}\int_0^{\Delta t}\big(G^\top e^{A^\top s}y\big)^\top\big(G^\top m\big)\,ds .
+$$
+The Cauchy–Schwarz inequality for vector functions on $[0,\Delta t]$ gives
+$$
+  (y^\top B_d)^2\le\frac1{4\sigma_T^4}
+  \int_0^{\Delta t}\big|G^\top e^{A^\top s}y\big|^2ds\cdot\int_0^{\Delta t}\big|G^\top m\big|^2ds
+  =\frac1{4\sigma_T^4}\,\big(y^\top Q_dy\big)\,\big(\Delta t\cdot2\sigma_T^2\kappa\big).
+$$
+Dividing by $y^\top Q_dy$ and taking the supremum (Step 1) gives
+$g\le\Delta t\,\kappa/(2\sigma_T^2)$.
+
+*Step 4: the lower bound, as $\Delta t\to0$.* Take $y=m$ in Step 1. Since
+$e^{As}=I+O(s)$,
+$$
+  m^\top B_d=\Delta t\,\kappa+O(\Delta t^2),\qquad
+  m^\top Q_dm=2\sigma_T^2\,\Delta t\,\kappa+O(\Delta t^2).
+$$
+If $\kappa>0$, then
+$g\ge(m^\top B_d)^2/(m^\top Q_dm)=\Delta t\,\kappa\,(1+O(\Delta t))/(2\sigma_T^2)$. With
+Step 3 this proves the limit. If $\kappa=0$, then $J^\top=0$, so $B=0$ and $g=0$.
+
+*Step 5: the design-independence.*
 
 - For the rigid leg, $D=b_ir^2$ and $J=-r$, so $JD^+J^\top=1/b_i$.
 - For the SEA,
     $D=\left[\begin{smallmatrix}b_s+b_ir^2&-b_s\\-b_s&b_s\end{smallmatrix}\right]$ has
     $\det D=b_sb_ir^2$, so $(D^{-1})_{11}=b_s/(b_sb_ir^2)=1/(b_ir^2)$. With
     $J=(-r,0)$, this gives $JD^{-1}J^\top=1/b_i$, independently of $k_s$ and $b_s$.
+:::
 
-*What is not proved here.* We do not prove that the discrete position-block terms
-leave the constant unchanged. The numbers below confirm it.
+::: {#rem-kl name="The same bound, read as relative entropy"}
+For a force $f$ held over one step, $\tfrac12g f^2$ is the relative entropy (KL divergence)
+between the laws of $x_{k+1}$ given $x_k$ with and without the force: two Gaussians with
+covariance $Q_d$ whose means differ by $B_df$. The bound
+$\Delta t\,\kappa f^2/(4\sigma_T^2)$ is the relative entropy between the laws of the whole
+path over the step, which Girsanov's theorem gives as
+$\tfrac12\int_0^{\Delta t}(Bf)^\top(GG^\top)^+(Bf)\,ds$. The sample at the end of the step
+is a function of the path, so by data processing it cannot carry more. Steps 3 and 4 are
+this argument made elementary: sampling never beats watching continuously, and at fine
+sampling it loses nothing to first order.
+
+Read the other way, $\tfrac12gf^2$ is also what KL control charges for pushing the body
+with $f$ away from its passive motion [@todorov2009efficient; @theodorou2012relative].
+For a Langevin body, the information held about a force and the KL price of applying it
+are the same number.
+
+Two further facts are checked numerically but not proved. First, the gap below the bound
+closes like $\Delta t^2$, faster than Step 4 shows. Second, the hypothesis is needed: if the
+force drives a coordinate that has no damping of its own, $g/\Delta t$ grows without bound
+as $\Delta t\to0$, because the force then pushes in a direction the noise reaches only
+through springs (`check_sampling_bound`).
 :::
 
 ::: {.callout-note appearance="simple" title="Numerical check"}
 
+- @prp-contact on the rigid leg, two SEAs and random chains, one of them with singular
+    $D$: the ratio $2\sigma_T^2g/(\Delta t\,\kappa)$ never exceeds 1 and differs from 1 by
+    less than $10^{-11}$ at $\Delta t=10^{-5}$ s (`check_sampling_bound`).
 - $2\sigma_T^2 g/(\Delta t\,JD^+J^\top)$ is $1.0000$ at 4, 16 and 64 kHz for the
     rigid leg and for SEAs at $k_s=70$, $10^4$ and $10^6$ (shown as $g\sigma_T^2
         f_s/JD^+J^\top=0.5000$ by `check_langevin_dt_limit`). It deviates only for

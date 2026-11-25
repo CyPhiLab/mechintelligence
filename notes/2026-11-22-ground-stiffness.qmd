@@ -116,8 +116,9 @@ $GG^\top=\diag(0,\,2\sigma_T^2H^{-1}DH^{-1})$, so, with the same algebra as in
 the Gibbs law $\E[(Jq)^2]=\sigma_T^2JK^{-1}J^\top=\sigma_T^2\varepsilon/k_c$. The product is
 $\varepsilon k_c/(2b_c)$.
 
-*What is not proved here.* As for @prp-contact, the discrete-time terms (the dependence of
-the sampled noise covariance on $\theta$) and the window's start are not treated. The
+*What is not proved here.* The discrete-time terms and the window's start are not treated.
+The discrete-time proof of @prp-contact does not cover this case, because here the
+parameter also changes the sampled noise covariance. The
 numbers below confirm the rate.
 :::
 

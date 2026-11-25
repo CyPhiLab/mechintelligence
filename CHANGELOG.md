@@ -4,6 +4,11 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- @prp-contact is now proved, not only checked (thread T3), with a remark (@rem-kl) that
+  reads the bound as relative entropy and links it to KL control.
+- New research note (threads T10 and T12): how other approaches to mechanical intelligence
+  relate to the book, from a first survey of 95 papers, with four proved links checked by
+  `tests/test_bridges.py`.
 - New Part IV, *Nonlinear bodies*, with one chapter (@sec-memory) that folds in the
   research notes on a mechanical bit, writing it, a bit inside a body, and erasure. The
   notes stay as short dated records.

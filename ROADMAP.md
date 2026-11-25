@@ -83,11 +83,18 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Done (2026-11-21): the four notes are folded into @sec-inside (Part III), together with
   the terrain-height result of T11. The notes stay as dated records.
 
-**T3. The Langevin body as the default noise model.** *Queued.*
+**T3. The Langevin body as the default noise model.** *Done.*
 
 - Question: can the discrete-time constant in @prp-contact be proved, not only checked?
-- Next step: expand $B_d^\top Q_d^{-1}B_d$ in $\Delta t$, including the position-block
-  terms, and show the leading coefficient is $J D^+J^\top/(2\sigma_T^2)$.
+- Done (2026-11-25): proved through relative entropy. Sampling never beats the
+  continuous-time (Girsanov) rate, $g\le\Delta t\,JD^+J^\top/(2\sigma_T^2)$ at every step,
+  and one explicit linear statistic reaches it to first order. Both steps are the
+  Cauchy–Schwarz inequality; @rem-kl reads them as data processing between path and sample.
+  Checked by `tests/test_bridges.py`, including singular $D$ and a case outside the
+  hypothesis.
+- Open: the gap below the bound closes like $\Delta t^2$ in every case checked; only
+  $O(\Delta t)$ is proved. The ground-stiffness rate is not covered, because there the
+  parameter also changes the noise covariance.
 
 **T4. Predictive validation on the Go2 designs.** *Parked: needs data.*
 
@@ -201,15 +208,40 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 - Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
   whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
-**T10. Literature.** *Queued.*
+**T10. Literature.** *Active.*
 
-- Confirm the *secondary* citations (see T1), then survey morphological computation,
-  physical reservoir computing and the thermodynamics of computation.
+- Done (2026-11-25): first survey of 95 papers supplied by the reviewer, read in nine
+  topic groups. One card per paper and a first map of the field are kept with the
+  literature collection. The [landscape note](notes/2026-11-25-landscape.qmd) records five
+  meanings of mechanical intelligence, draft axes, four proved links, and links still to
+  check.
+- Open: confirm the *secondary* citations (see T1); several sources, such as Zahedi and Ay
+  (2013), are now in the collection in full text. Check the links listed as unchecked in the
+  landscape note.
+
+**T12. Common benchmarks for different approaches.** *Active.*
+
+- Question: computed at the book's resolution on the same bodies, where do the measures of
+  other approaches agree with the book's, and with each other, and where do they part?
+  Measures: information held (the book), memory capacity, Zahedi and Ay's measures,
+  transfer entropy, empowerment, control effort, and energy cost.
+- Bodies: the rigid and SEA legs, plus benchmark bodies to be chosen with the reviewer.
+- First steps: choose the benchmarks; compute the measures; test the draft axes against
+  the results.
 
 ## Findings log
 
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
+
+- **2026-11-25.** The constant in @prp-contact is proved: $g\le\Delta t\,JD^+J^\top/(2\sigma_T^2)$
+  at every sampling step, with equality to first order as $\Delta t\to0$. The information
+  held about a force equals the KL control cost of applying it (@rem-kl). Four further links
+  between the book and other approaches are proved: memory capacity and information share
+  one Gramian spectrum; the thermal-force Gramian is the Gibbs law; $\mathrm{MC}_W$ is the
+  excess entropy of the thermal motion; and the energy-share rule for a spring in series
+  with the ground. `tests/test_bridges.py`;
+  [landscape note](notes/2026-11-25-landscape.qmd).
 
 - **2026-11-22.** Erasing a mechanical bit costs at least $\sigma_T^2(\ln2-H(p))$ for error
   $p$; the simulated four-stage erasure costs 1.372 down to 0.695 $\sigma_T^2$ as each stage

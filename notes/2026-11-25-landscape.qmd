@@ -1,0 +1,253 @@
+# 2026-11-25: How other approaches to mechanical intelligence relate to this book {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T12 · **Checked by:** `tests/test_bridges.py`
+:::
+
+**Question.** The book should map the field rather than defend a single measure. How do
+other approaches to intelligence in physical bodies relate to the book's measures, and to
+each other?
+
+**Short answer.** This note is a first pass over 95 papers. It covers morphological
+computation, physical reservoir computing, mechanical memory, the thermodynamics of
+information, control as inference, task-driven control, active sensing and experimental
+design, empowerment, and terrain estimation on legged robots.
+
+- *Five meanings.* "The body is intelligent" means one of five things in this literature.
+  The body holds information about its environment, transforms information, stores it,
+  relieves the controller, or acts on and withstands the world. These are different
+  questions about one body, not competing definitions. The book has so far treated the
+  first and part of the third.
+- *How a finite number is obtained.* The sharpest dividing line is how each approach gets a
+  finite answer: declared noise, quantization, binning, a restricted readout, or an
+  estimator. Approaches with no noise cannot tell invertible maps apart. In their view every
+  linear body is lossless and a part holds as much as the whole, so all of @sec-inside is an
+  effect of noise and dissipation.
+- *A common meeting point.* For linear bodies with Gaussian noise, most approaches reduce to
+  a log-determinant of one noise-whitened Gram matrix. Four such links are proved below and
+  checked in code. A fifth, between the information held about a force and the KL price of
+  applying it, is proved in @rem-kl. Its proof also settles the constant in @prp-contact
+  (thread T3).
+
+The reading notes, one card per paper with a synthesis for each group, are kept with the
+literature collection, not in the book.
+
+## Five meanings of mechanical intelligence
+
+1. **Holding.** The body's motion carries information about a force, the ground or a
+   payload. This is the book's question. @prachaseree2026information ask it for elastic
+   solids. Legged-robot terrain estimation (for example @miller2013leg) is the engineering
+   version, though it does not compute how much information is available.
+2. **Transforming.** The body is a filter bank or reservoir, and its merit is which maps a
+   simple readout can then produce [@hauser2011towards; @nakajima2020physical]. The
+   measures are memory capacity and task error.
+3. **Storing.** Memory is the persistence of a past event. Mechanical metamaterials count
+   discrete states and transitions without noise or energy accounting
+   [@bense2021complex]. Information thermodynamics prices each bit in kT but has no bodies
+   [@parrondo2015thermodynamics]. @sec-memory sits between the two.
+4. **Relieving the controller.** The body does what a controller would otherwise have to
+   do [@zahedi2013quantifying; @ghazizahedi2019morphological; @haeufle2014quantifying].
+   In KL control, the passive body is the reference that the controller pays to depart from
+   [@todorov2009efficient].
+5. **Acting and withstanding.** Empowerment measures how much the body's actions can
+   change what it later senses, the reverse of meaning 1 [@klyubin2005empowerment].
+   Robust locomotion treats intelligence as a task outcome that barely depends on the
+   environment.
+
+@muller2017what separate facilitating control, facilitating perception and computation
+proper. Their three roles match meanings 4, 1 and 2.
+
+## Draft axes
+
+These axes place every approach read so far. They are a draft. The comparisons planned in
+thread T12 will test them.
+
+| Axis | Values |
+|:--|:--|
+| Resolution: how a finite number is obtained | declared physical noise; thermal noise; sensor noise; quantization or binning; restricted readout; estimator or sample size; none |
+| Direction of flow | environment to body; body to controller; actions through the world back to the body's sensors; around the sensorimotor loop |
+| Reference | absolute; relative to a counterfactual (an arrow removed, a baseline controller, the passive dynamics) |
+| About what | an environmental input; an environmental parameter; the body's own state; a past event; a task variable; none (statistical structure) |
+| Who reads it | any reader (Shannon); a linear readout; a trained readout; the controller's channel; a fixed part of the body |
+| Time | snapshot; window or rate; fading memory; persistent memory |
+| Role of the number | a measured quantity; a bound on performance; a cost to be minimized |
+
+The resolution axis separates approaches most sharply. @geiger2013information and
+@bian2025problem treat the same problem the book starts from: a deterministic mechanism
+carries infinite information. They resolve it by quantizing the input and measuring what
+non-injective maps destroy. The book resolves it by declaring the noise on the body
+(@lem-noise). The two answers complement each other. The first sees only losses from maps
+that are not invertible. The second sees what dynamics and dissipation keep when the map is
+invertible.
+
+## Four proved links
+
+All four are stated for the book's linear body with thermal noise (@sec-langevin), sampled
+with step $\Delta t$ and the force held over each step: $x_{k+1}=A_dx_k+B_du_k+w_k$, with
+$w_k$ i.i.d. $\mathcal N(0,Q_d)$ and stationary covariance $P=\sigma_T^2\Em^{-1}$.
+
+### Memory capacity and information
+
+In reservoir computing, the *memory function* $C_j$ is the squared correlation between the
+input $u_{t-1-j}$ and its best linear reconstruction from the state $x_t$. The *memory
+capacity* is $\mathrm{MC}=\sum_{j\ge0}C_j$ [@nakajima2020physical].
+
+::: {#prp-mc-spectrum name="Memory capacity and information share one spectrum"}
+Let the input be i.i.d. $u_k\sim\mathcal N(0,q)$, scalar, and let the state be the response
+to it plus independent stationary thermal noise. Let $W=\sum_{j\ge0}A_d^jb\,b^\top
+(A_d^\top)^j$ be the controllability Gramian of $b=B_d$, and let $\lambda_i$ be the
+eigenvalues of $q\,P^{-1/2}WP^{-1/2}$. Then:
+
+(a) $C_j=1-e^{-2I_j}$, where $I_j=I(u_{t-1-j};x_t)$ in nats;
+(b) $\mathrm{MC}=\sum_i\lambda_i/(1+\lambda_i)$;
+(c) the information about the whole input history is
+    $I(u_{<t};x_t)=\frac12\sum_i\log(1+\lambda_i)$.
+:::
+
+::: {.proof}
+The state is $x_t=\sum_{j\ge0}A_d^jb\,u_{t-1-j}+n_t$, with $n_t\sim\mathcal N(0,P)$
+independent of the input. So $\Cov x_t=\Sigma=qW+P$ and $c_j=\Cov(x_t,u_{t-1-j})=qA_d^jb$.
+
+(a) The best linear reconstruction of $u_{t-1-j}$ from $x_t$ has squared correlation
+$C_j=c_j^\top\Sigma^{-1}c_j/q$. Because $(u_{t-1-j},x_t)$ is jointly Gaussian and
+$u_{t-1-j}$ is scalar, $I_j=-\frac12\log(1-C_j)$. Solving for $C_j$ gives (a).
+
+(b) Summing, $\sum_jc_jc_j^\top/q=qW$, so
+$\mathrm{MC}=\operatorname{tr}\big(\Sigma^{-1}qW\big)=\operatorname{tr}\big((qW+P)^{-1}qW\big)$.
+Write $M=qP^{-1/2}WP^{-1/2}$. Then $(qW+P)^{-1}qW=P^{-1/2}(I+M)^{-1}MP^{1/2}$, a similarity
+transform of $(I+M)^{-1}M$, whose trace is $\sum_i\lambda_i/(1+\lambda_i)$.
+
+(c) This is the Gaussian channel formula with signal covariance $qW$ and noise covariance
+$P$: $\frac12\log\det(I+P^{-1}qW)=\frac12\log\det(I+M)$.
+:::
+
+**What it means.** Memory capacity and information read the same spectrum in two ways.
+Each mode contributes $\lambda/(1+\lambda)$ to the memory capacity, which is at most 1,
+and $\frac12\log(1+\lambda)$ to the information, which has no cap. So memory capacity can
+never exceed the number of modes, however clean the body. It is the share of the
+information a linear readout can turn into reconstructions. On the SEA at $k_s=10^3$, with
+a force of standard deviation 100 N per sample, the memory capacity is 3.35 against 4.23
+nats of information (`check_memory_capacity`). In the noise-free limit the information is
+infinite, while the memory capacity tends to the number of modes.
+
+### The Gramian of the thermal forces is the Gibbs law
+
+::: {#prp-gramian name="Gramian and Gibbs law"}
+The infinite-horizon controllability Gramian of the thermal-force channel $G$ (with
+$GG^\top=\diag(0,2\sigma_T^2H^{-1}DH^{-1})$) is the Gibbs covariance $\sigma_T^2\Em^{-1}$.
+:::
+
+::: {.proof}
+The Gramian $W_\infty=\int_0^\infty e^{As}GG^\top e^{A^\top s}ds$ is the unique solution of
+$AW+WA^\top+GG^\top=0$ when $A$ is stable. @prp-fdt shows that $\sigma_T^2\Em^{-1}$ solves
+the same equation.
+:::
+
+**What it means.** In control language, the body's equilibrium law measures how far its
+own dampers can push it. Gramians, which much of the control literature uses to measure
+controllability and observability, and the energy metric, which the book uses to measure
+resolution, are the same object for a body in thermal equilibrium.
+
+### Morphological computation is the excess entropy of the thermal motion
+
+The *excess entropy* of a stationary process is the information its past carries about its
+future. It is a standard measure of memory in computational mechanics.
+
+::: {#prp-excess name="MC_W is the excess entropy"}
+For the sampled thermal motion of the body (no force, whole state observed),
+$I(x_{\le k};x_{>k})=I(x_k;x_{k+1})=\mathrm{MC}_W$ of @prp-mcw(b).
+:::
+
+::: {.proof}
+The sampled motion is a Markov chain. Given $x_k$, the past $x_{<k}$ is independent of the
+future, so $I(x_{\le k};x_{>k})=I(x_k;x_{>k})$. Given $x_{k+1}$, $x_k$ is independent of
+$x_{>k+1}$, so $I(x_k;x_{>k})=I(x_k;x_{k+1})$. The last quantity is $\mathrm{MC}_W$ by
+@prp-mcw(b).
+:::
+
+**What it means.** For a passive linear body, Zahedi and Ay's measure, read with the
+book's noise model, is the memory of the body's thermal motion. It is not a measure of
+anything about the environment. The check computes the past–future information with
+windows of up to four samples on each side and finds $\mathrm{MC}_W$ to eight digits
+(`check_excess_entropy`). Because the measure depends on the sampling step, it should
+always be reported with $\Delta t$.
+
+### A spring in series with the ground
+
+::: {#prp-series name="The energy-share rule"}
+Let the body sense the ground stiffness $k_g$ only through the stiffness
+$K_S=(1/k_g+1/k_l)^{-1}$ of the ground in series with a leg spring $k_l$. Then
+$$
+  I_{\rm F}(\log k_g)=\varepsilon^2\,I_{\rm F}(\log K_S),\qquad
+  \varepsilon=\frac{K_S}{k_g},
+$$
+where $I_{\rm F}$ is Fisher information and $\varepsilon$ is the ground spring's share of
+the energy stored in the pair.
+:::
+
+::: {.proof}
+$\log K_S=-\log(e^{-\log k_g}+1/k_l)$, so $d\log K_S/d\log k_g=(1/k_g)/(1/k_g+1/k_l)=K_S/k_g$.
+Fisher information transforms with the square of this derivative when the data depend on
+$k_g$ only through $K_S$. Under a common force $F$ the two springs store $F^2/2k_g$ and
+$F^2/2k_l$, so the ground's share is $(1/k_g)/(1/k_g+1/k_l)=K_S/k_g$.
+:::
+
+**What it means.** This is the chain rule behind the stiffness estimator of
+@miller2013leg. It is also the factor $\varepsilon^2$ found in the
+[ground-stiffness note](2026-11-22-ground-stiffness.qmd). It explains a pattern in the
+terrain papers: a ground much stiffer than the leg holds a small share of the energy and is
+hard to identify, which is why softer contacts help.
+
+## Links found but not yet checked
+
+The reading notes propose these. Each needs a proof or a computation before it goes into
+a chapter.
+
+- **Zahedi and Ay's other measures.** For a passive linear body without feedback, their
+  other measures equal $\mathrm{MC}_W$ or vanish, and differences appear only through
+  feedback.
+- **Transfer entropy and directed information.** For a force that does not react to the
+  body, the book's trajectory information is the accumulated transfer entropy from force to
+  state, which equals directed information. When the contact force reacts to the body,
+  directed information is the quantity to use.
+- **Experiment design.** The book's log-determinant is Bayesian D-optimal design
+  [@alexanderian2021optimal], with the body as the design variable.
+- **System identification.** Ljung's information from the noise model equals the Whittle
+  rate of the parameter notes [@ljung1999system]. Active excitation adds a separate term.
+- **Empowerment.** With actuator and contact at the same port, empowerment is the capacity
+  of the book's channel. The book's value is the information at the environment's force
+  law, so it cannot exceed empowerment at equal power.
+- **Entropy production.** The entropy production of a driven linear body is a sum over
+  dampers with the same form as the per-damper cost in @sec-push.
+
+## Points of tension
+
+- *Damping.* Damping contracts the state, which lowers what a controller must supply. It
+  also lowers what the body holds about the contact, and lowers $\mathrm{MC}_W$. Meanings 1
+  and 4 trade off through the same matrix.
+- *Fading and persistent memory.* Reservoir computing needs the body to forget its initial
+  condition. @sec-memory builds bodies that keep it.
+- *Is energy the noise metric?* Macroscopic mechanical memories have thermal lifetimes far
+  longer than any experiment. What limits them is fabrication scatter and driving error.
+  @sec-right covers thermal noise. What replaces it when the dominant noise is not thermal
+  is open.
+- *Ranking whole bodies.* @bian2025problem object that an answer based only on noise
+  cannot rank systems. The book reaches the same conclusion for the whole body in
+  @sec-langevin, and ranks parts instead.
+
+## Errors found in sources
+
+- @ghazizahedi2019morphological [p. 83] states that the measure $\mathrm{MI}_W$ is zero for
+  deterministic systems, using $H(W'\mid W,A)=H(W'\mid A)$. In a deterministic loop
+  $H(W'\mid W,A)=0$, while $H(W'\mid A)$ is generally not zero. The book's own hopping
+  examples give nonzero values.
+- @prachaseree2026information use noiseless sensors and a nearest-neighbour estimator. By
+  @lem-noise(b), the information is then infinite in principle, so its finite values come
+  from the estimator. Whether its saturation and depth-decay results survive a declared
+  noise is open.
+
+## Where this leads
+
+A new thread, T12, puts the measures of other approaches on common benchmark bodies at the
+book's resolution, so that the links above are shown with numbers. The proof of
+@prp-contact closes thread T3.

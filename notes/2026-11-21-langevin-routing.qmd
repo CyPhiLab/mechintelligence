@@ -32,5 +32,5 @@ measuring mechanical intelligence, or only a reasonable one?
    the rotor by the same factor, so that advantage is an artifact.
 
 **Open from this note.** The constant 1/2 in @prp-contact is confirmed numerically but
-proved only in continuous time (roadmap thread T3). The share in point 6 needs a
+proved only in continuous time (roadmap thread T3; proved in discrete time on 2026-11-25). The share in point 6 needs a
 definition and properties of its own (thread T2, now in @sec-inside).
