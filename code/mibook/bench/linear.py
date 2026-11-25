@@ -281,6 +281,38 @@ def white_input_bits(body: LinearBody, part: str | np.ndarray = "whole",
     return 0.5 * float(np.sum(with_u.logdet - without.logdet)) / LOG2
 
 
+def one_step_te(body, part: str | np.ndarray = "whole", channel: str = "force", q: float = 1.0,
+                fs: float = 4000.0, eps: float = 0.0) -> float:
+    """One-step transfer entropy I(u_{k-1}; y_k | y_{k-1}) in bits per sample, stationary,
+    for an i.i.d. N(0, q) input: the form used in sensorimotor studies. It equals the
+    directed-information rate only when y is the whole (Markov) state."""
+    C = body.part(part) if isinstance(part, str) else np.atleast_2d(part)
+    s = body.discretize(1.0 / fs, channel)
+    W = sla.solve_discrete_lyapunov(s.Ad, s.Bd @ s.Bd.T)
+    Sx = s.P + q * W
+    m = C.shape[0]
+    R = eps ** 2 * np.eye(m)
+    Syy = C @ Sx @ C.T + R
+    S10 = C @ s.Ad @ Sx @ C.T
+    Su1 = q * (C @ s.Bd).T                                  # Cov(u_{k-1}, y_k)
+    p = s.Bd.shape[1]
+    S = np.block([[q * np.eye(p), np.zeros((p, m)), Su1],
+                  [np.zeros((m, p)), Syy, S10.T],
+                  [Su1.T, S10, Syy]])
+    ld = lambda idx: np.linalg.slogdet(S[np.ix_(idx, idx)])[1]
+    iu, i0, i1 = list(range(p)), list(range(p, p + m)), list(range(p + m, p + 2 * m))
+    return 0.5 * (ld(iu + i0) + ld(i1 + i0) - ld(iu + i0 + i1) - ld(i0)) / LOG2
+
+
+def di_rate(body, part: str | np.ndarray = "whole", channel: str = "force", q: float = 1.0,
+            fs: float = 4000.0, eps: float = 0.0, n1: int = 200, n2: int = 400) -> float:
+    """Directed-information rate (bits per sample) about an i.i.d. N(0, q) input: the slope of
+    the window information, which with no feedback is the information itself."""
+    a = white_input_bits(body, part, channel, q, n1, fs, eps)
+    b = white_input_bits(body, part, channel, q, n2, fs, eps)
+    return (b - a) / (n2 - n1)
+
+
 # -- Spectral (infinite-window) rates ------------------------------------------------------
 
 def _transfer(body: LinearBody, w: np.ndarray, B: np.ndarray, C: np.ndarray) -> np.ndarray:

@@ -50,7 +50,9 @@ the findings recorded here.
    correspondence needs only a careful statement.
 2. First comparison study (T12): every measure, at the book's resolution, on the linear
    benchmarks (legs, network, whisker, swarm). Where do the measures rank designs and parts
-   alike, and where do they part? Test the draft axes against the results.
+   alike, and where do they part? Test the draft axes against the results. *First pass done
+   2026-11-25* ([comparison note](notes/2026-11-25-comparison.qmd)); to do: other seeds and
+   input levels.
 3. Holding, acting and paying on one body (T12): information about the environment,
    empowerment, controller effort and energy cost on the SEA stiffness sweep and the bird's
    shoulder. Framed as an open question, not a trade-off assumed in advance: compliance can
@@ -296,6 +298,13 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-25.** Measures compared on four families of linear benchmarks: measures about
+  the contact force rank leg designs identically while $\mathrm{MC}_W$ reverses them; memory
+  capacity ranks network nodes unlike window information (0.35); the nodes that hold the
+  input hold least about the anchors ($-0.79$); the motor's empowerment over the foot peaks at
+  intermediate series stiffness; every swarm member acts alike on the swarm's mean while
+  perceiving differently; and the input's band can reverse which member knows most (a new
+  axis). `tests/test_bench_compare.py`; [comparison note](notes/2026-11-25-comparison.qmd).
 - **2026-11-25.** Four links from the literature checked: with the whole state observed, the
   book's information about a white force is accumulated one-step transfer entropy and equals
   directed information; for a part, one-step transfer entropy misses nearly everything

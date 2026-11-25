@@ -536,3 +536,33 @@ if __name__ == "__main__":
     for f in (fig_invariance, fig_stiff_limit, fig_snr, fig_shapley, fig_rod, fig_ellipse,
               fig_free_motion, fig_alternatives, fig_langevin, fig_propagation, fig_chain, fig_terrain, fig_ground_stiffness, fig_resolution, fig_bistable, fig_write, fig_bitbody, fig_erasure):
         f()
+
+
+_MEASURE_LABEL = {"bits": "window info", "di": "DI rate", "te1": "one-step TE",
+                  "mc": "memory capacity", "snap": "snapshot info", "cap": "capacity",
+                  "emp": "empowerment", "mcw": r"MC$_W$", "fisher": "Fisher (property)"}
+
+
+def fig_compare(res=None):
+    """Spearman rank agreement between measures, in four families of linear benchmarks."""
+    from matplotlib.colors import LinearSegmentedColormap
+    from mibook.bench import compare
+    res = compare.run() if res is None else res
+    cmap = LinearSegmentedColormap.from_list("div", [C2, "#ffffff", C1])
+    fig, axes = plt.subplots(2, 2, figsize=(6.4, 6.0))
+    titles = {"legs": "leg designs (rotor)", "network": "network nodes",
+              "whisker": "whisker coordinates", "swarm": "swarm members"}
+    for ax, (fam, r) in zip(axes.ravel(), res.items()):
+        names, rho = r["names"], r["rho"]
+        ax.imshow(rho, cmap=cmap, vmin=-1, vmax=1)
+        lab = [_MEASURE_LABEL[m] for m in names]
+        ax.set_xticks(range(len(names)), lab, rotation=60, ha="right")
+        ax.set_yticks(range(len(names)), lab)
+        ax.grid(False)
+        for i in range(len(names)):
+            for j in range(len(names)):
+                ax.text(j, i, f"{rho[i, j]:.1f}".replace("-0.0", "0.0"), ha="center",
+                        va="center", fontsize=6, color=INK)
+        ax.set_title(titles.get(fam, fam))
+    fig.tight_layout()
+    return _save(fig, "compare")

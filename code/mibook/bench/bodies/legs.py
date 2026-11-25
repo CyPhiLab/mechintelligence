@@ -14,10 +14,12 @@ def _from_passive(s, name, params, build) -> LinearBody:
     n = s.n
     D = -s.H @ s.A[n:, n:]
     JT = s.H @ s.B_F[n:, :1]
-    parts = {"rotor": _sel(n, n - 1)}
+    parts = {"rotor": _sel(n, n - 1), "foot": _sel(n, 0)}
     if n > 1:
         parts["link"] = _sel(n, 0)
-    return LinearBody(H=s.H, D=0.5 * (D + D.T), K=s.K, inputs={"force": JT.T},
+    motor = np.zeros((1, n))
+    motor[0, n - 1] = 1.0                      # torque on the rotor coordinate
+    return LinearBody(H=s.H, D=0.5 * (D + D.T), K=s.K, inputs={"force": JT.T, "motor": motor},
                       parts=parts, sigma_T2=SIGMA_ENERGY ** 2, name=name,
                       params=params, build=build)
 

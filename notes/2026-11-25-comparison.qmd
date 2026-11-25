@@ -1,0 +1,142 @@
+# 2026-11-25: The same bodies, many measures {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T12 · **Checked by:** `tests/test_bench_compare.py`
+:::
+
+**Question.** The [landscape note](2026-11-25-landscape.qmd) found that, for linear bodies,
+most measures of mechanical intelligence are log-determinants of related matrices. Related
+is not the same. Computed at the book's resolution on the same bodies, do the measures of
+different approaches pick out the same designs and the same parts, and where they
+disagree, which axis of the draft map explains it?
+
+**Short answer.** The measures agree where they ask the same question and part ways along
+the axes of the map, plus one axis the map lacked.
+
+- *About what.* Across leg designs, every measure about the contact force ranks the designs
+  identically: stiffer series springs give the rotor more. Zahedi and Ay's
+  $\mathrm{MC}_W$ ranks them in exactly the reverse order, because it measures the body's
+  memory of its own state, which a soft spring increases. In a network, the nodes that hold
+  the most about the input force hold the least about the stiffness of the anchors
+  (rank correlation $-0.79$).
+- *Snapshot or history.* Memory capacity, which a linear readout gets from one snapshot,
+  ranks the nodes of a network differently from the information in a window of their
+  history (rank correlation 0.35).
+- *Direction.* Empowerment, where an actuator at the part acts on the contact, is not the
+  same as holding information about the contact. On the leg the motor's empowerment over
+  the foot peaks at an intermediate series stiffness, while what the rotor holds keeps
+  rising. In a swarm every member has exactly the same empowerment over the swarm's mean
+  position, while members differ in what they hold about a force on the swarm.
+- *The input's band, a new axis.* In the swarm, which member holds the most depends on the
+  frequencies of the environment: a slow push and a broadband one rank the members almost
+  oppositely.
+
+## Setting
+
+Four families of linear benchmarks from `mibook.bench`, each a set of items to rank:
+
+| Family | Items | Environment input | Property |
+|:--|:--|:--|:--|
+| Leg | rigid and SEA designs ($k_s$ from 70 to $10^5$), read at the rotor | contact force | none |
+| Network | the 20 nodes of one random spring network | force on the top node | anchor stiffness |
+| Whisker | seven coordinates from base to tip | contact force at 7 cm | contact point |
+| Swarm | the 12 members of one swarm | a force on every member | tether stiffness |
+
+Every body carries its own thermal noise at the declared resolution (@sec-langevin). For
+each item the study computes:
+
+- *window information*: the book's information about a band-limited input profile;
+- *directed-information rate* about a white input;
+- *one-step transfer entropy*, the form used in sensorimotor studies;
+- *memory capacity* of a snapshot, from reservoir computing;
+- *snapshot information* about the input's whole past;
+- *capacity*: the most any input law could put into the part;
+- *empowerment*: an actuator at the part acting on the contact, read at the contact;
+- $\mathrm{MC}_W$ of the passive body;
+- *Fisher information* about the family's property, where it has one.
+
+The units differ, so the measures are compared by how they rank the items (Spearman
+correlation). Code: `mibook.bench.compare`.
+
+```{python}
+#| label: fig-compare
+#| fig-cap: "How the measures rank the items of each family (Spearman correlation; blue agrees, orange reverses). A measure that is the same for every item is left out: MC$_W$ outside the leg family, empowerment in the swarm."
+from mibook import figures
+figures.fig_compare();
+```
+
+## Results
+
+**Leg designs: one question, one answer, and one measure about something else.** For the
+rotor, all six measures about the contact force rank the seven designs identically
+(@fig-compare): window information runs from 2.3 bits at $k_s=70$ to 37.7 for the rigid
+leg. $\mathrm{MC}_W$ runs from 22.2 bits down to 8.6, the reverse order. A soft series
+spring leaves a slow, lightly damped mode in the body, and $\mathrm{MC}_W$ rewards exactly
+that, the undissipated energy the body keeps (@prp-excess). The same spring hides the
+contact from the rotor. Both are correct answers to different questions: the first is about
+the environment, the second about the body itself. The one-step transfer entropy ranks the
+designs correctly but is tiny ($10^{-7}$ to $10^{-2}$ bits per sample against 0.01 to 1.7
+for the directed-information rate), for the reason given in the landscape note: at
+4 kHz consecutive samples of a part are nearly equal.
+
+**Network nodes: what is held depends on what is asked.** The window information, the
+directed-information rate, the capacity and empowerment agree closely (rank correlations
+0.93 to 0.98). Memory capacity does not (0.35 with window information). It is read from a
+single snapshot by a linear readout and saturates at one per mode, so it measures how many
+independent echoes a node keeps, not how much it knows. The Fisher information about the
+anchor stiffness is highest at the nodes nearest the anchors and lowest near the input,
+the reverse of the information about the input force ($-0.79$). A body does not hold "more"
+or "less" information in general: different parts hold different properties.
+
+**Whisker: the contact point is read near the base.** Along the beam, the information about
+the force peaks at mid-length, near the contact. The Fisher information about where the
+contact is runs the other way from the snapshot measures ($-0.64$): it is largest between
+the base and the middle of the beam and smallest near the tip. The base, where an animal's
+follicle sits, holds nearly as much about the contact point as the best coordinate.
+
+**Swarm: acting alike, perceiving differently.** Every member has the same empowerment over
+the swarm's mean position (2.07 bits). @prp-swarm-act shows why. What members hold about a
+force on the whole swarm differs, and which member holds the most depends on the input's
+band. For a slow push (below 2 Hz), the window information ranks the members one way; for
+broadband input, the directed-information rate ranks them almost oppositely
+($-0.94$ against the snapshot measures). Weakly connected members move freely at high
+frequency and see broadband forces best. Well connected members average with their
+neighbours and see slow forces best.
+
+::: {#prp-swarm-act name="Every member acts on the mean alike"}
+Let each member have the same mass $m$, tether $k_0$ and drag $b_0$, and let the members be
+coupled by springs and dampers that act between pairs. Then the channel from a force on any
+one member to the sum of the members' positions along that direction is the same for every
+member.
+:::
+
+::: {.proof}
+Let $X$ be the sum of the positions along the force. Each pairwise coupling exerts equal and
+opposite forces on its two members, so it drops out of the sum, and
+$m\ddot X=-k_0X-b_0\dot X+f_i+\Xi$, where $f_i$ is the force on member $i$ and $\Xi$ is the
+sum of the thermal forces. The thermal forces of the pairwise dampers also cancel in pairs,
+so $\Xi$ comes from the tethers' drag alone and does not depend on $i$. The equation for $X$
+is therefore the same whichever member is pushed.
+:::
+
+## What this changes in the map
+
+The results support four axes of the draft map and add a fifth.
+
+- **About what** separates $\mathrm{MC}_W$ (the body's own state) from the measures about
+  the force, and the anchor stiffness from the input force.
+- **Snapshot or history** separates memory capacity and snapshot information from the
+  window measures, and one-step transfer entropy from the directed-information rate.
+- **Who reads it**: memory capacity is limited by its linear readout and saturates where
+  information does not.
+- **Direction**: empowerment differs from holding on the leg, and is uniform where holding is
+  not in the swarm.
+- **New: the input's band**, or more generally the ensemble of environments a body is asked
+  about. The same body can rank its parts oppositely for slow and for fast environments, so
+  any statement that one part "knows more" needs the band attached, as the book already
+  requires for masses and dampings.
+
+*What is not settled here.* The study uses one network, one whisker and one swarm, and one
+setting of each input; the patterns should be checked across seeds and input levels before
+they are stated as general. The empowerment result on the leg, a peak at intermediate
+stiffness, is the starting point for the next study (priority 3 of the roadmap).

@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New research note (T12): the measures of different approaches compared on the same linear
+  bodies, with a figure (`fig_compare`) and the comparison code `mibook.bench.compare`. The
+  legs gain a motor channel and a foot part.
 - The landscape note gains four checked links (transfer entropy and directed information,
   Zahedi and Ay's measures in closed form, empowerment as a bound, and effective damping as
   dissipation per squared contact speed), with two corrections to the literature's guesses.
