@@ -1,7 +1,7 @@
 # 2026-11-22: Erasing a mechanical bit, and the cost of a cycle {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T7 · **Checked by:** `tests/test_erasure.py`
+**Status:** promoted to @sec-erase · **Thread:** T7 · **Checked by:** `tests/test_erasure.py`
 :::
 
 **Question.** A body that records events over and over must clear each record before it can
@@ -9,7 +9,7 @@ take the next one. The notes on [writing](2026-11-22-writing-a-bit.qmd) and on
 [a bit inside a body](2026-11-22-bit-in-a-body.qmd) covered writing and reading. What does
 erasing cost, and what does a full write-read-erase cycle cost?
 
-**Short answer.**
+**Findings.**
 
 - *Erasing has a floor.* Resetting a bit whose value is unknown to a fixed well costs, on
     average, at least $\sigma_T^2\ln2\approx0.69\,\sigma_T^2$ of work (Landauer's bound),
@@ -27,127 +27,6 @@ erasing cost, and what does a full write-read-erase cycle cost?
     erasure floor. Reading by another part of the body costs no work. Landauer's bound
     applies only to the erasure.
 
-## Setting
-
-The element of the bit notes in the book's units (lengths $a$, energies $\sigma_T^2$, times
-$\sqrt{ma^2/\sigma_T^2}$), damping rate $\gamma=2$, written as
-$$
-U(x,t)=\beta x^4-a_2(t)\,x^2-f(t)\,x ,
-$$
-which is the double well $\beta\big((x^2-1)^2-1\big)$ with barrier $\beta=8$ when
-$a_2=2\beta$ and $f=0$. The bit starts in a random well, each with probability one half, at
-equilibrium inside its well. The erasure resets it to the left well in four stages of equal
-length $\tau$ [@berut2012experimental]:
-
-1. lower the barrier, $a_2$ from $2\beta$ to 0;
-2. tilt to the left, $f$ from 0 to $-5$, so that the right side ends 10 thermal energies
-    higher;
-3. raise the barrier, $a_2$ from 0 back to $2\beta$;
-4. remove the tilt, $f$ from $-5$ to 0.
-
-The work is the energy put in by changing the potential, summed along each trajectory as
-$U(x,t+dt)-U(x,t)$ at the current position. Each value of $\tau$ uses 2,000 elements.
-
-## Results
-
-::: {#prp-landauer name="Landauer's bound, with errors"}
-Reset an element whose well is equally likely to be left or right, so that afterwards it is
-in the right well with probability $p\le\frac12$, and both wells have the same shape at the
-start and the end. The mean work satisfies
-$$
-\langle W\rangle\ \ge\ \sigma_T^2\big(\ln2-H(p)\big),\qquad H(p)=-p\ln p-(1-p)\ln(1-p),
-$$
-which is $\sigma_T^2\ln2$ for a perfect reset.
-:::
-
-::: {.proof name="Proof sketch"}
-*Step 1: the second law far from equilibrium.* For the Langevin body with a potential
-changed in time, the mean work exceeds the change in nonequilibrium free energy,
-$\langle W\rangle\ge\Delta\mathcal F$, where $\mathcal F=\langle U\rangle-\sigma_T^2S$ and $S$ is
-the entropy of the distribution of the state [@esposito2011second]. The difference is
-$\sigma_T^2$ times the entropy produced, which is never negative.
-
-*Step 2: the start and the end.* The potential is the same at both ends. Inside each well
-the element is at local equilibrium, and the two wells are mirror images, so the mean
-energy is the same before and after. Only the occupation of the wells changes: from
-$(\frac12,\frac12)$, with entropy $\ln2$, to $(1-p,p)$, with entropy $H(p)$. So
-$\Delta\mathcal F=\sigma_T^2(\ln2-H(p))$.
-
-*What is not proved here.* Step 1 is quoted; the end state is taken to be at local
-equilibrium inside each well, which holds when the barrier is high.
-:::
-
-The bound counts the work against the information the body loses about where the element
-could be. Writing into a known starting state, as in the writing note, loses no such
-information, and Landauer's bound does not apply to it. Reading the bit by another part of
-the body, as in the bit-in-a-body note, needs no work at all: the part simply moves with the
-body. That is the classical position of Bennett [@bennett1982thermodynamics]: measuring can be
-free, and the cost appears when a record is erased.
-
-## Numbers
-
-```{python}
-#| label: fig-erasure
-#| fig-cap: |
-#|   (a) Mean work of the four-stage erasure against the length of each stage, with two
-#|   standard errors, the fit $W_\infty+B/\tau$ to the three slowest runs, and Landauer's bound.
-#|   (b) Share of elements left in the wrong well.
-from mibook import figures
-figures.fig_erasure();
-```
-
-| stage length $\tau$ | 5 | 10 | 20 | 50 | 100 | 200 |
-|:--|--:|--:|--:|--:|--:|--:|
-| mean work / $\sigma_T^2$ | 1.372 | 1.015 | 0.862 | 0.758 | 0.720 | 0.695 |
-| standard error | 0.027 | 0.020 | 0.014 | 0.010 | 0.008 | 0.006 |
-| in the wrong well | 0.15% | 0.25% | 0.10% | 0.45% | 0.60% | 1.20% |
-| bound at that error | 0.682 | 0.676 | 0.685 | 0.664 | 0.657 | 0.628 |
-
-: The four-stage erasure at a barrier of $8\,\sigma_T^2$ (`check_erasure`). The bound is $\ln2-H(p)$ at the measured error $p$. {#tbl-erasure}
-
-- Every run costs more than its bound, by 0.07 $\sigma_T^2$ at $\tau=200$ and by 0.69 at
-    $\tau=5$.
-- A fit $W=W_\infty+B/\tau$ to the three slowest runs gives $W_\infty=0.675$ and $B=4.2$. The
-    limit lies a little under $\ln2=0.693$ because the slow runs leave more errors, which
-    lowers their bound.
-- The errors grow with $\tau$ because the bit has more time to leak back over the barrier
-    while the tilt is removed. At this barrier the flip rate of the untilted well is about
-    $3.6\times10^{-4}$ per time unit (from the bit note), so over the last stage of the
-    slowest run, 200 time units during which the tilt fades, errors of a few tenths of a
-    percent up to a few percent are expected; the measured 1.2% lies in that range.
-
-**The cost of a cycle at a barrier of $8\,\sigma_T^2$.**
-
-| step | work | how it is done here |
-|:--|--:|:--|
-| write | $\approx29\,\sigma_T^2$ ($3.6\Delta E$) | a steady push at $1.1F_c$, 98.5% reliable |
-| read | 0 | another part moves with the body |
-| erase | $0.70$ to $1.37\,\sigma_T^2$ | the four-stage protocol, $\tau=200$ to 5 |
-
-: Work per cycle; Landauer's bound applies only to the erasure, $0.69\,\sigma_T^2$. {#tbl-cycle}
-
-## What this changes
-
-A mechanical memory has a thermodynamic price, and this note puts numbers on it. Erasure is
-the only step with a hard floor, $\sigma_T^2\ln2$, and a slow protocol reaches it, at the cost
-of time and of some accuracy, since a slow erasure gives the bit time to leak. The step that
-dominates in practice is the write, because the environment pushes fast and the energy that
-carries the element over the barrier is then dissipated. On the book's effective temperature
-scale a write costs tens of thermal energies and an erasure about one. This is the first
-link in the book between mechanical intelligence and the thermodynamics of computation.
-
-## Limits of this note
-
-- One protocol, one barrier, one tilt and one damping rate. Optimal protocols for a given
-    time, which lower the $1/\tau$ term, are not explored.
-- The bound's proof quotes the second law for nonequilibrium free energy.
-- The write's cost is that of the push used in the writing note, not a minimum over ways
-    of writing.
-- The element is on its own; erasing a bit inside a body, where the body pushes back,
-    would change the barrier and the protocol.
-
-## Next steps
-
-- A part watching while the bit is written: what the history of the write holds.
-- Erasure of a bit inside a body.
-- A stiffening ground spring.
+**Where it lives now.** The definitions, proofs, figures and numbers moved to @sec-erase of
+the chapter on memory in mechanisms. This note keeps the dated record of the question and
+what was found.

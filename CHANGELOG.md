@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New Part IV, *Nonlinear bodies*, with one chapter (@sec-memory) that folds in the
+  research notes on a mechanical bit, writing it, a bit inside a body, and erasure. The
+  notes stay as short dated records.
 - New research note (thread T7): erasing a mechanical bit, and the cost of a
   write-read-erase cycle against Landauer's bound.
 - New research note (thread T7): a mechanical bit inside a body. A part reads a stored

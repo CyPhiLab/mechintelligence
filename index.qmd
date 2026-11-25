@@ -21,8 +21,10 @@ alternatives, and builds a thermally consistent body in which every design holds
 same total and designs differ in which parts of the body hold it. Part III asks what
 decides where the information sits inside the body: which dampers erode it on the way
 from the contact to a part, what changes with two feet on the ground, and how a property
-of the environment other than force, the height of the ground, propagates. The research
-log holds dated notes, the roadmap and the changelog.
+of the environment other than force, the height of the ground, propagates. Part IV leaves
+linear bodies: an element with two stable shapes keeps a record of an event, and the
+chapter follows one bit from writing through reading to erasure. The research log holds
+dated notes, the roadmap and the changelog.
 
 ## How the book changes
 

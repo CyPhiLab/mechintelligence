@@ -38,8 +38,9 @@ threads with concrete next steps, and research notes record progress on them.
     becomes the Gibbs law $\exp(-V/T)$ on a non-quadratic potential. A mechanical memory
     then stores a reliable bit when its energy barrier is large compared with the noise
     energy, the classical criterion behind Landauer's bound
-    [@landauer1961irreversibility]. This connects the analysis to mechanical
-    metamaterials and latching mechanisms, though none of it is tested yet.
+    [@landauer1961irreversibility]. @sec-memory tests this for one bistable element:
+    its lifetime, the cost of writing and erasing it, and what the rest of a body reads
+    about it. Several bits, logic between them, and other nonlinear springs remain open.
 6. *Validation must be predictive.* A definition is checked by its consequences. The
     consistency checks pass: invariance, the limits, and agreement with the bandwidth
     argument of @wensing2017proprioceptive. The empirical test is whether the total,

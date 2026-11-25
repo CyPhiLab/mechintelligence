@@ -141,6 +141,8 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   $\tau=200$, approaching Landauer's $\sigma_T^2\ln2$ with a $1/\tau$ excess; slow erasure
   leaks (1.2% errors). In a cycle the push-driven write ($\approx29\,\sigma_T^2$) dominates;
   reading costs no work.
+- Done (2026-11-25): the four T7 notes are folded into @sec-memory (Part IV). The notes
+  stay as dated records.
 - Next steps: a part watching a bit being written; erasing a bit inside a body; a
   stiffening ground spring.
 
@@ -372,6 +374,10 @@ written up.
 - **2026-11-22.** Masses and dampings are reported for a stated band, 100 Hz by default,
   where the criterion of the finite-answers note says a band is needed. Accepted with
   reservations; the checks listed under T11 come first.
+
+- **2026-11-25.** The live site is taken offline until the reviewer has polished the book;
+  work continues on `drafts`, and the next release republishes it. The nonlinear notes
+  are folded into a new Part IV, "Nonlinear bodies".
 
 ## Paper candidates
 

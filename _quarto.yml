@@ -30,6 +30,9 @@ book:
     - part: "Part III. Information inside the body"
       chapters:
         - chapters/inside-the-body.qmd
+    - part: "Part IV. Nonlinear bodies"
+      chapters:
+        - chapters/memory.qmd
     - chapters/open-problems.qmd
     - part: "Research log"
       chapters:
