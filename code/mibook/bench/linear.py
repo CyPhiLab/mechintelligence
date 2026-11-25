@@ -534,3 +534,55 @@ def simulate_linear(body, n_t: int, dt: float, batch: int, u: np.ndarray | None 
         if u is not None:
             x = x + u[k] @ s.Bd.T
     return out
+
+
+# ---------------------------------------------------------------------------------------
+# Exact finite-window Fisher information, in linear time (thread T11 check)
+# ---------------------------------------------------------------------------------------
+
+def window_kl(b0, b1, part, n_t: int, fs: float, eps: float = 0.0) -> float:
+    """KL(p0 || p1) in nats between the laws of the part's sampled thermal motion over n_t
+    samples under bodies b0 and b1, both started from their stationary laws.
+
+    KL = 1/2 [tr(S1^-1 S0) - N m + log det S1 - log det S0] for the stacked covariances.
+    The log-determinants come from each body's own Kalman filter. The trace is the expected
+    squared whitened innovation of body 1's filter run on body 0's data, computed exactly by
+    propagating the joint covariance of body 0's state and body 1's estimate. Linear in n_t.
+    """
+    C = b0.part(part) if isinstance(part, str) else np.atleast_2d(part)
+    s0 = b0.discretize(1.0 / fs)
+    s1 = b1.discretize(1.0 / fs)
+    m = C.shape[0]
+    R = eps ** 2 * np.eye(m)
+    f0 = Filter.build(s0, C, n_t, eps)
+    f1 = Filter.build(s1, C, n_t, eps)
+    d = s0.Ad.shape[0]
+    Z = np.zeros((2 * d, 2 * d))
+    Z[:d, :d] = s0.P
+    M = np.hstack([C, -C])
+    total = 0.0
+    for k in range(n_t):
+        Ce = M @ Z @ M.T + R
+        L1 = f1.chol[k]
+        X = sla.solve_triangular(L1, Ce, lower=True)
+        X = sla.solve_triangular(L1, X.T, lower=True)
+        total += np.trace(X) - m + f1.logdet[k] - f0.logdet[k]
+        K1 = f1.gains[k]
+        F = np.block([[s0.Ad, np.zeros((d, d))], [K1 @ C, s1.Ad - K1 @ C]])
+        N = np.zeros((2 * d, 2 * d))
+        N[:d, :d] = s0.Qd
+        N[d:, d:] = K1 @ R @ K1.T
+        Z = F @ Z @ F.T + N
+        Z = 0.5 * (Z + Z.T)
+    return 0.5 * total
+
+
+def window_fisher(body, param: str, part="whole", n_t: int = 400, fs: float = 4000.0,
+                  eps: float = 0.0, rel_step: float = 1e-3, log: bool = True) -> float:
+    """Exact Fisher information about a parameter from the part's thermal motion over n_t
+    samples: [KL(theta || theta + h) + KL(theta || theta - h)] / h^2, to second order in h."""
+    theta = body.params[param]
+    h = rel_step if log else rel_step * max(abs(theta), 1e-12)
+    up = body.with_params(**{param: theta * np.exp(h) if log else theta + h})
+    dn = body.with_params(**{param: theta * np.exp(-h) if log else theta - h})
+    return (window_kl(body, up, part, n_t, fs, eps) + window_kl(body, dn, part, n_t, fs, eps)) / h ** 2

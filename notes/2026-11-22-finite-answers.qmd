@@ -1,7 +1,7 @@
 # 2026-11-22: What a part's history can say without limit {.unnumbered}
 
 ::: {.callout-note appearance="minimal" icon="false"}
-**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_scale.py`
+**Status:** exploratory · **Thread:** T11 · **Checked by:** `tests/test_scale.py`, `tests/test_bench_t11.py`
 :::
 
 **Question.** The [note on payload mass](2026-11-22-mass-and-resolution.qmd) found that a
@@ -175,3 +175,74 @@ part touches the property.
     hold a finite amount about it.
 - Use the criterion in the nonlinear thread (T7), where the high-frequency behaviour may
     differ.
+
+## Checks of 2026-11-25
+
+The roadmap asked for four checks before this note and the
+[mass note](2026-11-22-mass-and-resolution.qmd) go into a chapter (thread T11). Three are
+done here; the fourth is a question of definition, recorded in the roadmap. Code:
+`mibook.bench.t11`; tests: `tests/test_bench_t11.py`.
+
+**1. The formula against a source read in full.** Whittle's formula is confirmed in the
+form used by system identification. @ljung1999system [Eqs. 13.24–13.26, pp. 416–417]
+gives the information per sample about a parameter of a sampled model $y=Gu+He$ as an
+input-driven term plus a noise term, $M_e=\frac{\lambda_0^2}{2\pi\kappa_0}\int H'_\theta
+H'^{*}_\theta/\Phi_v\,d\omega$. For Gaussian innovations whose variance does not depend on the
+parameter, and a noise filter $H$ that is monic, stable and stably invertible, $M_e$ equals
+the per-sample Whittle rate: the real and imaginary parts of $\partial\log H$ then carry equal
+energy over the band, which turns Ljung's integral of $|\partial\log H|^2$ into Whittle's
+integral of $(\partial\log\Phi_v)^2/4$. When the innovation variance does depend on the
+parameter, Whittle's formula already includes it; Ljung's split needs an extra term. The
+original sources of @whittle1953analysis and @ibragimov1978gaussian remain unread.
+
+**2. Finite windows, without Whittle's formula.** The information over a finite window is
+now computed exactly in time linear in the window (`linear.window_fisher`): the relative
+entropy between the part's motion at $\theta\pm h$ comes from two Kalman filters and the
+joint covariance of one body's state and the other body's estimate. It agrees with the
+book's stacked computation (71.213 against 71.213; 3.3453 against 3.3456). On the SEA
+($k_s=10^3$) the slope between windows of 0.1 and 0.4 s agrees with the spectral rate to
+four digits for every case, for example 8,398.1 against 8,398.1 per second about the link's
+mass at the link and 31.13 against 31.15 at the rotor. As the sampling rate doubles from 2 to
+16 kHz, the exact finite-window rate about the link's mass at the link grows by 4.00 per
+hertz, while the rotor's (31.1) and the ground stiffness's (635.5 and 43.2) stay put.
+
+One caution came out of this check. For a lightly damped body, the spectral rate needs a
+very fine frequency grid: on a chain whose slowest mode decays in 7 s, a grid of 0.25 Hz
+gave 559 where the exact value is 522, and only a grid of 0.008 Hz recovered it. The
+finite-window computation has no grid and is the safer check.
+
+**3. Parts with several coordinates.** @thm-leading extends to a part read through several
+coordinates, with the matrix $c=PH^{-1}DH^{-1}P^\top$ for a selector $P$ of the part's
+positions.
+
+::: {#prp-leading-matrix name="The leading coefficient for several coordinates"}
+For a part with position selector $P$ and $c=PH^{-1}DH^{-1}P^\top\succ0$, the information rate
+about $\theta$ grows with the band as
+$\dot I(B)=\operatorname{tr}\big[(c^{-1}\partial_\theta c)^2\big]\,B+O(1)$.
+:::
+
+::: {.proof name="Proof sketch"}
+Steps 2 to 4 of the proof of @thm-leading carry over with matrices. The part's spectrum is
+$S=\frac{2\sigma_T^2}{\omega^4}\big(c+O(\omega^{-2})\big)$, so
+$S^{-1}\partial_\theta S=c^{-1}\partial_\theta c+O(\omega^{-2})$. Whittle's rate for a vector
+signal is $\frac1{4\pi}\int\operatorname{tr}[(S^{-1}\partial_\theta S)^2]\,d\omega$, whose integrand
+tends to $\operatorname{tr}[(c^{-1}\partial_\theta c)^2]$; integrating over $|\omega|<2\pi B$ gives
+$B\operatorname{tr}[(c^{-1}\partial_\theta c)^2]+O(1)$. For one coordinate this is
+@thm-leading. The error terms are not proved, as before.
+:::
+
+On a three-mass grounded chain the exact finite-window rates agree with this to three
+decimals:
+
+| part (nodes) | mass 0 | mass 1 | mass 2 |
+|:--|--:|--:|--:|
+| node 1 | finite (0.4 per s) | 4.000 (predicted 4) | finite (16.9 per s) |
+| nodes 1 and 2 | finite (4.6 per s) | 7.332 (7.333) | 7.333 (7.333) |
+| all three | 5.498 (5.500) | 11.329 (11.333) | 9.832 (9.833) |
+
+Growth per hertz, from sampling rates of 1 to 8 kHz. So a part learns without limit about
+exactly the masses it contains, and the rate per hertz depends on how those masses share the
+dampers between them.
+
+**4. Whether a part's own mass is "environment".** This is a question of definition, not of
+calculation, and is left to the reviewer (see the roadmap).

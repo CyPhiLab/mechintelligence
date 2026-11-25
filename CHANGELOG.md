@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- The checks owed for the parameter notes (T11): exact finite-window Fisher information in
+  linear time (`linear.window_fisher`, `mibook.bench.t11`), agreement with the spectral
+  rates, the several-coordinate form of the leading-coefficient theorem, and the formula
+  confirmed in Ljung (1999). Written up in the finite-answers note.
 - New research note (T12): where compliance helps and hurts action, withstanding,
   perception and cost, on the leg and the bird, with a figure (`fig_regimes`) and code
   `mibook.bench.regimes`.

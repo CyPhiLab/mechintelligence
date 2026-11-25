@@ -63,7 +63,9 @@ the findings recorded here.
    element's resonance decides action and withstanding; perception beyond a spring never
    improves; the loss model decides cost. To do: nonlinear effects (stance energy return,
    impacts, conformation).
-4. The checks owed under T11 before the parameter notes enter a chapter.
+4. The checks owed under T11 before the parameter notes enter a chapter. *Done
+   2026-11-25*, except the question of definition below (see the
+   [finite-answers note](notes/2026-11-22-finite-answers.qmd), "Checks of 2026-11-25").
 5. Nonlinear comparisons: memory capacity against information on the soft arm; hysteron
    networks at finite temperature (T7, T12).
 6. The classification frame in the opening chapter, and the targeted links into
@@ -238,6 +240,18 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   check the finite-window version directly (exact Gaussian Fisher information over longer
   windows, not only Whittle's formula); check the several-coordinate form and a chain;
   and ask whether a part's own mass and dampers belong to "the environment" at all.
+- Done (2026-11-25): the Whittle-type formula confirmed in Ljung (1999), Eqs. 13.24–13.26
+  (the 1953 and 1978 originals remain unread); exact finite-window Fisher information in
+  linear time agrees with the spectral rates to four digits and reproduces the growth of
+  4.00 per hertz for the link's mass; the several-coordinate form,
+  $\operatorname{tr}[(c^{-1}\partial c)^2]$ per hertz, agrees with exact windows on a chain to
+  three decimals. A caution: spectral rates of lightly damped bodies need very fine
+  frequency grids; the exact window method has no grid.
+- Open, for the reviewer: is a part's own mass (or a damper attached to it) "environment"?
+  Proposed answer: a property is environment when it can change from task to task without
+  redesigning the body (a payload, the ground); the body's own masses are design. On that
+  reading, the only properties that need a stated band are environmental masses and dampers
+  attached directly to the part reading them, such as a payload on the link read at the link.
 - Next step after the decision: payload on the SEA and on the bodies of @sec-inside;
   whether $\varepsilon$ predicts what parts of chains and trees hold about the ground.
 
@@ -302,6 +316,11 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-25.** The T11 checks: exact finite-window Fisher information (linear time, no
+  Whittle formula) matches the spectral rates on the leg to four digits; the link's mass
+  grows by 4.00 per hertz, the rotor's stays at 31.1 per second; the several-coordinate
+  form $\operatorname{tr}[(c^{-1}\partial c)^2]$ matches a chain to three decimals; Ljung (1999)
+  confirms the Whittle-type formula. `tests/test_bench_t11.py`.
 - **2026-11-25.** Compliance mapped across stiffness and frequency on the leg and the bird.
   A series spring raises ground force per torque from about $f_r/3$ to $1.1f_r$ (up to
   5.1 times) and lowers it above; it amplifies shocks at the rotor in that band and isolates

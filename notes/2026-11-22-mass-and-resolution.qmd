@@ -23,7 +23,9 @@ potential half. Does the same picture hold?
 
 The reason is inertia. Above a body's modes, how it moves under any force is set by its
 mass, and how hard the thermal force shakes it is set by the damping. So every faster
-band of motion gives another look at both. This is not an artifact of white thermal noise:
+band of motion gives another look at both. (The finite-window and several-coordinate checks owed for this note were done on
+2026-11-25; see the [finite-answers note](2026-11-22-finite-answers.qmd).) This is not an
+artifact of white thermal noise:
 a thermal bath with finite memory, built here and consistent with fluctuation-dissipation,
 gives the same growth. Answers about masses and dampings therefore need a stated band, as
 force profiles already have one. In the book's 100 Hz band, the rigid leg's thermal motion

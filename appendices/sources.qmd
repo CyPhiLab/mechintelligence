@@ -19,6 +19,7 @@ text. This table is updated as sources are read in full (thread T10 of the
 | @vanderschaft2014port | full text | Eq. (4.10), input-state-output port-Hamiltonian form |
 | @buithanh2013computational | full text | Sec. 3.3, mass-weighted inner product |
 | @cotter2013mcmc | full text | robustness under mesh refinement (abstract and Sec. 1) |
+| @ljung1999system | full text | Eqs. 13.24–13.26, pp. 416–417: information per sample, split into input and noise terms (the Whittle-type formula of the parameter notes) |
 | @todorov2009efficient; @theodorou2012relative | full text | KL control: the control cost is the KL divergence between controlled and passive dynamics (@rem-kl) |
 | @kubo1966fluctuation | secondary | the FDT links noise intensity to dissipation; equipartition |
 | @moore1981principal | secondary | Gramians, coordinate dependence, balancing |
