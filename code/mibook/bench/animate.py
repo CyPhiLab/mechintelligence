@@ -1,0 +1,645 @@
+"""Short video demos of every benchmark, for sanity checks (thread T12).
+
+    uv run python -m mibook.bench.animate OUTDIR [name ...]
+
+Each demo runs a real simulation of the benchmark with a simple environment input and draws
+it. Where the motion is too small to see, displacements are magnified for display only, and
+the factor is printed on the frame. Slow motion is printed too. Videos are H.264 MP4.
+"""
+from __future__ import annotations
+
+import pathlib
+import sys
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.animation import FFMpegWriter, FuncAnimation  # noqa: E402
+
+from . import make  # noqa: E402
+from . import linear as L  # noqa: E402
+from .sampling import gibbs_start  # noqa: E402
+
+C1, C2, C3, C4 = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+INK, INK2, GRID = "#0b0b0b", "#52514e", "#e4e3df"
+FPS, N_FRAMES = 30, 150
+
+
+def _write(fig, update, path, n_frames=N_FRAMES):
+    anim = FuncAnimation(fig, update, frames=n_frames, blit=False)
+    anim.save(str(path), writer=FFMpegWriter(fps=FPS, codec="libx264",
+                                             extra_args=["-pix_fmt", "yuv420p"]), dpi=110)
+    plt.close(fig)
+    return path
+
+
+def _label(ax, text, loc="upper left"):
+    x, ha = (0.02, "left") if "left" in loc else (0.98, "right")
+    y, va = (0.97, "top") if "upper" in loc else (0.03, "bottom")
+    return ax.text(x, y, text, transform=ax.transAxes, ha=ha, va=va, fontsize=8, color=INK2)
+
+
+def _mag(target, peak):
+    """Display magnification: never below 1 (displays never shrink motion)."""
+    return max(1.0, target / (peak + 1e-30))
+
+
+def _fmt(A):
+    return f"x{A:.2g}" if A < 100 else f"x{A:.0f}"
+
+
+def _smooth_noise(rng, n, width, scale=1.0):
+    k = np.exp(-0.5 * (np.arange(-3 * width, 3 * width + 1) / width) ** 2)
+    x = np.convolve(rng.standard_normal(n + len(k)), k / np.sqrt((k ** 2).sum()), mode="same")
+    return scale * x[:n]
+
+
+def _trace_panel(ax, t, series, labels, colors):
+    lines = []
+    for y, lab, c in zip(series, labels, colors):
+        y = np.asarray(y)
+        yn = y / (np.max(np.abs(y)) + 1e-30)
+        ax.plot(t, yn, color=c, lw=1.0, label=lab)
+    cursor = ax.axvline(t[0], color=INK, lw=0.8)
+    ax.set_xlim(t[0], t[-1])
+    ax.set_ylim(-1.15, 1.15)
+    ax.set_yticks([])
+    ax.legend(fontsize=7, loc="lower left", frameon=False)
+    ax.set_xlabel("time (s)", fontsize=8)
+    ax.tick_params(labelsize=7)
+    return cursor
+
+
+# ---------------------------------------------------------------------------------------
+# Linear bodies
+# ---------------------------------------------------------------------------------------
+
+def legs(path):
+    """Rigid leg and SEA (k_s = 300) side by side, under the same random ground force."""
+    rng = np.random.default_rng(0)
+    fs, T = 4000.0, 0.3
+    n = int(T * fs)
+    f = _smooth_noise(rng, n, 25, 100.0) + 150.0 * (np.arange(n) > n // 3)
+    t = np.arange(n) / fs
+    bodies = [("rigid", make("rigid")), ("SEA $k_s=300$", make("sea", ks=300.0))]
+    runs = []
+    for _, b in bodies:
+        out = L.simulate_linear(b, n, 1 / fs, 1, u=f[:, None, None], channel="force",
+                                parts=("whole",), rng=rng, stationary=False)["whole"][:, 0]
+        runs.append(out)
+    A = _mag(0.6, max(np.abs(r[:, :b.n]).max() for r, (_, b) in zip(runs, bodies)))
+    fig = plt.figure(figsize=(7.2, 4.0))
+    axs = [fig.add_axes([0.03 + 0.33 * i, 0.32, 0.3, 0.62]) for i in range(2)]
+    tr = fig.add_axes([0.70, 0.32, 0.28, 0.62])
+    cursor = _trace_panel(tr, t, [f, runs[0][:, 0], runs[1][:, 1]],
+                          ["ground force", "rigid rotor", "SEA rotor"], [INK2, C1, C2])
+    art = []
+    for ax, (name, b) in zip(axs, bodies):
+        ax.set_xlim(-1.3, 1.3)
+        ax.set_ylim(-1.6, 1.0)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title(name, fontsize=9)
+        ax.axhline(-1.35, color=INK2, lw=1)
+        leg, = ax.plot([], [], color=INK, lw=3)
+        rotor = plt.Circle((0.0, 0.45), 0.3, fill=False, color=C2, lw=1.5)
+        ax.add_patch(rotor)
+        mark, = ax.plot([], [], color=C2, lw=2)
+        arrow, = ax.plot([], [], color=C1, lw=2)
+        art.append((leg, mark, arrow))
+    _label(fig.axes[0], f"angles {_fmt(A)}, slow motion x{N_FRAMES / FPS / T:.0f}", "lower left")
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        for (leg, mark, arrow), r, (_, b) in zip(art, runs, bodies):
+            th_j = A * r[i, 0]
+            th_m = A * r[i, b.n - 1]
+            foot = (1.2 * np.sin(th_j), -1.2 * np.cos(th_j))
+            leg.set_data([0, foot[0]], [0, foot[1]])
+            mark.set_data([0, 0.3 * np.sin(th_m)], [0.45, 0.45 + 0.3 * np.cos(th_m)])
+            arrow.set_data([foot[0], foot[0]], [foot[1] - 0.15, foot[1] - 0.15 - 0.3 * f[i] / 250])
+        cursor.set_xdata([t[i], t[i]])
+    return _write(fig, update, path)
+
+
+def network(path):
+    from scipy.spatial import Delaunay  # noqa: F401
+    from .bodies.networks import _edges
+    b = make("network")
+    p = b.params
+    pts = np.random.default_rng(p["seed"]).uniform(0, 1, (p["n_nodes"], 2))
+    edges = _edges(pts)
+    rng = np.random.default_rng(1)
+    fs, T = 200.0, 6.0
+    n = int(T * fs)
+    t = np.arange(n) / fs
+    f = 0.8 * np.sin(2 * np.pi * 1.5 * t) + _smooth_noise(rng, n, 8, 0.4)
+    x = L.simulate_linear(b, n, 1 / fs, 1, u=f[:, None, None], channel="force",
+                          parts=("whole",), rng=rng)["whole"][:, 0, :b.n].reshape(n, -1, 2)
+    A = _mag(0.08, np.abs(x).max())
+    anchors = np.argsort(pts[:, 1])[:p["n_anchor"]]
+    top = np.argsort(-pts[:, 1])[:p["n_input"]]
+    fig, ax = plt.subplots(figsize=(5.6, 5.0))
+    ax.set_xlim(-0.1, 1.1)
+    ax.set_ylim(-0.1, 1.15)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    lines = [ax.plot([], [], color=INK2, lw=0.8)[0] for _ in edges]
+    nodes = ax.scatter(pts[:, 0], pts[:, 1], s=25, color=C1, zorder=3)
+    ax.scatter(pts[anchors, 0], pts[anchors, 1] - 0.04, marker="^", s=40, color=INK2)
+    arrow, = ax.plot([], [], color=C2, lw=2)
+    _label(ax, f"random spring network: force on the top node; displacements {_fmt(A)}")
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        P = pts + A * x[i]
+        for ln, (a, c) in zip(lines, edges):
+            ln.set_data([P[a, 0], P[c, 0]], [P[a, 1], P[c, 1]])
+        nodes.set_offsets(P)
+        j = top[0]
+        arrow.set_data([P[j, 0], P[j, 0] + 0.15 * f[i]], [P[j, 1], P[j, 1]])
+    return _write(fig, update, path)
+
+
+def whisker(path):
+    b = make("whisker")
+    p = b.params
+    rng = np.random.default_rng(2)
+    fs, T = 4000.0, 0.25
+    n = int(T * fs)
+    t = np.arange(n) / fs
+    f = np.zeros(n)
+    for t0 in (0.02, 0.11, 0.17):                     # three taps
+        m = (t > t0) & (t < t0 + 0.004)
+        f[m] = 5e-3 * np.sin(np.pi * (t[m] - t0) / 0.004)
+    q = L.simulate_linear(b, n, 1 / fs, 1, u=f[:, None, None], channel="force",
+                          parts=("whole",), rng=rng)["whole"][:, 0, :b.n]
+    xs = np.linspace(0, p["length"], p["n_el"] + 1)
+    w = np.hstack([np.zeros((n, 1)), q[:, 1::2]])     # transverse displacement at each node
+    A = _mag(0.02, np.abs(w).max())
+    fig, (ax, tr) = plt.subplots(2, 1, figsize=(6.4, 4.2), gridspec_kw=dict(height_ratios=[2, 1]))
+    ax.set_xlim(-0.01, 0.11)
+    ax.set_ylim(-0.03, 0.03)
+    ax.axis("off")
+    beam, = ax.plot([], [], color=INK, lw=2)
+    ax.plot([-0.005, 0], [0, 0], color=C2, lw=6)
+    contact, = ax.plot([], [], color=C1, lw=2)
+    _label(ax, f"whisker tapped at 7 cm; deflection {_fmt(A)}, slow motion x{N_FRAMES / FPS / T:.0f}")
+    cursor = _trace_panel(tr, t, [f, q[:, 0]], ["contact force", "follicle angle"], [C1, C2])
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        beam.set_data(xs, A * w[i])
+        j = np.argmin(abs(xs - p["contact"]))
+        y = A * w[i, j]
+        contact.set_data([p["contact"], p["contact"]], [y + 0.004 + 3 * f[i], y + 0.004])
+        cursor.set_xdata([t[i], t[i]])
+    return _write(fig, update, path)
+
+
+def swarm(path):
+    b = make("swarm")
+    p = b.params
+    pts = np.random.default_rng(p["seed"]).uniform(0, 1, (p["n_agents"], 2))
+    links = [(i, j) for i in range(len(pts)) for j in range(i + 1, len(pts))
+             if np.linalg.norm(pts[i] - pts[j]) < p["r_c"]]
+    rng = np.random.default_rng(3)
+    fs, T = 20.0, 30.0
+    n = int(T * fs)
+    t = np.arange(n) / fs
+    f = 0.1 * np.sign(np.sin(2 * np.pi * t / 10.0))
+    x = L.simulate_linear(b, n, 1 / fs, 1, u=f[:, None, None], channel="common",
+                          parts=("whole",), rng=rng)["whole"][:, 0, :b.n].reshape(n, -1, 2)
+    A = _mag(0.15, np.abs(x).max())
+    fig, ax = plt.subplots(figsize=(5.6, 5.0))
+    ax.set_xlim(-0.2, 1.2)
+    ax.set_ylim(-0.1, 1.15)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    lines = [ax.plot([], [], color=INK2, lw=0.8)[0] for _ in links]
+    dots = ax.scatter(pts[:, 0], pts[:, 1], s=40, color=C1, zorder=3)
+    arrow, = ax.plot([], [], color=C2, lw=2.5)
+    _label(ax, f"swarm under a common push (orange); displacements {_fmt(A)}, sped up x{T / (N_FRAMES / FPS):.0f}")
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        P = pts + A * x[i]
+        for ln, (a, c) in zip(lines, links):
+            ln.set_data([P[a, 0], P[c, 0]], [P[a, 1], P[c, 1]])
+        dots.set_offsets(P)
+        arrow.set_data([0.5, 0.5 + 1.5 * f[i]], [1.08, 1.08])
+    return _write(fig, update, path)
+
+
+# ---------------------------------------------------------------------------------------
+# Nonlinear and contact bodies
+# ---------------------------------------------------------------------------------------
+
+def _arm_frames(sim, n_steps, dt, u, rng, every, q0=None):
+    out, _ = sim.simulate(n_steps, dt, 1, u=u, rng=rng, parts=("whole",),
+                          q_init=q0, v_init=np.zeros((1, sim.n)))
+    return out["whole"][::every, 0, :sim.n]
+
+
+def _draw_arm(ax, sim):
+    N = sim.n_seg
+    L_ = lambda i: 2 * (i - 1)
+    R_ = lambda i: 2 * (i - 1) + 1
+    pairs = [(L_(i), L_(i + 1)) for i in range(1, N)] + [(R_(i), R_(i + 1)) for i in range(1, N)] \
+        + [(L_(i), R_(i)) for i in range(1, N + 1)] + [(L_(i), R_(i + 1)) for i in range(1, N)]
+    lines = [ax.plot([], [], color=INK, lw=1)[0] for _ in pairs]
+    base_lines = [ax.plot([], [], color=INK, lw=1)[0] for _ in range(3)]
+    ax.plot(sim.base[:, 0], sim.base[:, 1], "s", color=INK2)
+    nodes, = ax.plot([], [], "o", ms=3, color=C1)
+
+    def draw(q):
+        X = q.reshape(-1, 2) + sim.rest
+        for ln, (a, c) in zip(lines, pairs):
+            ln.set_data([X[a, 0], X[c, 0]], [X[a, 1], X[c, 1]])
+        for ln, (i, b0) in zip(base_lines, ((L_(1), 0), (R_(1), 1), (R_(1), 0))):
+            ln.set_data([X[i, 0], sim.base[b0, 0]], [X[i, 1], sim.base[b0, 1]])
+        nodes.set_data(X[:, 0], X[:, 1])
+    return draw
+
+
+def soft_arm(path):
+    from .nonlinear_study import _stiffness
+    arm = make("soft_arm", b_spring=0.1)
+    rng = np.random.default_rng(4)
+    dt, T = 4e-4, 5.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    tt = np.arange(n) * dt
+    f = 0.012 * np.sin(2 * np.pi * 0.6 * tt) + _smooth_noise(rng, n, 500, 0.004)
+    q0, _ = gibbs_start(arm, 1, rng, K=_stiffness(arm))
+    Q = _arm_frames(arm, n, dt, f[:, None, None], rng, every, q0)
+    fig, ax = plt.subplots(figsize=(4.4, 5.0))
+    ax.set_xlim(-0.2, 0.2)
+    ax.set_ylim(-0.02, 0.34)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    draw = _draw_arm(ax, arm)
+    arrow, = ax.plot([], [], color=C2, lw=2)
+    _label(ax, "soft arm, force at the tip (orange); real scale and speed")
+
+    def update(k):
+        q = Q[min(k, len(Q) - 1)]
+        draw(q)
+        X = q.reshape(-1, 2) + arm.rest
+        tip = X[-2:].mean(0)
+        i = min(k * every, n - 1)
+        arrow.set_data([tip[0], tip[0] + 6.0 * f[i]], [tip[1] + 0.01, tip[1] + 0.01])
+    return _write(fig, update, path)
+
+
+def tentacle(path):
+    tn = make("tentacle")
+    rng = np.random.default_rng(5)
+    dt, T = 2e-4, 2.5
+    n = int(T / dt)
+    every = n // N_FRAMES
+    Q = _arm_frames(tn, n, dt, tn.grasp_input(1.0, ramp_steps=int(1.2 / dt)), rng, every)
+    fig, ax = plt.subplots(figsize=(4.6, 5.0))
+    ax.set_xlim(-0.2, 0.15)
+    ax.set_ylim(-0.02, 0.34)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.add_patch(plt.Circle((-0.06, 0.2), tn.params["r_obj"], color=C4, alpha=0.5))
+    arm_like = tn
+    arm_like.base = np.array([[-0.015, 0.0], [0.015, 0.0]])
+    draw = _draw_arm(ax, arm_like)
+    _label(ax, "tentacle: tendon on the left rail ramps to 1 N; real scale, slowed x2")
+
+    def update(k):
+        draw(Q[min(k, len(Q) - 1)])
+    return _write(fig, update, path)
+
+
+def bistable_chain(path):
+    from .bodies.nonlinear import mesostate
+    ch = make("bistable_chain")
+    rng = np.random.default_rng(6)
+    dt = 0.01
+    Fc = ch.critical_forces
+    prof = np.concatenate([np.linspace(0, 1.25 * Fc.max(), 3000), np.linspace(1.25 * Fc.max(), 0, 1500),
+                           np.zeros(500)])
+    n = len(prof)
+    every = n // N_FRAMES
+    cache = ch._ou(dt)
+    q = np.tile(ch.q0, (1, 1))
+    v = np.zeros((1, ch.n))
+    Q, S = [], []
+    for i, F in enumerate(prof):
+        q, v, _ = ch.step(q, v, np.array([[F]]), rng, dt, cache)
+        if i % every == 0:
+            Q.append(q[0].copy())
+            S.append(mesostate(ch, q)[0].copy())
+    fig, (ax, tr) = plt.subplots(2, 1, figsize=(7.0, 3.6), gridspec_kw=dict(height_ratios=[1.3, 1]))
+    ax.set_xlim(-2.0, 15.0)
+    ax.set_ylim(-1, 1)
+    ax.axis("off")
+    segs = [ax.plot([], [], lw=6, solid_capstyle="butt")[0] for _ in range(ch.n)]
+    dots, = ax.plot([], [], "o", color=INK, ms=6)
+    ax.plot([-1.5, -1.5], [-0.5, 0.5], color=INK2, lw=3)
+    _label(ax, "bistable chain: short blue = left well, long orange = switched; "
+               "ramp up, ramp down, wait")
+    tt = np.arange(n) * dt
+    cursor = _trace_panel(tr, tt, [prof], ["drive force"], [INK2])
+    for F in Fc:
+        tr.axhline(F / prof.max(), color=C2, lw=0.5, ls=":")
+
+    def update(k):
+        k = min(k, len(Q) - 1)
+        # Display each element with length 1.5 + s (s = -1 short, +1 long), so wells read as
+        # short and long segments from the wall at -1.5.
+        s_el = np.diff(np.concatenate([[0.0], Q[k]]))
+        x = -1.5 + np.concatenate([[0.0], np.cumsum(1.5 + s_el)])
+        for j, sg in enumerate(segs):
+            sg.set_data([x[j], x[j + 1]], [0, 0])
+            sg.set_color(C2 if S[k][j] else C1)
+        dots.set_data(x, np.zeros_like(x))
+        cursor.set_xdata([tt[k * every]] * 2)
+    return _write(fig, update, path)
+
+
+def hopper(path):
+    hp = make("hopper")
+    rng = np.random.default_rng(7)
+    dt, T = 5e-4, 4.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    out, _ = hp.simulate(n, dt, 1, u=hp.hop_input, rng=rng, parts=("body", "foot"),
+                         q_init=hp.q0[None], v_init=np.zeros((1, 2)))
+    yb, yf = out["body"][::every, 0, 0], out["foot"][::every, 0, 0]
+    fig, ax = plt.subplots(figsize=(3.6, 5.0))
+    ax.set_xlim(-0.4, 0.4)
+    ax.set_ylim(-0.05, 1.6)
+    ax.axis("off")
+    ax.axhline(0, color=INK2, lw=2)
+    body = plt.Rectangle((-0.15, 0), 0.3, 0.12, color=C1)
+    foot = plt.Rectangle((-0.04, 0), 0.08, 0.04, color=INK)
+    ax.add_patch(body)
+    ax.add_patch(foot)
+    spring, = ax.plot([], [], color=INK2, lw=1)
+    _label(ax, "hopper with thrust in stance; real scale and speed")
+
+    def update(k):
+        k = min(k, len(yb) - 1)
+        body.set_y(yb[k])
+        foot.set_y(yf[k])
+        z = np.linspace(yf[k] + 0.04, yb[k], 14)
+        spring.set_data(0.05 * np.sign(np.sin(np.arange(14) * np.pi / 2 + 0.1)), z)
+    return _write(fig, update, path)
+
+
+def gripper(path):
+    gp = make("gripper")
+    rng = np.random.default_rng(8)
+    dt, T = 1e-4, 1.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    tt = np.arange(n) * dt
+    d = np.zeros(n)
+    for t0 in (0.2, 0.5, 0.75):
+        m = (tt > t0) & (tt < t0 + 0.02)
+        d[m] = 1.5 * np.sin(np.pi * (tt[m] - t0) / 0.02)
+    out, _ = gp.simulate(n, dt, 1, u=d[:, None, None], rng=rng, parts=("whole",),
+                         q_init=gp.q0[None], v_init=np.zeros((1, 3)))
+    x = out["whole"][::every, 0, :3]
+    dx = x - gp.q0
+    A = _mag(0.01, np.abs(dx).max())
+    r_o = gp.params["r_o"]
+    fig, (ax, tr) = plt.subplots(2, 1, figsize=(6.0, 3.8), gridspec_kw=dict(height_ratios=[1.2, 1]))
+    ax.set_xlim(-0.07, 0.07)
+    ax.set_ylim(-0.03, 0.03)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    obj = plt.Rectangle((-r_o, -0.015), 2 * r_o, 0.03, color=C4, alpha=0.6)
+    padL = plt.Rectangle((0, -0.02), 0.006, 0.04, color=C1)
+    padR = plt.Rectangle((0, -0.02), 0.006, 0.04, color=C1)
+    for p_ in (obj, padL, padR):
+        ax.add_patch(p_)
+    _label(ax, f"gripper squeezing an object, taps on the object; motion {_fmt(A)}, slowed x5")
+    cursor = _trace_panel(tr, tt, [d, out["whole"][:, 0, 1] - gp.q0[1]], ["disturbance", "object"], [C2, C1])
+
+    def update(k):
+        k = min(k, len(x) - 1)
+        xl, xo, xr = gp.q0 + A * dx[k]
+        obj.set_x(xo - r_o)
+        padL.set_x(xl - 0.006)
+        padR.set_x(xr)
+        cursor.set_xdata([tt[k * every]] * 2)
+    return _write(fig, update, path)
+
+
+def walker(path):
+    wk = make("walker", gamma=0.1)
+    p = wk.params
+    rng = np.random.default_rng(9)
+    dt, T = 1e-3, 10.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    q = np.zeros((1, 1))
+    v = np.full((1, 1), 1.0)
+    cache = {"dt": dt, "steps": np.zeros(1)}
+    TH, ST = [], []
+    for i in range(n):
+        q, v, _ = wk.step(q, v, None, rng, dt, cache)
+        if i % every == 0:
+            TH.append(q[0, 0])
+            ST.append(cache["steps"][0])
+    a, g = p["alpha"], p["gamma"]
+    step = 2 * np.sin(a)
+    n_spokes = int(round(np.pi / a))
+    fig, ax = plt.subplots(figsize=(7.0, 3.6))
+    ax.set_aspect("equal")
+    ax.axis("off")
+    span = step * (max(ST) + 3)
+    xs = np.array([-1, span + 1])
+    ax.plot(xs * np.cos(g), -xs * np.sin(g), color=INK2, lw=1.5)
+    spokes = [ax.plot([], [], color=INK, lw=2)[0] for _ in range(n_spokes)]
+    hub, = ax.plot([], [], "o", color=C1, ms=8)
+    _label(ax, f"rimless wheel on a {g:.2f} rad slope; real scale and speed")
+
+    def update(k):
+        k = min(k, len(TH) - 1)
+        s = ST[k] * step                              # stance foot along the slope
+        foot = np.array([s * np.cos(g), -s * np.sin(g)])
+        ang = TH[k] - g                               # stance spoke angle from vertical
+        c = foot + np.array([np.sin(ang), np.cos(ang)])
+        for j, sp in enumerate(spokes):
+            phi = ang + np.pi + 2 * a * j
+            sp.set_data([c[0], c[0] + np.sin(phi)], [c[1], c[1] + np.cos(phi)])
+        hub.set_data([c[0]], [c[1]])
+        ax.set_xlim(c[0] - 3, c[0] + 3)
+        ax.set_ylim(c[1] - 2, c[1] + 1.5)
+    return _write(fig, update, path)
+
+
+def many_legged(path):
+    ml = make("many_legged", rugosity=0.015)
+    p = ml.params
+    rng = np.random.default_rng(10)
+    dt, T = 1e-3, 3.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    cache = ml._ou(dt)
+    cache["terrain"] = ml.terrain(1, rng)
+    h, res = cache["terrain"]
+    q = np.zeros((1, 1))
+    v = np.zeros((1, 1))
+    X, TT = [], []
+    for i in range(n):
+        q, v, _ = ml.step(q, v, None, rng, dt, cache)
+        if i % every == 0:
+            X.append(q[0, 0])
+            TT.append(cache["t"])
+    xs = np.arange(h.shape[1]) * res
+    legs_i = np.arange(p["n_legs"])
+    fig, ax = plt.subplots(figsize=(7.0, 3.0))
+    ax.axis("off")
+    terrain, = ax.plot([], [], color=INK2, lw=1)
+    body, = ax.plot([], [], color=C1, lw=5, solid_capstyle="round")
+    legs = [ax.plot([], [], lw=1.5)[0] for _ in legs_i]
+    _label(ax, "many-legged robot on rough ground: green = stance and touching, "
+               "red = stance but missing, grey = swing", "upper left")
+
+    def update(k):
+        k = min(k, len(X) - 1)
+        x0, t = X[k], TT[k]
+        win = (xs > x0 - 0.2) & (xs < x0 + p["n_legs"] * p["spacing"] + 0.2)
+        terrain.set_data(xs[win], h[0, win])
+        feet = x0 + legs_i * p["spacing"]
+        body.set_data([feet[0], feet[-1]], [0.06, 0.06])
+        stance = np.sin(p["omega"] * t - 2 * np.pi * legs_i / p["wave"]) > 0
+        for j, lg in enumerate(legs):
+            gnd = h[0, min(int(feet[j] / res), h.shape[1] - 1)]
+            touch = stance[j] and gnd > -p["reach"]
+            y_end = gnd if touch else (-p["reach"] if stance[j] else 0.02)
+            lg.set_data([feet[j], feet[j]], [0.06, y_end])
+            lg.set_color(C3 if touch else (C2 if stance[j] else GRID))
+        ax.set_xlim(x0 - 0.2, x0 + p["n_legs"] * p["spacing"] + 0.2)
+        ax.set_ylim(-0.08, 0.12)
+    return _write(fig, update, path)
+
+
+# ---------------------------------------------------------------------------------------
+# Fluids
+# ---------------------------------------------------------------------------------------
+
+def foil(path):
+    from .bodies.fluids import karman_gust
+    b = make("foil")
+    p = b.params
+    U, d, St = p["U"], 0.3, 0.2
+    fs, T = 200.0, 5.0
+    n = int(T * fs)
+    rng = np.random.default_rng(11)
+    g = karman_gust(n, 1 / fs, 1, U=U, d=d, St=St, amp=0.5, rng=rng)
+    out = L.simulate_linear(b, n, 1 / fs, 1, u=g, channel="gust", parts=("plunge", "pitch"), rng=rng)
+    h, al = out["plunge"][:, 0, 0], out["pitch"][:, 0, 0]
+    Ah = _mag(0.15, np.abs(h).max())
+    Aa = _mag(0.35, np.abs(al).max())
+    chord = 2 * p["b"]
+    f_shed = St * U / d
+    lam = U / f_shed
+    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+    ax.set_xlim(-4.0, 0.8)
+    ax.set_ylim(-0.6, 0.6)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    s = np.linspace(0, np.pi, 40)
+    xf = 0.5 * chord * (1 - np.cos(s))
+    tf = 0.06 * chord * np.sin(s) * (1 - 0.6 * (xf / chord))
+    foil_line, = ax.plot([], [], color=INK, lw=1.5)
+    top = ax.scatter([], [], s=40, color=C1)
+    bot = ax.scatter([], [], s=40, color=C2)
+    ax.annotate("", xy=(-3.2, -0.45), xytext=(-3.9, -0.45),
+                arrowprops=dict(arrowstyle="->", color=INK2))
+    ax.text(-3.9, -0.55, "flow", fontsize=7, color=INK2)
+    _label(ax, f"foil in a vortex street ({f_shed:.0f} Hz shedding, wavelength {lam:.1f} m); "
+               f"plunge {_fmt(Ah)}, pitch {_fmt(Aa)}, real speed")
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        t = i / fs
+        th = -Aa * al[i]
+        xc = np.concatenate([xf, xf[::-1]]) - chord / 2
+        yc = np.concatenate([tf, -tf[::-1]])
+        X = xc * np.cos(th) - yc * np.sin(th)
+        Y = xc * np.sin(th) + yc * np.cos(th) - Ah * h[i]
+        foil_line.set_data(X, Y)
+        shift = (U * t) % lam                        # vortices travel downstream (+x)
+        xt = np.arange(-6 * lam, 2 * lam, lam) + shift
+        xb = xt + lam / 2
+        top.set_offsets(np.c_[xt, np.full_like(xt, 0.2)])
+        bot.set_offsets(np.c_[xb, np.full_like(xb, -0.2)])
+    return _write(fig, update, path)
+
+
+def bird(path):
+    rng = np.random.default_rng(12)
+    fs, T = 200.0, 5.0
+    n = int(T * fs)
+    w = np.zeros(n)
+    t = np.arange(n) / fs
+    for t0 in (0.5, 2.0, 3.5):
+        m = (t > t0) & (t < t0 + 0.15)
+        w[m] = 2.0 * np.sin(np.pi * (t[m] - t0) / 0.15)
+    runs = []
+    for ks in (20.0, 1e4):
+        b = make("bird", k_s=ks)
+        out = L.simulate_linear(b, n, 1 / fs, 1, u=w[:, None, None], channel="gust",
+                                parts=("whole",), rng=rng, stationary=False)["whole"][:, 0]
+        yb = np.cumsum(out[:, 1]) / fs
+        k = int(fs)                                   # camera follows a 1 s moving average
+        slow = np.convolve(yb, np.ones(k) / k, mode="same")
+        yb = yb - slow
+        yw = yb + out[:, 0]
+        runs.append((ks, yb, yw))
+    A = _mag(0.6, max(np.abs(r[2]).max() for r in runs))
+    fig, axs = plt.subplots(1, 2, figsize=(6.4, 3.6))
+    arts = []
+    for ax, (ks, yb, yw) in zip(axs, runs):
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+        ax.axis("off")
+        ax.set_title("compliant shoulder" if ks < 1e3 else "stiff shoulder", fontsize=9)
+        body = plt.Rectangle((-0.15, 0), 0.3, 0.2, color=C1)
+        wing = plt.Rectangle((-0.8, 0), 1.6, 0.05, color=INK)
+        ax.add_patch(wing)
+        ax.add_patch(body)
+        gust, = ax.plot([], [], color=C2, lw=3)
+        arts.append((body, wing, gust))
+    _label(axs[0], f"gust pulses (orange); camera follows the slow climb; heights {_fmt(A)}",
+           "lower left")
+
+    def update(k):
+        i = int(k * (n - 1) / (N_FRAMES - 1))
+        for (body, wing, gust), (_, yb, yw) in zip(arts, runs):
+            body.set_y(A * yb[i] - 0.1)
+            wing.set_y(A * yw[i] + 0.1)
+            gust.set_data([0.9, 0.9], [-0.9, -0.9 + 0.3 * w[i]])
+    return _write(fig, update, path)
+
+
+DEMOS = dict(legs=legs, network=network, whisker=whisker, swarm=swarm, soft_arm=soft_arm,
+             tentacle=tentacle, bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
+             walker=walker, many_legged=many_legged, foil=foil, bird=bird)
+
+
+def render(outdir, names=None):
+    outdir = pathlib.Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    done = []
+    for name in (names or DEMOS):
+        path = DEMOS[name](outdir / f"{name}.mp4")
+        print("wrote", path, flush=True)
+        done.append(path)
+    return done
+
+
+if __name__ == "__main__":
+    render(sys.argv[1], sys.argv[2:] or None)
