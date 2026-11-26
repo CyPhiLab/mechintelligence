@@ -86,6 +86,9 @@ def _rows(rng):
     yield "foil", "flutter speed of the default section (m/s)", flutter_speed()
     yield "bird", "body acceleration in turbulence, compliant / stiff shoulder", (
         body_acceleration_rms(make("bird", k_s=20.0)), body_acceleration_rms(make("bird", k_s=1e4)))
+    cl = L.mirror_stabilize(make("pendulum", k=5.0), "motor")
+    yield "pendulum", "weak spring: least data rate (bits/s) / control power of the canonical stabilizer", (
+        cl.min_data_rate, cl.control_power)
     sw = make("swarm")
     kw = dict(channel="common", sigma_a=0.1, t_window=2.0, fs=50.0, band_hz=2.0)
     yield "swarm", "bits about a common force, one agent / whole swarm", (
