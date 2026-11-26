@@ -4,6 +4,9 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- General handling of unstable bodies in `mibook.bench` (priors, steady-state rates,
+  canonical mirror stabilization, nonlinear mirror feedback), a `pendulum` benchmark, and a
+  research note. `mibook.bench.animate` renders video demos of every benchmark.
 - New research note (T7, T12): transforming and storing in nonlinear bodies, with a figure
   (`fig_nonlinear`) and code `mibook.bench.nonlinear_study`.
 - The checks owed for the parameter notes (T11): exact finite-window Fisher information in

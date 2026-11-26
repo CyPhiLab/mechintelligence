@@ -138,13 +138,21 @@ def zoh(A: np.ndarray, B: np.ndarray, dt: float):
     return M[:n, :n], M[:n, n:]
 
 
+def is_stable(A: np.ndarray, tol: float = 1e-12) -> bool:
+    """True when every eigenvalue of A has negative real part (a stationary law exists)."""
+    return bool(np.max(np.linalg.eigvals(A).real) < -tol)
+
+
 @dataclass(frozen=True)
 class Sampled:
-    """x_{k+1} = Ad x_k + Bd u_k + w_k, w_k ~ N(0, Qd), stationary covariance P."""
+    """x_{k+1} = Ad x_k + Bd u_k + w_k, w_k ~ N(0, Qd), stationary covariance P.
+
+    P is None when the body is unstable: it then has no stationary law, and window measures
+    need a declared prior on the initial state (see `prior_rest` and `prior_declared`)."""
     Ad: np.ndarray
     Bd: np.ndarray | None
     Qd: np.ndarray
-    P: np.ndarray
+    P: np.ndarray | None
     dt: float
 
     @classmethod
@@ -155,8 +163,8 @@ class Sampled:
             Ad, Bd = zoh(A, body.B(channel), dt)
         else:
             Ad = sla.expm(A * dt)
-        return cls(Ad=Ad, Bd=Bd, Qd=discrete_noise(A, body.GG, dt),
-                   P=body.stationary_cov(), dt=dt)
+        P = body.stationary_cov() if is_stable(A) else None
+        return cls(Ad=Ad, Bd=Bd, Qd=discrete_noise(A, body.GG, dt), P=P, dt=dt)
 
 
 # ---------------------------------------------------------------------------------------
@@ -182,6 +190,10 @@ class Filter:
         C = np.atleast_2d(C)
         m = C.shape[0]
         R = eps ** 2 * np.eye(m)
+        if P0 is None and s.P is None:
+            raise ValueError("unstable body: it has no stationary law. Pass a prior on the "
+                             "initial state (prior_rest, prior_declared), use the steady-state "
+                             "rates (steady_white_rate), or stabilize it (mirror_stabilize).")
         Sig = s.P.copy() if P0 is None else P0.copy()
         gains, chol, logdet = [], [], np.empty(n_t)
         for k in range(n_t):
@@ -246,7 +258,7 @@ def bits_from_gram(G: np.ndarray) -> float:
 
 def profile_bits(body: LinearBody, part: str | np.ndarray = "whole", channel: str = "force",
                  t_window: float = 0.085, fs: float = 4000.0, band_hz: float = 100.0,
-                 sigma_a: float = 100.0, eps: float = 0.0) -> float:
+                 sigma_a: float = 100.0, eps: float = 0.0, prior: np.ndarray | None = None) -> float:
     """Bits about a band-limited input profile with i.i.d. N(0, sigma_a^2) DCT coefficients.
 
     This is the book's measure (`langevin_bits`), computed in linear time.
@@ -260,13 +272,13 @@ def profile_bits(body: LinearBody, part: str | np.ndarray = "whole", channel: st
     if n_u != 1:
         raise NotImplementedError("profile_bits: one-dimensional channels only")
     Y = responses(s, C, Phi[:, None, :])
-    Z = Filter.build(s, C, n_t, eps).whiten(Y)
+    Z = Filter.build(s, C, n_t, eps, P0=prior).whiten(Y)
     return bits_from_gram(sigma_a ** 2 * (Z.T @ Z))
 
 
 def white_input_bits(body: LinearBody, part: str | np.ndarray = "whole",
                      channel: str = "force", q: float = 1.0, n_t: int = 400,
-                     fs: float = 4000.0, eps: float = 0.0) -> float:
+                     fs: float = 4000.0, eps: float = 0.0, prior: np.ndarray | None = None) -> float:
     """Bits about an i.i.d. N(0, q I) input sequence over n_t samples.
 
     Computed as h(Y) - h(Y | U) with two Kalman filters: one with the input folded into the
@@ -276,8 +288,9 @@ def white_input_bits(body: LinearBody, part: str | np.ndarray = "whole",
     C = body.part(part) if isinstance(part, str) else np.atleast_2d(part)
     s = body.discretize(1.0 / fs, channel)
     noisy = dataclasses.replace(s, Qd=s.Qd + q * s.Bd @ s.Bd.T)
-    with_u = Filter.build(noisy, C, n_t, eps, P0=s.P)
-    without = Filter.build(s, C, n_t, eps)
+    P0 = s.P if prior is None else prior
+    with_u = Filter.build(noisy, C, n_t, eps, P0=P0)
+    without = Filter.build(s, C, n_t, eps, P0=P0)
     return 0.5 * float(np.sum(with_u.logdet - without.logdet)) / LOG2
 
 
@@ -522,9 +535,14 @@ def simulate_linear(body, n_t: int, dt: float, batch: int, u: np.ndarray | None 
     d = s.Ad.shape[0]
     lam, V = np.linalg.eigh(s.Qd)
     Lq = V * np.sqrt(np.clip(lam, 0.0, None))
-    lam, V = np.linalg.eigh(s.P)
-    Lp = V * np.sqrt(np.clip(lam, 0.0, None))
-    x = rng.standard_normal((batch, d)) @ Lp.T if stationary else np.zeros((batch, d))
+    if stationary and s.P is None:
+        raise ValueError("unstable body: no stationary law to start from; use stationary=False")
+    if stationary:
+        lam, V = np.linalg.eigh(s.P)
+        Lp = V * np.sqrt(np.clip(lam, 0.0, None))
+        x = rng.standard_normal((batch, d)) @ Lp.T
+    else:
+        x = np.zeros((batch, d))
     Cs = {p: body.part(p) for p in parts}
     out = {p: np.empty((n_t, batch, C.shape[0])) for p, C in Cs.items()}
     for k in range(n_t):
@@ -540,7 +558,8 @@ def simulate_linear(body, n_t: int, dt: float, batch: int, u: np.ndarray | None 
 # Exact finite-window Fisher information, in linear time (thread T11 check)
 # ---------------------------------------------------------------------------------------
 
-def window_kl(b0, b1, part, n_t: int, fs: float, eps: float = 0.0) -> float:
+def window_kl(b0, b1, part, n_t: int, fs: float, eps: float = 0.0,
+              prior: np.ndarray | None = None) -> float:
     """KL(p0 || p1) in nats between the laws of the part's sampled thermal motion over n_t
     samples under bodies b0 and b1, both started from their stationary laws.
 
@@ -554,11 +573,11 @@ def window_kl(b0, b1, part, n_t: int, fs: float, eps: float = 0.0) -> float:
     s1 = b1.discretize(1.0 / fs)
     m = C.shape[0]
     R = eps ** 2 * np.eye(m)
-    f0 = Filter.build(s0, C, n_t, eps)
-    f1 = Filter.build(s1, C, n_t, eps)
+    f0 = Filter.build(s0, C, n_t, eps, P0=prior)
+    f1 = Filter.build(s1, C, n_t, eps, P0=prior)
     d = s0.Ad.shape[0]
     Z = np.zeros((2 * d, 2 * d))
-    Z[:d, :d] = s0.P
+    Z[:d, :d] = s0.P if prior is None else prior
     M = np.hstack([C, -C])
     total = 0.0
     for k in range(n_t):
@@ -578,11 +597,96 @@ def window_kl(b0, b1, part, n_t: int, fs: float, eps: float = 0.0) -> float:
 
 
 def window_fisher(body, param: str, part="whole", n_t: int = 400, fs: float = 4000.0,
-                  eps: float = 0.0, rel_step: float = 1e-3, log: bool = True) -> float:
+                  eps: float = 0.0, rel_step: float = 1e-3, log: bool = True,
+                  prior: np.ndarray | None = None) -> float:
     """Exact Fisher information about a parameter from the part's thermal motion over n_t
     samples: [KL(theta || theta + h) + KL(theta || theta - h)] / h^2, to second order in h."""
     theta = body.params[param]
     h = rel_step if log else rel_step * max(abs(theta), 1e-12)
     up = body.with_params(**{param: theta * np.exp(h) if log else theta + h})
     dn = body.with_params(**{param: theta * np.exp(-h) if log else theta - h})
-    return (window_kl(body, up, part, n_t, fs, eps) + window_kl(body, dn, part, n_t, fs, eps)) / h ** 2
+    return (window_kl(body, up, part, n_t, fs, eps, prior)
+            + window_kl(body, dn, part, n_t, fs, eps, prior)) / h ** 2
+
+
+# ---------------------------------------------------------------------------------------
+# Unstable bodies: priors, steady-state rates, and canonical stabilization
+# ---------------------------------------------------------------------------------------
+
+def prior_rest(body, scale: float = 0.0) -> np.ndarray:
+    """A prior that starts the body at rest (state known exactly, or to a small isotropic
+    spread `scale`). Window measures from this prior are defined for any body."""
+    d = body.A.shape[0]
+    return scale * np.eye(d)
+
+
+def prior_declared(body, P0) -> np.ndarray:
+    """A declared prior covariance on the initial state."""
+    P0 = np.asarray(P0, float)
+    return 0.5 * (P0 + P0.T)
+
+
+def steady_innovations(s: Sampled, C: np.ndarray, eps: float) -> np.ndarray:
+    """Innovation covariance of the steady-state Kalman predictor, from the discrete
+    algebraic Riccati equation. Exists for unstable bodies whenever the unstable modes are
+    seen by the readout and driven by the noise (detectable and stabilizable), and does not
+    depend on the prior."""
+    C = np.atleast_2d(C)
+    R = max(eps, 1e-12) ** 2 * np.eye(C.shape[0])
+    P = sla.solve_discrete_are(s.Ad.T, C.T, s.Qd, R)
+    return C @ P @ C.T + R
+
+
+def steady_white_rate(body, part="whole", channel: str = "force", q: float = 1.0,
+                      fs: float = 4000.0, eps: float = 1e-9) -> float:
+    """Information rate (bits per sample) about an i.i.d. N(0, q) input, from the steady-state
+    innovations with and without the input. Needs no stationary law, so it is defined for
+    unstable bodies; for stable ones it equals the slope of the window information."""
+    C = body.part(part) if isinstance(part, str) else np.atleast_2d(part)
+    s = body.discretize(1.0 / fs, channel)
+    noisy = dataclasses.replace(s, Qd=s.Qd + q * s.Bd @ s.Bd.T)
+    S1 = steady_innovations(noisy, C, eps)
+    S0 = steady_innovations(s, C, eps)
+    return 0.5 * (np.linalg.slogdet(S1)[1] - np.linalg.slogdet(S0)[1]) / LOG2
+
+
+def unstable_rate(body) -> float:
+    """Sum of the positive real parts of the eigenvalues (1/s): how fast the body's unstable
+    modes grow. Divided by ln 2, it is the data-rate theorem's least rate (bits/s) at which
+    any controller must receive information to stabilize the body."""
+    lam = np.linalg.eigvals(body.A)
+    return float(np.sum(lam.real[lam.real > 0]))
+
+
+def mirror_stabilize(body, actuator: str):
+    """The canonical stabilization: the feedback u = -K x of least control energy that
+    stabilizes the body (LQR with no state cost). It moves each unstable eigenvalue to its
+    mirror image across the imaginary axis and leaves stable ones where they are; a stable
+    body gets K = 0. Returns a StateSpaceBody for the closed loop, with attributes `gain`,
+    `control_power` (mean squared control under the body's own noise) and
+    `min_data_rate` (bits/s, the data-rate theorem's bound)."""
+    A = body.A
+    B = body.B(actuator)
+    d = A.shape[0]
+    Hm = np.block([[A, -B @ B.T], [np.zeros((d, d)), -A.T]])
+    T, U, sdim = sla.schur(Hm, output="real", sort="lhp")
+    if sdim != d:
+        raise ValueError("eigenvalues on the imaginary axis: no unique mirror stabilization")
+    U11, U21 = U[:d, :d], U[d:, :d]
+    X = np.real(U21 @ np.linalg.inv(U11))
+    X = 0.5 * (X + X.T)
+    K = B.T @ X
+    Acl = A - B @ K
+    parts = dict(getattr(body, "parts", {}))
+    positions = None
+    if hasattr(body, "n"):
+        positions = np.hstack([np.eye(body.n), np.zeros((body.n, body.n))])
+    Bs = {c: body.B(c) for c in (body.inputs if hasattr(body, "inputs") else body.Bs)}
+    cl = StateSpaceBody(A_=Acl, Bs=Bs, GG_=body.GG, parts=parts, positions=positions,
+                        sigma_T2=body.sigma_T2, name=f"{getattr(body, 'name', 'body')} (mirror-stabilized)",
+                        params=dict(getattr(body, "params", {})))
+    P = cl.stationary_cov()
+    object.__setattr__(cl, "gain", K)
+    object.__setattr__(cl, "control_power", float(np.trace(K @ P @ K.T)))
+    object.__setattr__(cl, "min_data_rate", unstable_rate(body) / LOG2)
+    return cl

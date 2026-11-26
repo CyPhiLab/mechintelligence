@@ -318,6 +318,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-26.** Unstable bodies handled generally: window measures from a declared prior;
+  steady-state rates from the Riccati equation (no stationary law needed); the canonical
+  least-energy stabilization (unstable eigenvalues reflected) with its control power and
+  the data-rate bound, for stationary measures; the same feedback for nonlinear bodies at an
+  equilibrium. @prp-contact holds without stability, so the whole body's information about a
+  push is the same for stable and unstable bodies (pendulum: 2.2909 bits per sample across
+  $k$, to $10^{-5}$). `tests/test_bench_unstable.py`;
+  [note](notes/2026-11-26-instability.qmd).
 - **2026-11-25.** Nonlinear comparisons: the soft arm's degree-2 capacity comes mainly from
   large deflections (0.37 at 0.1 N with linear springs, 0.51 with strong stiffening, about
   0.03 at 0.02 N) and costs a little linear memory; the bistable chain keeps 1.38 of 1.46 bits

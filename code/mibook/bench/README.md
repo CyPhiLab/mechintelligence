@@ -46,6 +46,21 @@ them.
 | fluid | `foil` | typical section, unsteady thin-airfoil aerodynamics, gusts and vortex streets |
 | fluid | `bird` | body and wings joined by a compliant shoulder, in turbulence |
 | collective | `swarm` | tethered agents coupled to neighbours, sensing a common force |
+| linear | `pendulum` | inverted pendulum on a spring: stable or unstable by one parameter |
+
+## Unstable bodies
+
+An unstable body has no stationary law. Window measures take a declared `prior`
+(`linear.prior_rest`); `linear.steady_white_rate` gives rates from the Riccati equation;
+`linear.mirror_stabilize` closes the loop with the least-energy stabilizing feedback
+(unstable eigenvalues reflected) and reports `control_power` and `min_data_rate`;
+`sampling.mirror_feedback` does the same for a nonlinear body at an equilibrium. See the
+research note of 2026-11-26.
+
+## Video demos
+
+`python -m mibook.bench.animate OUTDIR [name ...]` writes a 5 s MP4 per benchmark from a
+real simulation, with display magnification and slow motion printed on the frame.
 
 ## Conventions and caveats
 

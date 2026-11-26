@@ -625,9 +625,64 @@ def bird(path):
     return _write(fig, update, path)
 
 
+def pendulum(path):
+    """Stable spring, weak spring left alone, weak spring with the canonical (mirror)
+    stabilizing feedback. Nonlinear pendulum, the same pushes for all three."""
+    from .sampling import MechSim, mirror_feedback
+    m, l, g, b = 1.0, 1.0, 9.81, 0.5
+    dt, T = 1e-3, 6.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    tt = np.arange(n) * dt
+    push = np.zeros(n)
+    for t0 in (1.0, 3.5):
+        mask = (tt > t0) & (tt < t0 + 0.1)
+        push[mask] = 3.0
+    runs = []
+    for k, ctrl in ((15.0, False), (5.0, False), (5.0, True)):
+        sim = MechSim(H=np.array([[m * l * l]]), D=np.array([[b]]),
+                      force=lambda q, p, k=k: m * g * l * np.sin(q) - k * q,
+                      J=lambda q: np.full((q.shape[0], 1, 1), l), sigma_T2=1e-3, params={})
+        env = lambda kk, q, v: np.array([[push[min(kk, n - 1)]]])
+        u = env
+        if ctrl:
+            u, _ = mirror_feedback(sim, np.array([[l]]), base_input=env)
+        rng = np.random.default_rng(13)
+        out, _ = sim.simulate(n, dt, 1, u=u, rng=rng, parts=("whole",),
+                              q_init=np.full((1, 1), 0.02), v_init=np.zeros((1, 1)))
+        th = np.clip(out["whole"][::every, 0, 0], -np.pi / 2, np.pi / 2)   # the floor stops a fall
+        runs.append(th)
+    titles = ["stiff spring: stable", "weak spring: falls", "weak spring + mirror feedback"]
+    fig, axs = plt.subplots(1, 3, figsize=(7.2, 3.0))
+    arts = []
+    for ax, ttl in zip(axs, titles):
+        ax.set_xlim(-1.3, 1.3)
+        ax.set_ylim(-0.2, 1.3)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title(ttl, fontsize=8.5)
+        ax.axhline(0, color=INK2, lw=1)
+        rod, = ax.plot([], [], color=INK, lw=2.5)
+        bob, = ax.plot([], [], "o", color=C1, ms=10)
+        arr, = ax.plot([], [], color=C2, lw=2)
+        arts.append((rod, bob, arr))
+    fig.text(0.5, 0.06, "nonlinear pendulum, the same two pushes for all three; real scale and speed",
+             ha="center", fontsize=8, color=INK2)
+
+    def update(k):
+        k = min(k, len(runs[0]) - 1)
+        i = min(k * every, n - 1)
+        for (rod, bob, arr), th in zip(arts, runs):
+            x, y = l * np.sin(th[k]), l * np.cos(th[k])
+            rod.set_data([0, x], [0, y])
+            bob.set_data([x], [y])
+            arr.set_data([x - 0.4 * push[i] / 3, x], [y, y] if push[i] > 0 else [y, y])
+    return _write(fig, update, path)
+
+
 DEMOS = dict(legs=legs, network=network, whisker=whisker, swarm=swarm, soft_arm=soft_arm,
              tentacle=tentacle, bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
-             walker=walker, many_legged=many_legged, foil=foil, bird=bird)
+             walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum)
 
 
 def render(outdir, names=None):

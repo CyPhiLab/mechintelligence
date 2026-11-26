@@ -1,0 +1,124 @@
+# 2026-11-26: Bodies that cannot stand on their own {.unnumbered}
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Status:** exploratory · **Thread:** T12 · **Checked by:** `tests/test_bench_unstable.py`
+:::
+
+**Question.** Several bodies of interest are unstable on their own: a bird gliding with its
+elbow flexed (a negative static margin), an inverted pendulum on a weak spring, a robot
+balancing. An unstable body has no stationary law, so every measure in the book that starts
+from the Gibbs law, or from any stationary distribution, is undefined. Is there a general
+way to handle such bodies?
+
+**Short answer.** Yes, with three tools that fit together, and one finding that makes the
+problem smaller than it looks.
+
+- *Finite windows from a declared prior.* Every window measure works from any stated
+  prior on the initial state, such as "at rest", because the Kalman filter needs no
+  stability. The prior must be stated, as the noise is.
+- *Steady-state rates without a stationary law.* Information rates come from the steady
+  state of the Kalman filter (a Riccati equation). That steady state exists for an unstable
+  body whenever its unstable modes are seen and are driven by the noise, and it does not
+  depend on the prior.
+- *A canonical stabilization for everything else.* For measures that need a stationary law
+  (snapshots, memory capacity, $\mathrm{MC}_W$), close the loop with the stabilizing feedback
+  of least control energy. It has no tuning: it reflects each unstable eigenvalue across the
+  imaginary axis and leaves stable ones alone. It comes with two costs, its mean control
+  power and the data-rate theorem's bound on the information a controller must receive.
+  For nonlinear bodies, the same feedback is computed at an equilibrium.
+- *The finding.* What the whole body holds about a force does not depend on whether the body
+  is stable. The proof of @prp-contact never uses stability. Instability changes what it
+  costs to stay upright, not what the body holds about a push.
+
+## Setting
+
+A new benchmark, `pendulum`: an inverted pendulum held up by a torsional spring $k$, with
+$m l^2\ddot\theta+b\dot\theta+(k-mgl)\theta=\tau+lf$ for small angles. The net stiffness
+$k-mgl$ plays the part of a static margin: positive, the pendulum returns upright; negative,
+it falls. Inputs: a push $f$ on the mass (the environment) and a torque $\tau$ (the actuator).
+With $m=l=1$, $b=0.5$ and $g=9.81$, the pendulum is unstable for $k<9.81$. Code:
+`mibook.bench.linear` (`prior_rest`, `steady_white_rate`, `mirror_stabilize`) and
+`mibook.bench.sampling` (`mirror_feedback`).
+
+## The tools
+
+**Windows from a prior.** For an unstable body, `white_input_bits`, `profile_bits` and
+`window_fisher` refuse to run without a prior, and run with one. From rest, the window
+information about a white push on the unstable pendulum ($k=5$) grows at 2.2909 bits per
+sample, the steady-state rate below.
+
+**Steady-state rates.** The innovation covariance of the steady-state predictor solves the
+discrete algebraic Riccati equation, which has a stabilizing solution for any body whose
+unstable modes are detectable through the readout and stabilizable by the noise. The rate
+is half the log-ratio of the innovation covariances with and without the input. For stable
+bodies it equals the slope of the window information (checked on the SEA to $10^{-4}$); for
+the unstable pendulum it equals the slope from rest to $10^{-6}$.
+
+::: {#prp-mirror name="Least-energy stabilization reflects the unstable eigenvalues"}
+Let $(A,B)$ be stabilizable with no eigenvalues of $A$ on the imaginary axis. Among the linear
+feedbacks $u=-Kx$ that stabilize $\dot x=Ax+Bu$, the one that minimizes the control energy
+$\int_0^\infty|u|^2dt$ from every initial state has closed-loop eigenvalues
+$\{\lambda:\lambda\in\operatorname{eig}A,\ \operatorname{Re}\lambda<0\}\cup
+\{-\bar\lambda:\lambda\in\operatorname{eig}A,\ \operatorname{Re}\lambda>0\}$.
+:::
+
+::: {.proof name="Proof sketch"}
+This is the linear-quadratic regulator with no state cost, $K=B^\top X$ with $X$ the
+stabilizing solution of $A^\top X+XA-XBB^\top X=0$. Its Hamiltonian matrix
+$\left[\begin{smallmatrix}A&-BB^\top\\0&-A^\top\end{smallmatrix}\right]$ is block triangular, so
+its eigenvalues are those of $A$ and of $-A^\top$. The closed-loop eigenvalues are the $n$ in
+the left half-plane: the stable eigenvalues of $A$, and the reflections $-\bar\lambda$ of the
+unstable ones, which come from the $-A^\top$ block. The code computes $X$ from the ordered
+Schur form of the Hamiltonian.
+:::
+
+The feedback is canonical: there is nothing to tune. For a stable body it is zero. Its
+costs measure the instability. The mean control power under the body's own noise rises from
+$1.4\times10^{-4}$ to $5.8\times10^{-4}$ (N m)$^2$ as $k$ falls from 9 to 0. The data-rate theorem
+[@nair2004stabilizability] adds an information cost: any controller, of any design, must
+receive information about the body at a rate of at least the sum of the unstable growth
+rates divided by $\ln 2$, here 0.99 to 4.2 bits per second.
+
+**Nonlinear bodies.** `mirror_feedback` linearizes a simulated body at an equilibrium,
+computes the same gain, and feeds it back during simulation. On the nonlinear pendulum
+with $k=5$, every open-loop trajectory falls; with the feedback, every trajectory stays up,
+and the variance of the angle is $2.33\times10^{-4}$ rad², against the linear prediction
+$2.35\times10^{-4}$.
+
+## The finding: instability does not hide the push
+
+::: {#prp-unstable-contact name="The contact bound holds for unstable bodies"}
+@prp-contact holds for any $A$, stable or not, when $Q_d$ is the noise covariance accumulated
+over one sample, $Q_d=\int_0^{\Delta t}e^{As}GG^\top e^{A^\top s}\,ds$. In particular, with the
+whole state observed, the information about a force per sample is at most
+$\Delta t\,JD^+J^\top/2\sigma_T^2$ and reaches it as $\Delta t\to0$, whatever the stiffness.
+:::
+
+::: {.proof}
+Steps 1 to 4 of the proof of @prp-contact use only the integral form of $Q_d$, the zero-order
+hold form of $B_d$, and the Cauchy–Schwarz inequality. Stability entered only to identify
+$Q_d$ with $P-A_dPA_d^\top$ through the stationary law $P$, which is not needed.
+:::
+
+On the pendulum, the steady-state rate about the push, read through the angle, is 2.2909
+bits per sample at 200 Hz for $k=20$, 12, 10.5, 9, 5 and 0, which spans stable, nearly
+neutral and strongly unstable. The values differ by less than $10^{-5}$, and the difference
+shrinks about threefold per doubling of the sampling rate. A body that is falling over
+records a push exactly as well as one that stands, because the push competes with the same
+thermal force of the same damper. What instability changes is the price of staying upright:
+control power, and information flowing to a controller.
+
+## What this means
+
+Unstable bodies fit into the book with one addition to what must be declared: a prior on
+the initial state for window measures, or the canonical stabilization for stationary ones.
+For the gliding bird of Harvey and colleagues, where morphing moves the static margin
+across zero, this means the information about gusts can be compared directly across the
+stable and unstable configurations, and the cost of instability reported separately, as
+control power and as a data rate.
+
+*What is not settled here.* The canonical feedback assumes the controller sees the whole
+state with no delay; real sensing and delays raise the cost, and the data-rate bound is the
+floor under any of them. The nonlinear wrapper is local to one equilibrium. For a part of
+the body rather than the whole, instability can change what the part holds, and that is not
+studied here.

@@ -37,6 +37,7 @@ book:
     - part: "Research log"
       chapters:
         - notes/index.qmd
+        - notes/2026-11-26-instability.qmd
         - notes/2026-11-25-nonlinear-comparisons.qmd
         - notes/2026-11-25-holding-acting-paying.qmd
         - notes/2026-11-25-comparison.qmd

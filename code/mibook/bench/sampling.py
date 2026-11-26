@@ -234,3 +234,41 @@ def feature_fisher(run: Callable[[dict, np.random.Generator], np.ndarray], param
     dmu = (Fu.mean(0) - Fd.mean(0)) / (2 * h)
     S = np.atleast_2d(np.cov(F0, rowvar=False))
     return float(dmu @ np.linalg.solve(S, dmu))
+
+
+def linearize(sim: MechSim, q_eq: np.ndarray | None = None, eps: float = 1e-7):
+    """Stiffness of a simulated body at an equilibrium: K = -dF/dq (central differences)."""
+    n = sim.n
+    q_eq = np.zeros(n) if q_eq is None else np.asarray(q_eq, float)
+    K = np.zeros((n, n))
+    for j in range(n):
+        dq = np.zeros(n)
+        dq[j] = eps
+        K[:, j] = -(sim.force((q_eq + dq)[None], sim.params) - sim.force((q_eq - dq)[None], sim.params))[0] / (2 * eps)
+    return 0.5 * (K + K.T)
+
+
+def mirror_feedback(sim: MechSim, actuator: np.ndarray, q_eq: np.ndarray | None = None,
+                    base_input=None):
+    """The canonical stabilizing controller for a nonlinear body near an equilibrium:
+    linearize there, compute the least-energy stabilizing gain (`linear.mirror_stabilize`)
+    for the actuator J (rows of generalized force per unit input), and feed back
+    u = -K (x - x_eq). `base_input(k, q, v)`, if given, is added (an environment input
+    on the same channel). Returns (u_callable, closed-loop linear body)."""
+    from .linear import LinearBody, mirror_stabilize
+    n = sim.n
+    q_eq = np.zeros(n) if q_eq is None else np.asarray(q_eq, float)
+    K = linearize(sim, q_eq)
+    lin = LinearBody(H=sim.H, D=sim.D, K=K, inputs={"act": np.atleast_2d(actuator)},
+                     sigma_T2=sim.sigma_T2)
+    cl = mirror_stabilize(lin, "act")
+    G = cl.gain
+
+    def u(k, q, v):
+        x = np.concatenate([q - q_eq, v], axis=1)
+        out = -x @ G.T
+        if base_input is not None:
+            out = out + base_input(k, q, v)
+        return out
+
+    return u, cl
