@@ -7,24 +7,18 @@ from mibook.bench import sampling as S
 from mibook.bench.bodies.contact import crawl, walk
 
 
-def test_hopper_stands_without_thrust_and_hops_with_it():
-    hp = bench.make("hopper")
-    rng = np.random.default_rng(0)
-    q0 = np.tile(hp.q0, (100, 1))
-    out, _ = hp.simulate(2000, 5e-4, 100, rng=rng, parts=("foot",), q_init=q0,
-                         v_init=np.zeros((100, 2)))
-    assert (out["foot"][:, :, 0] > 0).mean() < 0.01                 # standing
-    out, _ = hp.simulate(4000, 5e-4, 100, u=hp.hop_input, rng=rng, parts=("foot",), q_init=q0,
-                         v_init=np.zeros((100, 2)))
-    assert (out["foot"][2000:, :, 0] > 0).mean() > 0.3               # hopping: flight phases
-
-
-def test_hopper_learns_the_ground_only_through_contact():
-    hp = bench.make("hopper")
-    fi, se = S.path_fisher(hp, "k_g", n_steps=1000, dt=5e-4, batch=200,
-                           rng=np.random.default_rng(1), u=hp.hop_input, burn_in=2000,
-                           q_init=np.tile(hp.q0, (200, 1)), v_init=np.zeros((200, 2)))
-    assert fi > 10 * se > 0
+def test_hopper_reproduces_the_published_apex():
+    # Ghazi-Zahedi et al. (2016): every actuator model was tuned to hop to 1.070 m.
+    from mibook.bench.bodies.contact import apexes
+    mf = bench.make("hopper", actuator="musfib").simulate(T=5.0)
+    ml = bench.make("hopper", actuator="muslin").simulate(T=5.0)
+    for o in (mf, ml):
+        ap = apexes(o["y"][:, 0], o["t"])
+        assert len(ap) >= 4 and np.ptp(ap) < 1e-3                      # periodic
+        assert ap.mean() == pytest.approx(1.070, abs=0.006)
+    dc = bench.make("hopper", actuator="dcmot").simulate(
+        T=5.0, y_des=(mf["t"], mf["y"][:, 0], mf["v"][:, 0]))
+    assert apexes(dc["y"][:, 0], dc["t"]).mean() == pytest.approx(1.070, abs=0.006)
 
 
 def test_gripper_holds_its_squeeze():

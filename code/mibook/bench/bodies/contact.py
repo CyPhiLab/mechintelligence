@@ -29,52 +29,113 @@ def _sel(n, *idx):
 
 
 # ---------------------------------------------------------------------------------------
-# Hopper
+# Hopper (Haeufle et al. 2010; as specified in Ghazi-Zahedi et al. 2016, Sec. 4)
 # ---------------------------------------------------------------------------------------
 
+class Hopper:
+    """The reduced hopping model of Haeufle et al. (2010), with the three leg actuators of
+    Ghazi-Zahedi, Haeufle, Montufar, Schmitt and Ay (2016), Frontiers in Robotics and AI 3:42:
+
+        m y'' = -m g + (F_L if y <= l0 else 0),      m = 80 kg, l0 = 1 m.
+
+    actuator = "musfib": F_L = q F_fib(l_M, l_M'), with activation q' = (u - q)/tau,
+        tau = 10 ms, 0.001 <= u <= 1, reflex stimulation u = G F_L(t - delta) + u0,
+        delta = 15 ms, G = 2.4/F_max, u0 = 0.027, and the Hill-type force-length-velocity
+        relation of their Eq. (6) (F_max = 2.5 kN, l_opt = 0.9 m, w = 0.45, c = 30,
+        l'_max = -3.5 m/s, K = 1.5, N = 1.5). In contact l_M = y, l_M' = y'.
+    actuator = "muslin": as musfib but F_fib replaced by F_max (1 - mu l_M'), mu = 0.25 s/m,
+        G = 0.8/F_max, u0 = 0.19 (their Eq. 8).
+    actuator = "dcmot": F_L = gamma k_T I with I' = (u_DC - k_T gamma y' - R I)/L, a PD
+        controller u_DC = K_P (y_des - y) + K_D (y_des' - y') limited to +-48 V tracking the
+        musfib trajectory, mass m_DC = 0.68 kg (their Eqs. 9-12).
+    Each was tuned in the paper to hop periodically with apex 1.070 m. Optional additive
+    white force noise of intensity `noise` (N^2 s) gives the body a declared resolution.
+    """
+
+    F_MAX, L_OPT, W, C, LDOT_MAX, K, N = 2500.0, 0.9, 0.45, 30.0, -3.5, 1.5, 1.5
+
+    def __init__(self, actuator: str = "musfib", noise: float = 0.0, g: float = 9.81):
+        self.actuator = actuator
+        self.noise = noise
+        self.g = g
+        self.l0 = 1.0
+        self.m = 0.68 if actuator == "dcmot" else 80.0
+        self.name = f"hopper ({actuator})"
+        self.params = dict(actuator=actuator, noise=noise)
+        if actuator == "musfib":
+            self.G, self.u0 = 2.4 / self.F_MAX, 0.027
+        elif actuator == "muslin":
+            self.G, self.u0 = 0.8 / self.F_MAX, 0.19
+        self.tau, self.delta = 0.010, 0.015
+        self.kT, self.gamma, self.R, self.Lw = 0.126, 100.0, 7.19, 1.6e-3
+        self.KP, self.KD = 5000.0, 500.0
+
+    def f_fib(self, lM, dlM):
+        fl = np.exp(-self.C * np.abs((lM - self.L_OPT) / (self.L_OPT * self.W)) ** 3)
+        lm = self.LDOT_MAX
+        conc = (lm + dlM) / (lm - self.K * dlM)
+        ecc = self.N + (self.N - 1) * (lm + dlM) / (-7.56 * self.K * dlM - lm)
+        fv = np.where(dlM > 0, conc, ecc)
+        return self.F_MAX * fl * np.maximum(fv, 0.0)
+
+    def simulate(self, T: float = 8.0, dt: float = 1e-4, y0: float = 1.070, batch: int = 1,
+                 rng=None, y_des=None):
+        """Fixed-step integration (semi-implicit Euler, dt = 0.1 ms). Returns time, height,
+        velocity, leg force and actuator command at every step. `y_des` = (t, y, y') arrays
+        for the DC motor's PD target."""
+        rng = np.random.default_rng() if rng is None else rng
+        n = int(T / dt)
+        y = np.full(batch, y0)
+        v = np.zeros(batch)
+        q = np.full(batch, getattr(self, "u0", 0.0))
+        I = np.zeros(batch)
+        lag = int(round(self.delta / dt))
+        Fhist = np.zeros((lag + 1, batch))
+        out = {k: np.empty((n, batch)) for k in ("y", "v", "F", "a")}
+        for k in range(n):
+            contact = y <= self.l0
+            if self.actuator in ("musfib", "muslin"):
+                F_del = Fhist[k % (lag + 1)]
+                u = np.clip(self.G * F_del + self.u0, 0.001, 1.0)
+                q = q + dt * (u - q) / self.tau
+                lM = np.where(contact, y, self.l0)
+                dlM = np.where(contact, v, 0.0)
+                if self.actuator == "musfib":
+                    F = q * self.f_fib(lM, dlM)
+                else:
+                    F = q * self.F_MAX * np.maximum(1 - 0.25 * dlM, 0.0)
+                F = np.where(contact, F, 0.0)
+                a_cmd = u
+            else:
+                td, yd, vd = y_des
+                yd_k = np.interp(k * dt, td, yd)
+                vd_k = np.interp(k * dt, td, vd)
+                u = np.clip(self.KP * (yd_k - y) + self.KD * (vd_k - v), -48.0, 48.0)
+                I = I + dt * (u - self.kT * self.gamma * v - self.R * I) / self.Lw
+                F = np.where(contact, self.gamma * self.kT * I, 0.0)
+                a_cmd = u
+            Fhist[k % (lag + 1)] = F
+            acc = -self.g + F / self.m
+            if self.noise > 0:
+                acc = acc + np.sqrt(self.noise / dt) * rng.standard_normal(batch) / self.m
+            v = v + dt * acc
+            y = y + dt * v
+            out["y"][k], out["v"][k], out["F"][k], out["a"][k] = y, v, F, a_cmd
+        out["t"] = np.arange(n) * dt
+        return out
+
+
+def apexes(y: np.ndarray, t: np.ndarray, t_min: float = 2.0) -> np.ndarray:
+    """Heights of the local maxima of y(t) after t_min (one trajectory)."""
+    m = (y[1:-1] > y[:-2]) & (y[1:-1] >= y[2:]) & (t[1:-1] > t_min) & (y[1:-1] > 1.0)
+    return y[1:-1][m]
+
+
 @register("hopper", "3-contact",
-          "Vertical spring-loaded hopper (body and foot) on a ground of unknown stiffness.")
-def hopper(M: float = 10.0, m_f: float = 1.0, k_l: float = 5000.0, l0: float = 0.5,
-           b_l: float = 20.0, b_f: float = 2.0, b_b: float = 0.5, k_g: float = 1e5,
-           b_g: float = 300.0, thrust: float = 300.0, sigma_T2: float = 1e-4) -> MechSim:
-    """q = (body height, foot height). The leg is a spring k_l with damper b_l between them;
-    the ground pushes the foot with k_g (h - y_f) - b_g y_f' while they overlap (h = 0).
-    `thrust` is the size of a Raibert-style push between body and foot during stance while
-    the body rises, which keeps the hopping going; `hop_input` gives it."""
-    H = np.diag([M, m_f])
-    a = np.array([1.0, -1.0])
-    D = b_l * np.outer(a, a) + np.diag([b_b, b_f])
-    params = dict(k_g=k_g, b_g=b_g, k_l=k_l)
-
-    def force(q, p):
-        s = q[:, 0] - q[:, 1] - l0                    # leg stretch
-        f_leg = -p["k_l"] * s
-        pen = np.clip(-q[:, 1], 0.0, None)            # foot below the ground
-        F = np.stack([f_leg - M * G, -f_leg - m_f * G + p["k_g"] * pen], axis=1)
-        return F
-
-    def vforce(q, v, p):
-        inside = q[:, 1] < 0.0
-        Fg = np.where(inside, -p["b_g"] * v[:, 1], 0.0)
-        # The ground can push but not pull.
-        Fg = np.maximum(Fg, -p["k_g"] * np.clip(-q[:, 1], 0.0, None))
-        return np.stack([np.zeros_like(Fg), Fg], axis=1)
-
-    J = np.array([[1.0, -1.0]])
-    q0 = np.array([l0 - (M * G) / k_l - (M + m_f) * G / k_g, -(M + m_f) * G / k_g])
-    sim = MechSim(H=H, D=D, force=force,
-                  J=lambda q: np.broadcast_to(J, (q.shape[0], 1, 2)),
-                  sigma_T2=sigma_T2, params=params, velocity_force=vforce,
-                  parts={"body": _sel(2, 0), "foot": _sel(2, 1), "leg": np.array([[1.0, -1.0, 0, 0]])},
-                  name="hopper", q0=q0)
-
-    def hop_input(k, q, v):
-        stance = q[:, 1] < 0.0
-        rising = v[:, 0] > 0.0
-        return np.where(stance & rising, thrust, 0.0)[:, None]
-
-    sim.hop_input = hop_input
-    return sim
+          "Reduced hopper of Haeufle et al. (2010) with muscle-fibre, linear-muscle or DC-motor "
+          "legs (Ghazi-Zahedi et al. 2016).")
+def hopper(actuator: str = "musfib", noise: float = 0.0) -> Hopper:
+    return Hopper(actuator=actuator, noise=noise)
 
 
 # ---------------------------------------------------------------------------------------

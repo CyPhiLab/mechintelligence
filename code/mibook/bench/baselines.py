@@ -58,11 +58,10 @@ def _rows(rng):
     yield "bistable_chain", "switching force / critical force, weakest element", \
         float(np.nanmedian(first[:, np.argmin(ch.critical_forces)]) / ch.critical_forces.min())
 
-    hp = make("hopper")
-    q0 = np.tile(hp.q0, (100, 1))
-    out, _ = hp.simulate(4000, 5e-4, 100, u=hp.hop_input, rng=rng, parts=("foot",),
-                         q_init=q0, v_init=np.zeros((100, 2)))
-    yield "hopper", "fraction of time in flight", float((out["foot"][2000:, :, 0] > 0).mean())
+    from .bodies.contact import apexes
+    ho = make("hopper", actuator="musfib").simulate(T=4.0)
+    yield "hopper", "apex height, muscle-fibre leg (m; published 1.070)", \
+        float(apexes(ho["y"][:, 0], ho["t"]).mean())
 
     gp = make("gripper")
     fi, _ = S.path_fisher(gp, "k_o", n_steps=1000, dt=1e-4, batch=300, rng=rng, burn_in=500,

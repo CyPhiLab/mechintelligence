@@ -366,32 +366,39 @@ def bistable_chain(path):
 
 
 def hopper(path):
-    hp = make("hopper")
-    rng = np.random.default_rng(7)
-    dt, T = 5e-4, 4.0
-    n = int(T / dt)
+    """The reduced hopper of Haeufle et al. with the muscle-fibre leg (Ghazi-Zahedi et al.
+    2016); the bar shows the leg force."""
+    from .bodies.contact import apexes
+    h = make("hopper", actuator="musfib")
+    T = 2.5
+    o = h.simulate(T=T)
+    n = len(o["t"])
     every = n // N_FRAMES
-    out, _ = hp.simulate(n, dt, 1, u=hp.hop_input, rng=rng, parts=("body", "foot"),
-                         q_init=hp.q0[None], v_init=np.zeros((1, 2)))
-    yb, yf = out["body"][::every, 0, 0], out["foot"][::every, 0, 0]
-    fig, ax = plt.subplots(figsize=(3.6, 5.0))
-    ax.set_xlim(-0.4, 0.4)
-    ax.set_ylim(-0.05, 1.6)
+    y, F = o["y"][::every, 0], o["F"][::every, 0]
+    ap = apexes(o["y"][:, 0], o["t"], t_min=0.5)
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(5.2, 4.2), gridspec_kw=dict(width_ratios=[1, 0.35]))
+    ax.set_xlim(-0.5, 0.5)
+    ax.set_ylim(-0.05, 1.2)
+    ax.set_aspect("equal")
     ax.axis("off")
     ax.axhline(0, color=INK2, lw=2)
-    body = plt.Rectangle((-0.15, 0), 0.3, 0.12, color=C1)
-    foot = plt.Rectangle((-0.04, 0), 0.08, 0.04, color=INK)
-    ax.add_patch(body)
-    ax.add_patch(foot)
-    spring, = ax.plot([], [], color=INK2, lw=1)
-    _label(ax, "hopper with thrust in stance; real scale and speed")
+    ax.axhline(h.l0, color=GRID, lw=0.8, ls=":")
+    mass = plt.Circle((0, 1.0), 0.08, color=C1)
+    ax.add_patch(mass)
+    leg, = ax.plot([], [], color=INK, lw=2)
+    bar = bx.bar([0], [0], color=C2)[0]
+    bx.set_ylim(0, 3.5)
+    bx.set_xticks([])
+    bx.set_ylabel("leg force (kN)", fontsize=8)
+    _label(ax, f"80 kg hopper, muscle-fibre leg; apex {ap.mean():.3f} m (published 1.070); "
+               "real speed, slowed x2", "upper left")
 
     def update(k):
-        k = min(k, len(yb) - 1)
-        body.set_y(yb[k])
-        foot.set_y(yf[k])
-        z = np.linspace(yf[k] + 0.04, yb[k], 14)
-        spring.set_data(0.05 * np.sign(np.sin(np.arange(14) * np.pi / 2 + 0.1)), z)
+        k = min(k, len(y) - 1)
+        mass.center = (0, y[k])
+        foot = 0.0 if y[k] <= h.l0 else y[k] - h.l0
+        leg.set_data([0, 0], [foot, y[k] - 0.08])
+        bar.set_height(F[k] / 1e3)
     return _write(fig, update, path)
 
 

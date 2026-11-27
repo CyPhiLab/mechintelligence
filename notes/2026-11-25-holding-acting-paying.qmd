@@ -29,6 +29,13 @@ is asked.
   ground force falls in the resonance band. Mechanical work per unit ground force never
   falls: the spring's damper only adds losses.
 
+::: {.callout-warning appearance="simple" title="Provisional, 2026-11-27"}
+The bird in this note is a two-mass suspension model of my own, not drawn from the
+literature. Its results, including the proposition about the shoulder, hold for that model
+only. A gliding-bird benchmark after Harvey et al. (2019, 2022) will replace it. The leg
+results use the book's own leg and stand.
+:::
+
 ## Setting
 
 *The leg.* The book's rigid leg and series-elastic legs with $k_s$ from 30 to $10^6$ N m/rad

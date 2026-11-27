@@ -25,6 +25,13 @@ they cost?
   drive 50 to 97 $\sigma_T^2$ of work, roughly in proportion to the barrier, while the record's
   lifetime grows much faster.
 
+::: {.callout-warning appearance="simple" title="Provisional, 2026-11-27"}
+The soft arm in this note is a ladder truss of my own, not the octopus-arm model of
+Nakajima et al. (2013) that it stands in for. Its capacities are provisional until the arm
+is rebuilt from the published model. The chain of double wells follows @sec-memory but does
+not yet reproduce a published hysteron result.
+:::
+
 ## Setting
 
 *Soft arm* (`soft_arm`): a ladder truss of 20 point masses with springs that stiffen as
