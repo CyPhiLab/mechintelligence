@@ -328,10 +328,22 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   - *Inputs ready:* bird. AvInertia (Harvey et al. 2022) is ported to Python
     (`mibook.bench.avinertia`) and reproduces the paper's published inertia, centre-of-
     gravity and stability results; the glider built on it is still owed.
-  - *Owed:* network (rebuild after Hauser et al. 2011); whisker, rimless wheel,
-    pendulum, walker, foil, bistable chain (textbook or published checks); gripper (ground
-    it in a published model or drop it).
+  - *Started:* network. `hauser_network` follows Hauser et al. (2011), Sect. 4: cubic
+    springs and dampers on a Delaunay graph, two fixed nodes, 20% input nodes, RK4 at 1 ms,
+    linear readout of spring lengths. Tested: the construction, rest as an equilibrium,
+    fading memory, and the qualitative result of their Fig. 9c (a readout of the spring
+    lengths emulates the Volterra operator, regression on the raw input does not). Not yet
+    reproducible: their placement area and input scale are in the paper's supplementary
+    material, which is needed; without the scale, their Eqs. 7 and 8 diverge. The linear
+    `network` stays for the comparison note until then.
+  - *Owed:* whisker, rimless wheel, pendulum, walker, foil, bistable chain (textbook or
+    published checks); gripper (ground it in a published model or drop it).
   - *Test bodies, not from the literature:* `ladder_arm`, `agents`.
+  - *Sources requested (2026-11-27):* gull aerodynamic data (figshare c.5275490 and
+    c.4334126; figshare is blocked from the container); Chong et al. 2023 PNAS and Chong
+    et al. 2022 Bioinspir. Biomim. for the many-legged robot's leg length, module mass and
+    friction; Hauser et al. 2011 supplementary material; the whisker, walker and foil
+    sources.
   The soft arm and the tentacle are one benchmark. Order: soft arm, hopper, many-legged
   robot, network.
 - **Licences to settle before a release.** The AvInertia port is a derivative of GPL-3

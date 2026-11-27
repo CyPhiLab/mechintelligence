@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New benchmark body `hauser_network`: a random recurrent network of cubic springs and
+  masses built as in Hauser et al. (2011), with their three emulation tasks. Construction,
+  fading memory and their qualitative Volterra result are tested; reproducing their task
+  errors waits on the paper's supplementary material.
 - AvInertia (Harvey et al. 2022) ported to Python as `mibook.bench.avinertia`: the inertia
   of a bird as a composite of simple solids, for every wing shape at once, with the
   neutral point and static margin of the paper. It reproduces the paper's published
