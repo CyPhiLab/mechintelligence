@@ -239,30 +239,39 @@ def agents(path):
 # ---------------------------------------------------------------------------------------
 
 def soft_arm(path):
-    """The soft arm as a Cosserat rod (PyElastica): a curling torque ramps up and the arm
-    wraps an object, with thermal jiggling; side view of the rod's centreline."""
-    from .bodies.softarm import SoftArm
-    arm = SoftArm(n_elem=20, cylinder=dict(x=-0.06, z=0.28, r=0.035))
-    T = 3.0
-    probe = arm.simulate(1e-3, 1)
-    every = max(1, int(T / probe["dt"]) // N_FRAMES)
-    out = arm.simulate(T, 1, curl=lambda t: np.array([-0.04 * min(1.0, t / 1.5)]),
-                       record_every=every, rng=np.random.default_rng(14))
-    frames = out["frames"]
+    """The soft arm as a MuJoCo link chain: a tip push sets it swaying, then a curling couple
+    ramps up and the arm wraps an object; side view, links drawn at their radius."""
+    from .bodies.softarm import soft_arm as make_arm
+    arm = make_arm(grasp=True)
+    T = 4.0
+    push = lambda t: np.array([[1.5e-2 if t < 0.05 else 0.0, 0.0]])
+    curl = lambda t: -0.04 * np.clip((t - 1.5) / 1.5, 0.0, 1.0)
+    out = arm.simulate(T, 1, tip_force=push, curl=curl, rng=np.random.default_rng(14))
+    steps = out["q"].shape[1]
+    idx = np.linspace(0, steps - 1, N_FRAMES).astype(int)
+    pts = arm.centreline(out["q"][0, idx])
+    p = arm.params
+    s_mid = np.concatenate([[0.0], arm.s_joint, [p["length"]]])
+    r = p["r_base"] + (p["r_tip"] - p["r_base"]) * s_mid / p["length"]
     fig, ax = plt.subplots(figsize=(4.4, 5.0))
-    ax.set_xlim(-0.25, 0.15)
-    ax.set_ylim(-0.02, 0.48)
+    ax.set_xlim(-0.25, 0.25)
+    ax.set_ylim(-0.02, 0.56)
     ax.set_aspect("equal")
     ax.axis("off")
-    ax.add_patch(plt.Circle((-0.06, 0.28), 0.035, color=C4, alpha=0.6))
+    c = p["cylinder"]
+    ax.add_patch(plt.Circle((c["x"], c["z"]), c["r"], color=C4, alpha=0.6))
     ax.plot([-0.03, 0.03], [0, 0], color=INK2, lw=4)
-    rod, = ax.plot([], [], color=C1, lw=3, solid_capstyle="round")
-    _label(ax, f"Cosserat-rod arm (PyElastica) curling\naround an object; real scale, "
-               f"slowed x{N_FRAMES / FPS / T:.1f}")
+    # Line widths in points that match the arm's diameter at this axis scale.
+    pt_per_m = fig.get_size_inches()[1] * 72 / 0.58 * 0.8
+    segs = [ax.plot([], [], color=C1, lw=max(1.0, 2 * r[i] * pt_per_m),
+                    solid_capstyle="round")[0] for i in range(len(r) - 1)]
+    _label(ax, f"soft arm, MuJoCo link chain ({arm.n} links): a tip push,\n"
+               f"then a curling couple wraps the object; real scale, slowed x{N_FRAMES / FPS / T:.1f}")
 
     def update(k):
-        f = frames[min(k, len(frames) - 1)][0]
-        rod.set_data(f[0], f[2])
+        P = pts[k]
+        for i, ln in enumerate(segs):
+            ln.set_data(P[i:i + 2, 0], P[i:i + 2, 1])
     return _write(fig, update, path)
 
 

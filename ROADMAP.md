@@ -319,9 +319,10 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   - *Meets the standard:* legs (the book's own model, regression tests); hopper (Haeufle et
     al. 2010 with the legs of Ghazi-Zahedi et al. 2016; reproduces the 1.070 m apex);
     swarmalators (O'Keeffe, Ceron and Petersen 2017; the five states).
-  - *Partly:* soft arm (Cosserat rod in PyElastica, Gazzola et al. 2018; geometry after
-    Nakajima et al. 2014, radii and modulus assumed; passes the cantilever and first-mode
-    textbook checks and a grasp check, no published result reproduced yet); many-legged
+  - *Partly:* soft arm (MuJoCo link chain, the pseudo-rigid-body beam model of Howell
+    2001; geometry after Nakajima et al. 2014, radii, modulus and damping assumed; passes
+    the cantilever and first-mode textbook checks, equipartition and a grasp check; no
+    published result reproduced yet); many-legged
     robot (physical side-view model, kinematic speed check; to be rebuilt in MuJoCo after
     Chong et al. 2023).
   - *Owed:* network (rebuild after Hauser et al. 2011); bird (glider after Harvey et al.
@@ -331,6 +332,12 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   - *Test bodies, not from the literature:* `ladder_arm`, `agents`.
   The soft arm and the tentacle are one benchmark. Order: soft arm, hopper, many-legged
   robot, network.
+- **Simulator speeds (2026-11-27, this container, 4 cores).** Soft arm, simulated seconds
+  per wall second: PyElastica Cosserat rod about 0.5 to 0.7, no gain from batching; SoRoMoX
+  planar PCS, 5 segments, bending only, about 50 single and 65 batched with vmap (about 4
+  with axial and shear strains, which force a 0.1 ms step); MuJoCo link chain, 20 links,
+  about 16 single in a Python loop and 85 batched in MuJoCo's threaded rollout. MuJoCo was
+  chosen for contact; SoRoMoX stays an option where parameter gradients matter.
 
 ## Findings log
 

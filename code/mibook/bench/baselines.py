@@ -34,11 +34,11 @@ def _rows(rng):
 
     try:
         from .bodies.softarm import check_cantilever
-        c = check_cantilever(n_elem=15, T=1.5)
+        c = check_cantilever()
         val = c["deflection"] / c["predicted"]
-    except ImportError:                                  # PyElastica (physics extra) missing
+    except ImportError:                                  # MuJoCo (physics extra) missing
         val = float("nan")
-    yield "soft_arm", "Cosserat rod: tip deflection / F L^3/3EI (15 elements; needs PyElastica)", val
+    yield "soft_arm", "link chain: tip deflection / F L^3/3EI (20 links; needs MuJoCo)", val
 
     arm = make("ladder_arm")
     fs, sub, T, k = 1000.0, 5, 0.1, 8

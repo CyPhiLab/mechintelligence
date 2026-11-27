@@ -19,7 +19,6 @@ dependencies = [
 [project.optional-dependencies]
 physics = [
     "mujoco>=3.2",
-    "pyelastica>=0.3.2",
 ]
 
 [dependency-groups]
