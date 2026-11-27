@@ -268,73 +268,184 @@ def tentacle(r_obj: float = 0.04, cx: float = -0.06, cy: float = 0.2, k_obj: flo
 
 
 # ---------------------------------------------------------------------------------------
-# Hyper-redundant many-legged robot
+# Many-legged robot (side view): rigid body, prescribed leg cycles, frictional contact
 # ---------------------------------------------------------------------------------------
 
-class ManyLegged(MechSim):
-    """Forward motion x of a body with n_legs legs spaced `spacing` apart. Leg i is in stance
-    when sin(omega t - 2 pi i / wave) > 0; a stance leg pushes with force f_leg only if the
-    ground under its foot is within reach: terrain height h(x_i) > -reach. Terrain is a
-    random field of rugosity `rugosity` (standard deviation) and correlation length `corr`,
-    one realization per batch member. Thermal noise from the drag b."""
+class LeggedRobot:
+    """A many-legged robot seen from the side, in the spirit of the multilegged robophysical
+    models of Chong et al. (2023) and He et al. (2025).
 
-    def _ou(self, dt):
-        return {"dt": dt, "t": 0.0}
+    Body: a rigid bar of length `body_len` and mass `mass`, with forward position x, height z
+    and pitch th, under gravity, and pitch inertia m L^2 / 12.
+    Legs: n_legs hips spread along the bar. Each foot follows a prescribed cycle relative
+    to its hip, in the body frame, with phase p = omega t - psi_i. In stance (half the
+    cycle) the foot moves straight back from +A to -A at constant speed, at depth l below
+    the hip; in swing it returns forward along a raised arc of height `lift`. A = l sin(phi0).
+    Successive legs lag by psi_i = 2 pi waves i / n_legs, a travelling wave from head to tail.
+    Contact: each leg is a compliant spring k_leg in series with the ground contact k_c, with
+    its nominal foot point `reach` below the ground plane, so a stance foot presses into
+    hollows up to about that depth. A foot below the terrain h(x) feels a normal force
+    k_eff pen - b_c pen' (never pulling), k_eff = (1/k_c + 1/k_leg)^-1, with b_c a fraction
+    zeta_c of critical damping for the body's share per stance leg, and a Coulomb
+    friction force -mu N tanh(v_slip / v_eps) along x. Legs are massless, so every contact
+    force acts on the body at the foot. Thrust comes only from friction. On flat ground all
+    stance feet move back together and the body moves at the kinematic speed 4 A f.
+    Belly: points along the underside of the body (at the hips) touch the terrain with the
+    ground stiffness and the same friction, so a robot that loses its footing drags on its
+    belly instead of sinking through the ground.
+    Terrain: a random field of standard deviation `rugosity` and correlation length `corr`,
+    one realization per batch member. Thermal noise enters through a small air drag.
+    """
 
-    def terrain(self, batch, rng, length=40.0, res=0.005):
+    def __init__(self, n_legs=12, body_len=0.5, mass=1.0, leg_len=0.08, phi0=0.4, freq=2.0,
+                 waves=1.0, lift=0.03, k_c=3e4, k_leg=150.0, reach=0.02, zeta_c=0.5, mu=0.6,
+                 v_eps=0.005, rugosity=0.0, corr=0.03, b_air=0.05, sigma_T2=1e-6, g=G):
+        k_eff = 1.0 / (1.0 / k_c + 1.0 / k_leg)
+        # Contact damping as a fraction zeta_c of critical, for the body's share per stance leg.
+        b_c = 2.0 * zeta_c * np.sqrt(k_eff * mass / (n_legs / 2.0))
+        self.params = dict(n_legs=n_legs, body_len=body_len, mass=mass, leg_len=leg_len,
+                           phi0=phi0, freq=freq, waves=waves, lift=lift, k_c=k_c, k_leg=k_leg,
+                           reach=reach, zeta_c=zeta_c, b_c=b_c, mu=mu, v_eps=v_eps,
+                           rugosity=rugosity, corr=corr, b_air=b_air, sigma_T2=sigma_T2, g=g)
+        self.n = 3
+        self.name = "many-legged robot"
+        self.hips = np.linspace(-body_len / 2, body_len / 2, n_legs)
+        self.psi = 2 * np.pi * waves * np.arange(n_legs) / n_legs
+        self.inertia = mass * body_len ** 2 / 12.0
+
+    def terrain(self, batch, rng, length=12.0, res=0.002):
         p = self.params
         n = int(length / res)
-        w = rng.standard_normal((batch, n))
+        if p["rugosity"] <= 0:
+            return np.zeros((batch, n)), res
         k = max(1, int(p["corr"] / res))
         ker = np.exp(-0.5 * (np.arange(-3 * k, 3 * k + 1) / k) ** 2)
         ker /= np.sqrt((ker ** 2).sum())
-        h = np.stack([np.convolve(row, ker, mode="same") for row in w]) * p["rugosity"]
+        w = rng.standard_normal((batch, n + len(ker)))
+        h = np.stack([np.convolve(row, ker, mode="same")[:n] for row in w]) * p["rugosity"]
         return h, res
 
-    def step(self, q, v, u, rng, dt, cache, a=None):
+    def feet(self, q, v, t):
+        """World positions and velocities of every foot, the lever arms from the body's
+        centre, and the stance mask. q, v: (batch, 3) = (x, z, th)."""
         p = self.params
-        t = cache["t"]
-        h, res = cache["terrain"]
-        i = np.arange(p["n_legs"])
-        stance = np.sin(p["omega"] * t - 2 * np.pi * i / p["wave"]) > 0.0
-        xi = q[:, :1] + i[None, :] * p["spacing"]
-        idx = np.clip((xi / res).astype(int), 0, h.shape[1] - 1)
-        ground = np.take_along_axis(h, idx, axis=1)
-        touch = stance[None, :] & (ground > -p["reach"])
-        thrust = p["f_leg"] * touch.sum(axis=1, keepdims=True) / p["n_legs"]
-        b = self.D[0, 0]
-        m = self.H[0, 0]
-        v = v + (thrust - b * v) / m * dt + np.sqrt(2 * self.sigma_T2 * b * dt) / m * rng.standard_normal(v.shape)
+        om = 2 * np.pi * p["freq"]
+        ph = np.mod(om * t - self.psi, 2 * np.pi)                 # (n_legs,)
+        A = p["leg_len"] * np.sin(p["phi0"])
+        stance = ph < np.pi
+        sp = np.where(stance, ph / np.pi, (ph - np.pi) / np.pi)   # progress in the phase
+        x = np.where(stance, A * (1 - 2 * sp), -A * np.cos(np.pi * sp))
+        dx = np.where(stance, -2 * A * om / np.pi, A * om * np.sin(np.pi * sp))
+        z = np.where(stance, 0.0, p["lift"] * np.sin(np.pi * sp)) - p["leg_len"] - p["reach"]
+        dz = np.where(stance, 0.0, p["lift"] * om * np.cos(np.pi * sp))
+        rel = np.stack([self.hips + x, z], -1)                     # body frame
+        drel = np.stack([dx, dz], -1)
+        swing = ~stance
+        c, s = np.cos(q[:, 2]), np.sin(q[:, 2])
+        R = np.stack([np.stack([c, -s], -1), np.stack([s, c], -1)], -2)            # (batch, 2, 2)
+        r = np.einsum("bij,nj->bni", R, rel)                                       # lever arms
+        pos = q[:, None, :2] + r
+        w = v[:, 2][:, None]
+        vel = v[:, None, :2] + np.stack([-w * r[..., 1], w * r[..., 0]], -1) \
+            + np.einsum("bij,nj->bni", R, drel)
+        return pos, vel, r, ~swing
+
+    def _ground(self, terrain, x):
+        h, res = terrain
+        idx = np.clip((x / res).astype(int) + h.shape[1] // 2, 0, h.shape[1] - 1)
+        return np.take_along_axis(h, idx, axis=1)
+
+    def _contact(self, pen, vz, vx, k, b):
+        p = self.params
+        N = np.where(pen > 0, np.maximum(k * pen - b * vz, 0.0), 0.0)
+        return N, -p["mu"] * N * np.tanh(vx / p["v_eps"])
+
+    def forces(self, q, v, t, terrain):
+        p = self.params
+        pos, vel, r, stance = self.feet(q, v, t)
+        pen = self._ground(terrain, pos[..., 0]) - pos[..., 1]
+        k_eff = 1.0 / (1.0 / p["k_c"] + 1.0 / p["k_leg"])
+        N, Ft = self._contact(pen, vel[..., 1], vel[..., 0], k_eff, p["b_c"])
+        # Belly points at the hips.
+        c, s = np.cos(q[:, 2]), np.sin(q[:, 2])
+        rb = np.stack([self.hips[None, :] * c[:, None], self.hips[None, :] * s[:, None]], -1)
+        pb = q[:, None, :2] + rb
+        w = v[:, 2][:, None]
+        vb = v[:, None, :2] + np.stack([-w * rb[..., 1], w * rb[..., 0]], -1)
+        penb = self._ground(terrain, pb[..., 0]) - pb[..., 1]
+        bb = 2.0 * p["zeta_c"] * np.sqrt(p["k_c"] * p["mass"] / p["n_legs"])
+        Nb, Fb = self._contact(penb, vb[..., 1], vb[..., 0], p["k_c"], bb)
+        Fx = Ft.sum(1) + Fb.sum(1)
+        Fz = N.sum(1) + Nb.sum(1) - p["mass"] * p["g"]
+        tau = (r[..., 0] * N - r[..., 1] * Ft).sum(1) + (rb[..., 0] * Nb - rb[..., 1] * Fb).sum(1)
+        return np.stack([Fx, Fz, tau], 1), dict(N=N, slip=vel[..., 0], stance=stance,
+                                               touch=N > 0, pos=pos, belly=Nb.sum(1))
+
+    def step(self, q, v, rng, dt, t, terrain):
+        p = self.params
+        F, info = self.forces(q, v, t, terrain)
+        Mi = np.array([1 / p["mass"], 1 / p["mass"], 1 / self.inertia])
+        drag = p["b_air"] * v
+        noise = np.sqrt(2 * p["sigma_T2"] * p["b_air"] * dt) * rng.standard_normal(v.shape)
+        v = v + ((F - drag) * dt + noise) * Mi
         q = q + v * dt
-        cache["t"] = t + dt
-        cache.setdefault("contacts", []).append(touch.sum(axis=1))
-        return q, v, None
+        return q, v, info
+
+    def start(self, batch, terrain):
+        p = self.params
+        q = np.zeros((batch, 3))
+        k_eff = 1.0 / (1.0 / p["k_c"] + 1.0 / p["k_leg"])
+        q[:, 1] = p["leg_len"] + p["reach"] - p["mass"] * p["g"] / (k_eff * p["n_legs"] / 2)
+        h, res = terrain
+        q[:, 1] += h[:, h.shape[1] // 2]
+        return q, np.zeros((batch, 3))
 
 
 @register("many_legged", "3-contact",
-          "Hyper-redundant many-legged robot whose stance legs find ground at random.")
-def many_legged(n_legs: int = 16, spacing: float = 0.05, omega: float = 2 * np.pi * 2.0,
-                wave: float = 4.0, f_leg: float = 10.0, reach: float = 0.01,
-                rugosity: float = 0.01, corr: float = 0.02, mass: float = 1.0,
-                drag: float = 20.0, sigma_T2: float = 1e-4) -> MechSim:
-    return ManyLegged(H=np.array([[mass]]), D=np.array([[drag]]),
-                      force=lambda q, p: np.zeros_like(q),
-                      J=lambda q: np.zeros((q.shape[0], 1, 1)), sigma_T2=sigma_T2,
-                      params=dict(n_legs=n_legs, spacing=spacing, omega=omega, wave=wave,
-                                  f_leg=f_leg, reach=reach, rugosity=rugosity, corr=corr),
-                      parts={"x": _sel(1, 0), "speed": _sel(1, 1)}, name="many-legged",
-                      q0=np.array([0.0]))
+          "Many-legged robot in side view: rigid body, prescribed leg cycles, compliant legs, "
+          "frictional contact on rough terrain.")
+def many_legged(n_legs: int = 12, rugosity: float = 0.0, seg_len: float = 0.045,
+                m_leg: float = 1.0 / 12, **kw) -> LeggedRobot:
+    """Built from identical modules, as the robophysical models are: each leg comes with a
+    body segment of length seg_len and mass m_leg, so length and mass grow with n_legs and
+    every leg carries the same share of the weight."""
+    kw.setdefault("body_len", seg_len * n_legs)
+    kw.setdefault("mass", m_leg * n_legs)
+    return LeggedRobot(n_legs=n_legs, rugosity=rugosity, **kw)
 
 
-def crawl(sim: ManyLegged, batch: int, t_end: float, dt: float = 1e-3, rng=None) -> dict:
-    """Run `batch` robots, each on its own terrain; returns mean speeds and contact counts."""
+def crawl(robot: LeggedRobot, batch: int, t_end: float, dt: float = 2e-4, rng=None,
+          record_every: int = 0) -> dict:
+    """Run `batch` robots, each on its own terrain. Returns the mean speed after the first
+    cycle, the fraction of stance legs in contact, the mean slip speed of contacting feet,
+    and (if asked) frames of body state and foot positions."""
     rng = np.random.default_rng() if rng is None else rng
-    cache = sim._ou(dt)
-    cache["terrain"] = sim.terrain(batch, rng)
-    q = np.zeros((batch, 1))
-    v = np.zeros((batch, 1))
+    terr = robot.terrain(batch, rng)
+    q, v = robot.start(batch, terr)
     n = int(t_end / dt)
-    for _ in range(n):
-        q, v, _ = sim.step(q, v, None, rng, dt, cache)
-    contacts = np.array(cache["contacts"])
-    return dict(speed=q[:, 0] / t_end, contacts=contacts.mean(axis=0))
+    t0 = int(1.0 / robot.params["freq"] / dt)
+    x0 = None
+    touch_frac, slip, frames = [], [], []
+    for k in range(n):
+        t = k * dt
+        q, v, info = robot.step(q, v, rng, dt, t, terr)
+        if k == t0:
+            x0 = q[:, 0].copy()
+        if k > t0:
+            st = info["stance"][None, :]
+            touch_frac.append((info["touch"] & st).sum(1) / max(st.sum(), 1))
+            m = info["touch"]
+            slip.append(np.where(m, np.abs(info["slip"]), np.nan))
+        if record_every and k % record_every == 0:
+            frames.append(dict(q=q.copy(), pos=info["pos"].copy(), touch=info["touch"].copy(),
+                               stance=info["stance"].copy(), t=t))
+    T = (n - 1 - t0) * dt
+    return dict(speed=(q[:, 0] - x0) / T, contact=np.mean(touch_frac, axis=0),
+                slip=np.nanmean(np.concatenate(slip, axis=1), axis=1), frames=frames,
+                terrain=terr, z=q[:, 1], pitch=q[:, 2])
+
+
+def kinematic_speed(robot: LeggedRobot) -> float:
+    """No-slip speed on flat ground: stance feet move back at 4 A f with A = l sin(phi0)."""
+    p = robot.params
+    return 4 * p["leg_len"] * np.sin(p["phi0"]) * p["freq"]

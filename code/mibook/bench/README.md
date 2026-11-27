@@ -45,7 +45,8 @@ them.
 | contact | `many_legged` | hyper-redundant robot whose stance legs find rough ground at random |
 | fluid | `foil` | typical section, unsteady thin-airfoil aerodynamics, gusts and vortex streets |
 | fluid | `bird` | body and wings joined by a compliant shoulder, in turbulence |
-| collective | `swarm` | tethered agents coupled to neighbours, sensing a common force |
+| linear (test body) | `agents` | tethered agents coupled to neighbours by springs; not a swarm |
+| collective | `swarmalators` | swarmalators (O'Keeffe et al. 2017): agents that swarm and sync |
 | linear | `pendulum` | inverted pendulum on a spring: stable or unstable by one parameter |
 
 ## Unstable bodies

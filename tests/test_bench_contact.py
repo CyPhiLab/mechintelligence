@@ -1,5 +1,6 @@
 """Contact-tier benchmark bodies of mibook.bench (thread T12)."""
 import numpy as np
+import pytest
 
 from mibook import bench
 from mibook.bench import sampling as S
@@ -55,13 +56,30 @@ def test_tentacle_wraps_the_object():
     assert free.in_contact(q).sum() == 0
 
 
-def test_more_legs_make_crawling_more_reliable_on_rough_ground():
-    rng = np.random.default_rng(5)
-    cv = {}
-    for n in (6, 16):
-        r = crawl(bench.make("many_legged", n_legs=n, rugosity=0.02), 150, 2.0, rng=rng)
-        cv[n] = r["speed"].std() / r["speed"].mean()
-    assert cv[16] < cv[6]
-    smooth = crawl(bench.make("many_legged", rugosity=0.002), 100, 2.0, rng=rng)
-    rough = crawl(bench.make("many_legged", rugosity=0.02), 100, 2.0, rng=rng)
-    assert rough["speed"].mean() < smooth["speed"].mean()
+def test_legged_robot_walks_at_the_kinematic_speed_on_flat_ground():
+    from mibook.bench.bodies.contact import kinematic_speed
+    robot = bench.make("many_legged", n_legs=12)
+    r = crawl(robot, 1, 2.0, rng=np.random.default_rng(5))
+    assert r["speed"][0] == pytest.approx(kinematic_speed(robot), rel=0.08)
+    assert r["contact"][0] > 0.85                                   # stance feet on the ground
+
+
+def test_compliant_legs_keep_contact_on_rough_ground():
+    rng = np.random.default_rng(6)
+    soft = crawl(bench.make("many_legged", rugosity=0.015, k_leg=150.0), 12, 2.0, rng=rng)
+    stiff = crawl(bench.make("many_legged", rugosity=0.015, k_leg=3e4), 12, 2.0, rng=rng)
+    flat = crawl(bench.make("many_legged"), 1, 2.0, rng=rng)
+    assert soft["contact"].mean() > 2 * stiff["contact"].mean()
+    assert soft["speed"].mean() < flat["speed"].mean()               # roughness costs speed
+    assert soft["speed"].std() < stiff["speed"].std()
+
+
+def test_swarmalators_reproduce_the_five_published_states():
+    from mibook.bench.bodies.swarmalators import check_states
+    r = check_states(N=80, T=150.0)
+    assert r["static sync"]["R"] > 0.95 and r["static sync"]["speed"] < 1e-3
+    assert r["static async"]["R"] < 0.2 and r["static async"]["S"] < 0.2
+    assert r["static phase wave"]["S"] > 0.9 and r["static phase wave"]["speed"] < 1e-3
+    assert r["splintered phase wave"]["S"] > 0.8 and r["splintered phase wave"]["clusters"] >= 3
+    assert r["splintered phase wave"]["speed"] > 10 * r["static phase wave"]["speed"]
+    assert 0.4 < r["active phase wave"]["S"] < 0.95 and r["active phase wave"]["speed"] > 0.05

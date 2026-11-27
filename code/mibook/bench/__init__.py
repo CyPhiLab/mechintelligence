@@ -35,7 +35,7 @@ def register(name: str, tier: str, description: str):
 
 
 def _load():
-    from .bodies import legs, networks, beam, nonlinear, contact, fluids, swarm, pendulum  # noqa: F401
+    from .bodies import legs, networks, beam, nonlinear, contact, fluids, agents, pendulum, swarmalators  # noqa: F401
 
 
 def make(name: str, **kw):

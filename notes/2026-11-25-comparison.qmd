@@ -25,11 +25,20 @@ the axes of the map, plus one axis the map lacked.
 - *Direction.* Empowerment, where an actuator at the part acts on the contact, is not the
   same as holding information about the contact. On the leg the motor's empowerment over
   the foot peaks at an intermediate series stiffness, while what the rotor holds keeps
-  rising. In a swarm every member has exactly the same empowerment over the swarm's mean
-  position, while members differ in what they hold about a force on the swarm.
-- *The input's band, a new axis.* In the swarm, which member holds the most depends on the
+  rising. In a network of tethered agents every member has exactly the same empowerment
+  over the network's mean position, while members differ in what they hold about a force on
+  the network.
+- *The input's band, a new axis.* In the agent network, which member holds the most depends on the
   frequencies of the environment: a slow push and a broadband one rank the members almost
   oppositely.
+
+::: {.callout-warning appearance="simple" title="Correction, 2026-11-27"}
+The fourth family was first called a swarm. It is a linear network of agents, each tethered
+to its own set point and coupled to its neighbours by springs and dampers, with none of
+the collective dynamics of a swarm. It is renamed *tethered agents* (`agents`). A swarm
+benchmark built on a published model (swarmalators) now exists separately. The results for
+this family are unchanged; only the name and its claim are.
+:::
 
 ## Setting
 
@@ -40,7 +49,7 @@ Four families of linear benchmarks from `mibook.bench`, each a set of items to r
 | Leg | rigid and SEA designs ($k_s$ from 70 to $10^5$), read at the rotor | contact force | none |
 | Network | the 20 nodes of one random spring network | force on the top node | anchor stiffness |
 | Whisker | seven coordinates from base to tip | contact force at 7 cm | contact point |
-| Swarm | the 12 members of one swarm | a force on every member | tether stiffness |
+| Tethered agents | the 12 members of one network | a force on every member | tether stiffness |
 
 Every body carries its own thermal noise at the declared resolution (@sec-langevin). For
 each item the study computes:
@@ -60,7 +69,7 @@ correlation). Code: `mibook.bench.compare`.
 
 ```{python}
 #| label: fig-compare
-#| fig-cap: "How the measures rank the items of each family (Spearman correlation; blue agrees, orange reverses). A measure that is the same for every item is left out: MC$_W$ outside the leg family, empowerment in the swarm."
+#| fig-cap: "How the measures rank the items of each family (Spearman correlation; blue agrees, orange reverses). A measure that is the same for every item is left out: MC$_W$ outside the leg family, empowerment for the tethered agents."
 from mibook import figures
 figures.fig_compare();
 ```
@@ -94,9 +103,9 @@ contact is runs the other way from the snapshot measures ($-0.64$): it is larges
 the base and the middle of the beam and smallest near the tip. The base, where an animal's
 follicle sits, holds nearly as much about the contact point as the best coordinate.
 
-**Swarm: acting alike, perceiving differently.** Every member has the same empowerment over
-the swarm's mean position (2.07 bits). @prp-swarm-act shows why. What members hold about a
-force on the whole swarm differs, and which member holds the most depends on the input's
+**Tethered agents: acting alike, perceiving differently.** Every member has the same
+empowerment over the network's mean position (2.07 bits). @prp-swarm-act shows why. What
+members hold about a force on the whole network differs, and which member holds the most depends on the input's
 band. For a slow push (below 2 Hz), the window information ranks the members one way; for
 broadband input, the directed-information rate ranks them almost oppositely
 ($-0.94$ against the snapshot measures). Weakly connected members move freely at high
@@ -130,13 +139,13 @@ The results support four axes of the draft map and add a fifth.
 - **Who reads it**: memory capacity is limited by its linear readout and saturates where
   information does not.
 - **Direction**: empowerment differs from holding on the leg, and is uniform where holding is
-  not in the swarm.
+  not in the agent network.
 - **New: the input's band**, or more generally the ensemble of environments a body is asked
   about. The same body can rank its parts oppositely for slow and for fast environments, so
   any statement that one part "knows more" needs the band attached, as the book already
   requires for masses and dampings.
 
-*What is not settled here.* The study uses one network, one whisker and one swarm, and one
+*What is not settled here.* The study uses one network, one whisker and one agent network, and one
 setting of each input; the patterns should be checked across seeds and input levels before
 they are stated as general. The empowerment result on the leg, a peak at intermediate
 stiffness, is the starting point for the next study (priority 3 of the roadmap).

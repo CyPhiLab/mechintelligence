@@ -2,7 +2,7 @@
 the book's resolution on the same linear bodies (thread T12).
 
 A *family* is a set of items that should be ranked against each other: designs of a leg,
-nodes of a network, parts of a whisker, members of a swarm. For each item every measure
+nodes of a network, parts of a whisker, members of a network of tethered agents. For each item every measure
 is computed, and the measures are compared by how they rank the items (Spearman
 correlation), since their units differ.
 
@@ -61,7 +61,7 @@ def families() -> list[Family]:
         C = np.zeros((1, 2 * n))
         C[0, i] = 1.0
         beam_parts.append((f"dof{i}", w, C))
-    sw = make("swarm")
+    sw = make("agents")
     agents = [(f"agent{i}", sw, f"agent{i}") for i in range(sw.params["n_agents"])]
     return [
         Family("legs", legs, "force", 4000.0, 1e4, 100.0, 0.085, 100.0, 40,
@@ -73,9 +73,9 @@ def families() -> list[Family]:
                fisher=("contact", dict(log=False, channel="force", level=1e-8, band_hz=200.0,
                                        n_w=600)),
                note="coordinates along the beam; property = contact point (through the force)"),
-        Family("swarm", agents, "common", 50.0, 0.01, 0.1, 2.0, 2.0, 100,
+        Family("agents", agents, "common", 50.0, 0.01, 0.1, 2.0, 2.0, 100,
                fisher=("k_0", dict(band_hz=5.0, n_w=600)),
-               note="members of one swarm; property = tether stiffness"),
+               note="members of one network of tethered agents; property = tether stiffness"),
     ]
 
 

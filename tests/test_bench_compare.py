@@ -30,11 +30,11 @@ def test_network_property_and_input_live_in_different_nodes(res):
     assert rho[names.index("bits"), names.index("mc")] < 0.6        # snapshot readout differs
 
 
-def test_swarm_members_act_alike_but_perceive_differently(res):
-    rows = res["swarm"]["rows"]
+def test_agents_act_alike_but_perceive_differently(res):
+    rows = res["agents"]["rows"]
     emp = np.array([r["emp"] for r in rows.values()])
     bits = np.array([r["bits"] for r in rows.values()])
     assert np.ptp(emp) < 1e-9 * emp.mean()                         # momentum: same for all
     assert np.ptp(bits) > 0.05 * bits.mean()
-    names, rho = res["swarm"]["names"], res["swarm"]["rho"]
+    names, rho = res["agents"]["names"], res["agents"]["rho"]
     assert rho[names.index("bits"), names.index("di")] < 0          # the band decides who knows

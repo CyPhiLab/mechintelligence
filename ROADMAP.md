@@ -49,7 +49,7 @@ the findings recorded here.
    are not in the collection. The Ljung-Whittle link moves to item 4; the D-optimal
    correspondence needs only a careful statement.
 2. First comparison study (T12): every measure, at the book's resolution, on the linear
-   benchmarks (legs, network, whisker, swarm). Where do the measures rank designs and parts
+   benchmarks (legs, network, whisker, tethered agents). Where do the measures rank designs and parts
    alike, and where do they part? Test the draft axes against the results. *First pass done
    2026-11-25* ([comparison note](notes/2026-11-25-comparison.qmd)); to do: other seeds and
    input levels.
@@ -349,7 +349,7 @@ written up.
   the contact force rank leg designs identically while $\mathrm{MC}_W$ reverses them; memory
   capacity ranks network nodes unlike window information (0.35); the nodes that hold the
   input hold least about the anchors ($-0.79$); the motor's empowerment over the foot peaks at
-  intermediate series stiffness; every swarm member acts alike on the swarm's mean while
+  intermediate series stiffness; every member of the tethered-agent network acts alike on its mean while
   perceiving differently; and the input's band can reverse which member knows most (a new
   axis). `tests/test_bench_compare.py`; [comparison note](notes/2026-11-25-comparison.qmd).
 - **2026-11-25.** Four links from the literature checked: with the whole state observed, the

@@ -77,21 +77,23 @@ def _rows(rng):
     yield "tentacle", "arm nodes touching the object after a 1 N grasp", \
         float(tn.in_contact(q).sum(axis=0).mean())
 
-    cv = []
-    for n in (6, 16):
-        rr = crawl(make("many_legged", n_legs=n, rugosity=0.02), 100, 2.0, rng=rng)
-        cv.append(rr["speed"].std() / rr["speed"].mean())
-    yield "many_legged", "speed variation on rough ground, 6 legs / 16 legs", tuple(cv)
-
+    rr = crawl(make("many_legged", n_legs=12, rugosity=0.015), 12, 2.0, rng=rng)
+    yield "many_legged", "speed on rough ground (sd 1.5 cm), compliant legs (m/s) / fraction of " \
+        "stance feet touching", (float(rr["speed"].mean()), float(rr["contact"].mean()))
+    from .bodies.swarmalators import Swarmalators, order_parameters
+    swl = Swarmalators(N=60, J=1.0, K=0.0, D_x=0.0, D_theta=0.0, seed=0)
+    xs, ths, _ = swl.simulate(1500, 0.05, 1, rng=np.random.default_rng(0))
+    yield "swarmalators", "order parameter S of the static phase wave (J=1, K=0)", \
+        float(order_parameters(xs, ths)["S"][0])
     yield "foil", "flutter speed of the default section (m/s)", flutter_speed()
     yield "bird", "body acceleration in turbulence, compliant / stiff shoulder", (
         body_acceleration_rms(make("bird", k_s=20.0)), body_acceleration_rms(make("bird", k_s=1e4)))
     cl = L.mirror_stabilize(make("pendulum", k=5.0), "motor")
     yield "pendulum", "weak spring: least data rate (bits/s) / control power of the canonical stabilizer", (
         cl.min_data_rate, cl.control_power)
-    sw = make("swarm")
+    sw = make("agents")
     kw = dict(channel="common", sigma_a=0.1, t_window=2.0, fs=50.0, band_hz=2.0)
-    yield "swarm", "bits about a common force, one agent / whole swarm", (
+    yield "agents", "bits about a common force, one agent / whole network", (
         L.profile_bits(sw, "agent0", eps=1e-9, **kw), L.profile_bits(sw, **kw))
 
 

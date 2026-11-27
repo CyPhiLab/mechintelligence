@@ -32,8 +32,8 @@ def test_bird_is_stable_for_any_shoulder():
         assert body_acceleration_rms(b) > 0
 
 
-def test_swarm_one_member_holds_less_than_the_swarm():
-    sw = bench.make("swarm")
+def test_one_agent_holds_less_than_the_network():
+    sw = bench.make("agents")
     kw = dict(channel="common", sigma_a=0.1, t_window=2.0, fs=50.0, band_hz=2.0)
     one = L.profile_bits(sw, "agent0", eps=1e-9, **kw)
     whole = L.profile_bits(sw, **kw)

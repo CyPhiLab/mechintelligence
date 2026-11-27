@@ -551,7 +551,7 @@ def fig_compare(res=None):
     cmap = LinearSegmentedColormap.from_list("div", [C2, "#ffffff", C1])
     fig, axes = plt.subplots(2, 2, figsize=(6.4, 6.0))
     titles = {"legs": "leg designs (rotor)", "network": "network nodes",
-              "whisker": "whisker coordinates", "swarm": "swarm members"}
+              "whisker": "whisker coordinates", "agents": "tethered agents"}
     for ax, (fam, r) in zip(axes.ravel(), res.items()):
         names, rho = r["names"], r["rho"]
         ax.imshow(rho, cmap=cmap, vmin=-1, vmax=1)

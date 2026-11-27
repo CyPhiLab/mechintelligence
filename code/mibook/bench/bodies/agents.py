@@ -1,11 +1,16 @@
-"""A swarm: agents coupled to their neighbours, sensing a common environment.
+"""Tethered coupled agents: a linear network of agents, each tethered to its own set point
+and coupled to its neighbours by springs and dampers, sensing a common environment.
+
+This is not a swarm: it has none of the collective dynamics of swarms (no self-propulsion,
+no aggregation, no synchronization). For a swarm see `swarmalators`.
+
 
 Agents move in the plane. Each is tethered to its own set point (spring k_0, drag b_0) and
 coupled to the agents within range r_c by springs k_c with dampers b_c. The coupling can be
 read as physical links or as the virtual springs of a consensus controller; the mathematics
 is the same. Environment channels: a force common to every agent ("common", along x) and a
 force on agent 0 alone ("local0"). The question it is built for: what does one member hold
-about the common environment, against the whole swarm?
+about the common environment, against the whole network?
 """
 from __future__ import annotations
 
@@ -15,10 +20,10 @@ from .. import register
 from ..linear import LinearBody
 
 
-@register("swarm", "5-collective",
+@register("agents", "5-collective",
           "Agents in the plane, tethered and coupled to neighbours within range; "
           "inputs: a common force and a force on one agent.")
-def swarm(n_agents: int = 12, seed: int = 0, r_c: float = 0.45, k_0: float = 1.0,
+def agents(n_agents: int = 12, seed: int = 0, r_c: float = 0.45, k_0: float = 1.0,
           b_0: float = 0.5, k_c: float = 5.0, b_c: float = 0.5, mass: float = 1.0,
           sigma_T2: float = 1e-4) -> LinearBody:
     rng = np.random.default_rng(seed)
@@ -48,7 +53,7 @@ def swarm(n_agents: int = 12, seed: int = 0, r_c: float = 0.45, k_0: float = 1.0
     params = dict(n_agents=n_agents, seed=seed, r_c=r_c, k_0=k_0, b_0=b_0, k_c=k_c, b_c=b_c,
                   mass=mass, sigma_T2=sigma_T2)
     body = LinearBody(H=H, D=D, K=K, inputs={"common": common, "local0": local0},
-                      parts=parts, sigma_T2=sigma_T2, name=f"swarm n={n_agents}",
-                      params=params, build=swarm)
+                      parts=parts, sigma_T2=sigma_T2, name=f"agents n={n_agents}",
+                      params=params, build=agents)
     object.__setattr__(body, "degrees", np.diag(Lap).copy())
     return body

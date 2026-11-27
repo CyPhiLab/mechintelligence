@@ -29,8 +29,9 @@ FPS, N_FRAMES = 30, 150
 
 def _write(fig, update, path, n_frames=N_FRAMES):
     anim = FuncAnimation(fig, update, frames=n_frames, blit=False)
-    anim.save(str(path), writer=FFMpegWriter(fps=FPS, codec="libx264",
-                                             extra_args=["-pix_fmt", "yuv420p"]), dpi=110)
+    anim.save(str(path), writer=FFMpegWriter(
+        fps=FPS, codec="libx264",
+        extra_args=["-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2"]), dpi=110)
     plt.close(fig)
     return path
 
@@ -199,8 +200,8 @@ def whisker(path):
     return _write(fig, update, path)
 
 
-def swarm(path):
-    b = make("swarm")
+def agents(path):
+    b = make("agents")
     p = b.params
     pts = np.random.default_rng(p["seed"]).uniform(0, 1, (p["n_agents"], 2))
     links = [(i, j) for i in range(len(pts)) for j in range(i + 1, len(pts))
@@ -221,7 +222,7 @@ def swarm(path):
     lines = [ax.plot([], [], color=INK2, lw=0.8)[0] for _ in links]
     dots = ax.scatter(pts[:, 0], pts[:, 1], s=40, color=C1, zorder=3)
     arrow, = ax.plot([], [], color=C2, lw=2.5)
-    _label(ax, f"swarm under a common push (orange); displacements {_fmt(A)}, sped up x{T / (N_FRAMES / FPS):.0f}")
+    _label(ax, f"tethered agents under a common push (orange); displacements {_fmt(A)}, sped up x{T / (N_FRAMES / FPS):.0f}")
 
     def update(k):
         i = int(k * (n - 1) / (N_FRAMES - 1))
@@ -479,49 +480,90 @@ def walker(path):
 
 
 def many_legged(path):
-    ml = make("many_legged", rugosity=0.015)
-    p = ml.params
-    rng = np.random.default_rng(10)
-    dt, T = 1e-3, 3.0
-    n = int(T / dt)
-    every = n // N_FRAMES
-    cache = ml._ou(dt)
-    cache["terrain"] = ml.terrain(1, rng)
-    h, res = cache["terrain"]
-    q = np.zeros((1, 1))
-    v = np.zeros((1, 1))
-    X, TT = [], []
-    for i in range(n):
-        q, v, _ = ml.step(q, v, None, rng, dt, cache)
-        if i % every == 0:
-            X.append(q[0, 0])
-            TT.append(cache["t"])
-    xs = np.arange(h.shape[1]) * res
-    legs_i = np.arange(p["n_legs"])
-    fig, ax = plt.subplots(figsize=(7.0, 3.0))
-    ax.axis("off")
-    terrain, = ax.plot([], [], color=INK2, lw=1)
-    body, = ax.plot([], [], color=C1, lw=5, solid_capstyle="round")
-    legs = [ax.plot([], [], lw=1.5)[0] for _ in legs_i]
-    _label(ax, "many-legged robot on rough ground: green = stance and touching, "
-               "red = stance but missing, grey = swing", "upper left")
+    """Compliant-legged and stiff-legged versions of the same 12-legged robot on the same
+    rough terrain. Legs are drawn from hip to the simulated foot position."""
+    from .bodies.contact import crawl
+    T, dt = 4.0, 2e-4
+    every = int(T / dt) // N_FRAMES
+    runs = []
+    for kl in (150.0, 3e4):
+        robot = make("many_legged", n_legs=12, rugosity=0.015, k_leg=kl)
+        r = crawl(robot, 1, T, dt=dt, rng=np.random.default_rng(10), record_every=every)
+        runs.append((kl, robot, r))
+    fig, axs = plt.subplots(2, 1, figsize=(7.0, 4.4))
+    arts = []
+    for ax, (kl, robot, r) in zip(axs, runs):
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title("compliant legs" if kl < 1e3 else "stiff legs", fontsize=9)
+        terrain, = ax.plot([], [], color=INK2, lw=1)
+        body, = ax.plot([], [], color=C1, lw=5, solid_capstyle="round")
+        legs = [ax.plot([], [], lw=1.5)[0] for _ in range(robot.params["n_legs"])]
+        arts.append((ax, terrain, body, legs))
+    fig.text(0.5, 0.02, "same rough terrain (sd 1.5 cm); green = stance foot touching, red = stance "
+             "foot missing, grey = swing; real scale", ha="center", fontsize=7.5, color=INK2)
 
     def update(k):
-        k = min(k, len(X) - 1)
-        x0, t = X[k], TT[k]
-        win = (xs > x0 - 0.2) & (xs < x0 + p["n_legs"] * p["spacing"] + 0.2)
-        terrain.set_data(xs[win], h[0, win])
-        feet = x0 + legs_i * p["spacing"]
-        body.set_data([feet[0], feet[-1]], [0.06, 0.06])
-        stance = np.sin(p["omega"] * t - 2 * np.pi * legs_i / p["wave"]) > 0
-        for j, lg in enumerate(legs):
-            gnd = h[0, min(int(feet[j] / res), h.shape[1] - 1)]
-            touch = stance[j] and gnd > -p["reach"]
-            y_end = gnd if touch else (-p["reach"] if stance[j] else 0.02)
-            lg.set_data([feet[j], feet[j]], [0.06, y_end])
-            lg.set_color(C3 if touch else (C2 if stance[j] else GRID))
-        ax.set_xlim(x0 - 0.2, x0 + p["n_legs"] * p["spacing"] + 0.2)
-        ax.set_ylim(-0.08, 0.12)
+        for (ax, terrain, body, legs), (kl, robot, r) in zip(arts, runs):
+            fr = r["frames"][min(k, len(r["frames"]) - 1)]
+            q = fr["q"][0]
+            h, res = r["terrain"]
+            xs = (np.arange(h.shape[1]) - h.shape[1] // 2) * res
+            L = robot.params["body_len"]
+            win = (xs > q[0] - L) & (xs < q[0] + L)
+            terrain.set_data(xs[win], h[0, win])
+            c, s_ = np.cos(q[2]), np.sin(q[2])
+            hx = q[0] + robot.hips * c
+            hz = q[1] + robot.hips * s_
+            body.set_data([hx[0], hx[-1]], [hz[0], hz[-1]])
+            for j, lg in enumerate(legs):
+                fx, fz = fr["pos"][0, j]
+                if fr["touch"][0, j]:          # a touching foot sits on the surface (leg compressed)
+                    gi = int(np.clip(fx / res + h.shape[1] // 2, 0, h.shape[1] - 1))
+                    fz = max(fz, h[0, gi])
+                lg.set_data([hx[j], fx], [hz[j], fz])
+                touch, st = fr["touch"][0, j], fr["stance"][j]
+                lg.set_color(C3 if touch else (C2 if st else "#b9b8b4"))
+            ax.set_xlim(q[0] - 0.75 * L, q[0] + 0.75 * L)
+            ax.set_ylim(-0.06, 0.16)
+    return _write(fig, update, path)
+
+
+def swarmalators(path):
+    """The five published states of swarmalators (O'Keeffe et al. 2017), from random starts;
+    colour is phase."""
+    from .bodies.swarmalators import STATES, Swarmalators
+    dt, T = 0.05, 120.0
+    n = int(T / dt)
+    every = n // N_FRAMES
+    runs = []
+    for name, (J, K) in STATES.items():
+        sw = Swarmalators(N=150, J=J, K=K, seed=1)
+        _, _, frames = sw.simulate(n, dt, 1, rng=np.random.default_rng(1), record_every=every)
+        runs.append((name, J, K, frames))
+    fig, axs = plt.subplots(2, 3, figsize=(7.2, 4.9))
+    cmap = plt.get_cmap("hsv")
+    arts = []
+    for ax, (name, J, K, frames) in zip(axs.ravel(), runs):
+        ax.set_aspect("equal")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title(f"{name}\nJ={J:g}, K={K:g}", fontsize=8)
+        sc = ax.scatter([], [], s=8, c=[], cmap=cmap, vmin=0, vmax=2 * np.pi)
+        arts.append((ax, sc))
+    axs.ravel()[-1].axis("off")
+    axs.ravel()[-1].text(0.5, 0.5, "swarmalators\n(O'Keeffe et al. 2017)\ncolour = phase\n"
+                         f"{T:.0f} time units from random starts", ha="center", va="center",
+                         fontsize=8, color=INK2, transform=axs.ravel()[-1].transAxes)
+
+    def update(k):
+        for (ax, sc), (_, _, _, frames) in zip(arts, runs):
+            x, th = frames[min(k, len(frames) - 1)]
+            sc.set_offsets(x[0])
+            sc.set_array(np.mod(th[0], 2 * np.pi))
+            c = x[0].mean(0)
+            ax.set_xlim(c[0] - 1.6, c[0] + 1.6)
+            ax.set_ylim(c[1] - 1.6, c[1] + 1.6)
     return _write(fig, update, path)
 
 
@@ -680,9 +722,10 @@ def pendulum(path):
     return _write(fig, update, path)
 
 
-DEMOS = dict(legs=legs, network=network, whisker=whisker, swarm=swarm, soft_arm=soft_arm,
+DEMOS = dict(legs=legs, network=network, whisker=whisker, agents=agents, soft_arm=soft_arm,
              tentacle=tentacle, bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
-             walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum)
+             walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum,
+             swarmalators=swarmalators)
 
 
 def render(outdir, names=None):
