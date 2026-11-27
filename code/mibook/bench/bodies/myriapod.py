@@ -234,7 +234,7 @@ class Myriapod:
                      f'range="-0.6 0.6" damping="0.05"/>')
             pos = f"{self.x_start} 0 {z0}" if i == 0 else f"{-L} 0 0"
             return f"""
-      <body name="m{i}" pos="{pos}">
+      <body name="m{i}" pos="{pos}" childclass="robot">
         {joint}
         <geom type="box" size="{0.4 * L} 0.03 0.015" mass="{self.module_mass}" rgba=".16 .47 .84 1"/>
         <body name="swing{i}">
@@ -259,7 +259,11 @@ class Myriapod:
         return f"""
 <mujoco model="myriapod">
   <option timestep="{self.dt}" integrator="implicitfast"/>
-  <default><geom friction="{self.mu} 0.005 0.0001" condim="3" solref="0.004 1"/></default>
+  <default>
+    <geom friction="{self.mu} 0.005 0.0001" condim="3" solref="0.004 1"/>
+    <!-- Robot parts touch the terrain only, never each other (contype 2, conaffinity 1). -->
+    <default class="robot"><geom contype="2" conaffinity="1"/></default>
+  </default>
   <worldbody>
     <geom name="floor" type="plane" size="5 5 0.1" rgba=".85 .85 .82 1"/>
     {terrain}
