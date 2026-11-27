@@ -30,8 +30,9 @@ def _spring_forces(X, F, pairs, rest, k, alpha):
     F[j] -= f                          # construction), so plain indexing accumulates exactly
 
 
-@register("soft_arm", "2-nonlinear",
-          "Planar soft arm: a ladder truss of point masses with stiffening springs.")
+@register("ladder_arm", "2-nonlinear",
+          "Test body, not from the literature: a ladder truss of point masses with stiffening "
+          "springs (the earlier stand-in for a soft arm; see `soft_arm`).")
 def soft_arm(n_seg: int = 10, length: float = 0.3, width: float = 0.03, mass: float = 0.005,
              k_rail: float = 200.0, k_rung: float = 200.0, k_diag: float = 100.0,
              alpha: float = 1e3, b_spring: float = 0.02, sigma_T2: float = 1e-6) -> MechSim:

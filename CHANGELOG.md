@@ -4,6 +4,11 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- The soft arm is now a Cosserat rod simulated with PyElastica (optional `physics` extra,
+  with MuJoCo), anchored to the silicone arm of Nakajima et al.; it absorbs the tentacle
+  benchmark and can grasp a cylinder. It passes textbook checks (static tip deflection,
+  first bending frequency) and a grasp check. The earlier spring-ladder arm is kept as the
+  test body `ladder_arm`. The roadmap now records the benchmark standard and audit.
 - General handling of unstable bodies in `mibook.bench` (priors, steady-state rates,
   canonical mirror stabilization, nonlinear mirror feedback), a `pendulum` benchmark, and a
   research note. `mibook.bench.animate` renders video demos of every benchmark.

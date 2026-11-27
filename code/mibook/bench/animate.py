@@ -238,83 +238,31 @@ def agents(path):
 # Nonlinear and contact bodies
 # ---------------------------------------------------------------------------------------
 
-def _arm_frames(sim, n_steps, dt, u, rng, every, q0=None):
-    out, _ = sim.simulate(n_steps, dt, 1, u=u, rng=rng, parts=("whole",),
-                          q_init=q0, v_init=np.zeros((1, sim.n)))
-    return out["whole"][::every, 0, :sim.n]
-
-
-def _draw_arm(ax, sim):
-    N = sim.n_seg
-    L_ = lambda i: 2 * (i - 1)
-    R_ = lambda i: 2 * (i - 1) + 1
-    pairs = [(L_(i), L_(i + 1)) for i in range(1, N)] + [(R_(i), R_(i + 1)) for i in range(1, N)] \
-        + [(L_(i), R_(i)) for i in range(1, N + 1)] + [(L_(i), R_(i + 1)) for i in range(1, N)]
-    lines = [ax.plot([], [], color=INK, lw=1)[0] for _ in pairs]
-    base_lines = [ax.plot([], [], color=INK, lw=1)[0] for _ in range(3)]
-    ax.plot(sim.base[:, 0], sim.base[:, 1], "s", color=INK2)
-    nodes, = ax.plot([], [], "o", ms=3, color=C1)
-
-    def draw(q):
-        X = q.reshape(-1, 2) + sim.rest
-        for ln, (a, c) in zip(lines, pairs):
-            ln.set_data([X[a, 0], X[c, 0]], [X[a, 1], X[c, 1]])
-        for ln, (i, b0) in zip(base_lines, ((L_(1), 0), (R_(1), 1), (R_(1), 0))):
-            ln.set_data([X[i, 0], sim.base[b0, 0]], [X[i, 1], sim.base[b0, 1]])
-        nodes.set_data(X[:, 0], X[:, 1])
-    return draw
-
-
 def soft_arm(path):
-    from .nonlinear_study import _stiffness
-    arm = make("soft_arm", b_spring=0.1)
-    rng = np.random.default_rng(4)
-    dt, T = 4e-4, 5.0
-    n = int(T / dt)
-    every = n // N_FRAMES
-    tt = np.arange(n) * dt
-    f = 0.012 * np.sin(2 * np.pi * 0.6 * tt) + _smooth_noise(rng, n, 500, 0.004)
-    q0, _ = gibbs_start(arm, 1, rng, K=_stiffness(arm))
-    Q = _arm_frames(arm, n, dt, f[:, None, None], rng, every, q0)
+    """The soft arm as a Cosserat rod (PyElastica): a curling torque ramps up and the arm
+    wraps an object, with thermal jiggling; side view of the rod's centreline."""
+    from .bodies.softarm import SoftArm
+    arm = SoftArm(n_elem=20, cylinder=dict(x=-0.06, z=0.28, r=0.035))
+    T = 3.0
+    probe = arm.simulate(1e-3, 1)
+    every = max(1, int(T / probe["dt"]) // N_FRAMES)
+    out = arm.simulate(T, 1, curl=lambda t: np.array([-0.04 * min(1.0, t / 1.5)]),
+                       record_every=every, rng=np.random.default_rng(14))
+    frames = out["frames"]
     fig, ax = plt.subplots(figsize=(4.4, 5.0))
-    ax.set_xlim(-0.2, 0.2)
-    ax.set_ylim(-0.02, 0.34)
+    ax.set_xlim(-0.25, 0.15)
+    ax.set_ylim(-0.02, 0.48)
     ax.set_aspect("equal")
     ax.axis("off")
-    draw = _draw_arm(ax, arm)
-    arrow, = ax.plot([], [], color=C2, lw=2)
-    _label(ax, "soft arm, force at the tip (orange); real scale and speed")
+    ax.add_patch(plt.Circle((-0.06, 0.28), 0.035, color=C4, alpha=0.6))
+    ax.plot([-0.03, 0.03], [0, 0], color=INK2, lw=4)
+    rod, = ax.plot([], [], color=C1, lw=3, solid_capstyle="round")
+    _label(ax, f"Cosserat-rod arm (PyElastica) curling\naround an object; real scale, "
+               f"slowed x{N_FRAMES / FPS / T:.1f}")
 
     def update(k):
-        q = Q[min(k, len(Q) - 1)]
-        draw(q)
-        X = q.reshape(-1, 2) + arm.rest
-        tip = X[-2:].mean(0)
-        i = min(k * every, n - 1)
-        arrow.set_data([tip[0], tip[0] + 6.0 * f[i]], [tip[1] + 0.01, tip[1] + 0.01])
-    return _write(fig, update, path)
-
-
-def tentacle(path):
-    tn = make("tentacle")
-    rng = np.random.default_rng(5)
-    dt, T = 2e-4, 2.5
-    n = int(T / dt)
-    every = n // N_FRAMES
-    Q = _arm_frames(tn, n, dt, tn.grasp_input(1.0, ramp_steps=int(1.2 / dt)), rng, every)
-    fig, ax = plt.subplots(figsize=(4.6, 5.0))
-    ax.set_xlim(-0.2, 0.15)
-    ax.set_ylim(-0.02, 0.34)
-    ax.set_aspect("equal")
-    ax.axis("off")
-    ax.add_patch(plt.Circle((-0.06, 0.2), tn.params["r_obj"], color=C4, alpha=0.5))
-    arm_like = tn
-    arm_like.base = np.array([[-0.015, 0.0], [0.015, 0.0]])
-    draw = _draw_arm(ax, arm_like)
-    _label(ax, "tentacle: tendon on the left rail ramps to 1 N; real scale, slowed x2")
-
-    def update(k):
-        draw(Q[min(k, len(Q) - 1)])
+        f = frames[min(k, len(frames) - 1)][0]
+        rod.set_data(f[0], f[2])
     return _write(fig, update, path)
 
 
@@ -730,7 +678,7 @@ def pendulum(path):
 
 
 DEMOS = dict(legs=legs, network=network, whisker=whisker, agents=agents, soft_arm=soft_arm,
-             tentacle=tentacle, bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
+             bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
              walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum,
              swarmalators=swarmalators)
 

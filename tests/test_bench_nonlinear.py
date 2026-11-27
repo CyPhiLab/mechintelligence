@@ -17,25 +17,25 @@ def _stiffness(sim, eps=1e-7):
 
 
 def test_soft_arm_is_a_stable_truss():
-    arm = bench.make("soft_arm")
+    arm = bench.make("ladder_arm")
     K = _stiffness(arm)
     np.testing.assert_allclose(K, K.T, atol=1e-6 * np.abs(K).max())
     assert np.linalg.eigvalsh(0.5 * (K + K.T)).min() > 0          # bending stiffness exists
 
 
 def test_soft_arm_stiffens():
-    arm = bench.make("soft_arm")
+    arm = bench.make("ladder_arm")
     n = arm.n
     q = np.zeros((1, n))
     q[0, -1] = 0.01                                               # stretch the tip upward
-    soft = bench.make("soft_arm", alpha=0.0)
+    soft = bench.make("ladder_arm", alpha=0.0)
     assert np.abs(arm.force(q, arm.params)).sum() > np.abs(soft.force(q, soft.params)).sum()
 
 
 def test_soft_arm_thermal_velocities():
     # Start from the Gibbs law of the linearized arm, so equipartition already holds.
     from mibook.bench.sampling import gibbs_start
-    arm = bench.make("soft_arm")
+    arm = bench.make("ladder_arm")
     rng = np.random.default_rng(0)
     q0, v0 = gibbs_start(arm, 400, rng, K=_stiffness(arm))
     out, (q, v) = arm.simulate(300, 2e-4, 400, rng=rng, parts=(), q_init=q0, v_init=v0)

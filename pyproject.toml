@@ -16,6 +16,12 @@ dependencies = [
     "slip-passive-info @ git+https://github.com/zpatty/quadruped-mech-info@2b25bca",
 ]
 
+[project.optional-dependencies]
+physics = [
+    "mujoco>=3.2",
+    "pyelastica>=0.3.2",
+]
+
 [dependency-groups]
 dev = ["pytest>=8.0", "quarto-cli==1.11.9"]
 

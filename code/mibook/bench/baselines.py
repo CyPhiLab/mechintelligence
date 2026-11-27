@@ -32,7 +32,15 @@ def _rows(rng):
     I = L.fisher_rate(w, "contact", "follicle", log=False, channel="force", level=1e-8, band_hz=200)
     yield "whisker", "contact-point error after 1 s, from the follicle (mm)", 1e3 / np.sqrt(I)
 
-    arm = make("soft_arm")
+    try:
+        from .bodies.softarm import check_cantilever
+        c = check_cantilever(n_elem=15, T=1.5)
+        val = c["deflection"] / c["predicted"]
+    except ImportError:                                  # PyElastica (physics extra) missing
+        val = float("nan")
+    yield "soft_arm", "Cosserat rod: tip deflection / F L^3/3EI (15 elements; needs PyElastica)", val
+
+    arm = make("ladder_arm")
     fs, sub, T, k = 1000.0, 5, 0.1, 8
     n_t = int(T * fs) + 1
     Phi = L.dct_basis(n_t, k)
@@ -41,7 +49,7 @@ def _rows(rng):
     u = np.repeat((W @ Phi.T).T, sub, axis=0)[:, :, None]
     out, _ = arm.simulate(n_t * sub, 1 / fs / sub, batch, u=u, rng=rng,
                           parts=("tip_x",), burn_in=300)
-    yield "soft_arm", "bits about a tip-force profile, tip (linear-estimate bound)", \
+    yield "ladder_arm", "test body: bits about a tip-force profile, tip (linear-estimate bound)", \
         S.lmmse_bits(W, out["tip_x"][::sub, :, 0][::4].T)
 
     ch = make("bistable_chain")
@@ -71,10 +79,6 @@ def _rows(rng):
     r = walk(make("walker"), 60, 8.0, rng=rng)
     yield "walker", "steps per second on a 0.08 rad slope", float(r["rate"].mean())
 
-    tn = make("tentacle")
-    _, (q, _) = tn.simulate(6000, 2e-4, 10, u=tn.grasp_input(1.0), rng=rng, parts=())
-    yield "tentacle", "arm nodes touching the object after a 1 N grasp", \
-        float(tn.in_contact(q).sum(axis=0).mean())
 
     rr = crawl(make("many_legged", n_legs=12, rugosity=0.015), 12, 2.0, rng=rng)
     yield "many_legged", "speed on rough ground (sd 1.5 cm), compliant legs (m/s) / fraction of " \

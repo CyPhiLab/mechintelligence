@@ -7,7 +7,6 @@ dampers D. Bodies whose motion jumps at impacts, or whose time matters, override
 - `hopper`: a vertical spring-loaded hopper on a ground of unknown stiffness.
 - `gripper`: two compliant finger pads squeezing an object of unknown stiffness.
 - `walker`: a rimless wheel, the simplest passive walker, on a slope.
-- `tentacle`: the soft arm curled by a tendon around a round object.
 - `many_legged`: a many-legged robot whose stance legs touch rough ground at random.
 """
 from __future__ import annotations
@@ -16,7 +15,6 @@ import numpy as np
 
 from .. import register
 from ..sampling import MechSim
-from .nonlinear import soft_arm
 
 G = 9.81
 
@@ -250,82 +248,6 @@ def walk(sim: RimlessWheel, batch: int, t_end: float, dt: float = 1e-3, rng=None
     T = (n - burn) * dt
     step_len = 2 * np.sin(sim.params["alpha"])
     return dict(rate=cache["steps"] / T, speed=cache["steps"] * step_len / T, v=v[:, 0])
-
-
-# ---------------------------------------------------------------------------------------
-# Tentacle grasping
-# ---------------------------------------------------------------------------------------
-
-@register("tentacle", "3-contact",
-          "Soft arm curled by a tendon along one rail around a round object.")
-def tentacle(r_obj: float = 0.04, cx: float = -0.06, cy: float = 0.2, k_obj: float = 2000.0,
-             b_obj: float = 0.5, b_spring: float = 0.5, **arm_kw) -> MechSim:
-    """The soft arm (`soft_arm`) with a tendon along its left rail: tension T pulls each
-    left-rail segment's ends together, so the arm curls to the left. A rigid-ish disc of
-    radius r_obj at (cx, cy) pushes back on any node inside it. Input "tendon": T (N)."""
-    arm = soft_arm(b_spring=b_spring, **arm_kw)
-    N, n, rest = arm.n_seg, arm.n, arm.rest
-    left = arm.left
-    base_L = arm.base[0]
-    nn = n // 2
-    base_force = arm.force
-
-    def nodes(q):
-        return q.T.reshape(nn, 2, -1) + rest[:, :, None]
-
-    def J(q):
-        X = nodes(q)
-        Fg = np.zeros_like(X)
-        prev = np.broadcast_to(base_L[:, None], X[left[0]].shape)
-        for idx, i in enumerate(left):
-            d = X[i] - prev
-            u = d / np.sqrt(d[0] ** 2 + d[1] ** 2)
-            Fg[i] -= u                               # pulled back toward the previous node
-            if idx > 0:
-                Fg[left[idx - 1]] += u
-            prev = X[i]
-        return Fg.reshape(n, -1).T[:, None, :]
-
-    c = np.array([cx, cy])[:, None]
-
-    def force(q, p):
-        F = base_force(q, p).T.reshape(nn, 2, -1)
-        X = nodes(q)
-        d = X - c
-        dist = np.sqrt(d[:, 0] ** 2 + d[:, 1] ** 2)
-        pen = np.clip(p["r_obj"] - dist, 0.0, None)
-        F += (p["k_obj"] * pen / np.maximum(dist, 1e-9))[:, None, :] * d
-        return F.reshape(n, -1).T
-
-    def vforce(q, v, p):
-        X = nodes(q)
-        V = v.T.reshape(nn, 2, -1)
-        d = X - c
-        dist = np.sqrt(d[:, 0] ** 2 + d[:, 1] ** 2)
-        nrm = d / np.maximum(dist, 1e-9)[:, None, :]
-        vn = (V * nrm).sum(axis=1)
-        inside = dist < p["r_obj"]
-        F = np.where(inside, -p["b_obj"] * vn, 0.0)[:, None, :] * nrm
-        return F.reshape(n, -1).T
-
-    params = dict(arm.params, r_obj=r_obj, k_obj=k_obj, b_obj=b_obj)
-    sim = MechSim(H=arm.H, D=arm.D, force=force, J=J, sigma_T2=arm.sigma_T2, params=params,
-                  parts=arm.parts, name="tentacle", velocity_force=vforce)
-    sim.rest, sim.n_seg = rest, N
-
-    def in_contact(q):
-        X = nodes(q)
-        d = X - c
-        return np.sqrt(d[:, 0] ** 2 + d[:, 1] ** 2) < sim.params["r_obj"]
-
-    sim.in_contact = in_contact
-
-    def grasp_input(tension: float = 1.0, ramp_steps: int = 2500):
-        """Tendon tension ramped linearly to `tension` over `ramp_steps` steps, then held."""
-        return lambda k, q, v: np.full((q.shape[0], 1), min(1.0, k / ramp_steps) * tension)
-
-    sim.grasp_input = grasp_input
-    return sim
 
 
 # ---------------------------------------------------------------------------------------

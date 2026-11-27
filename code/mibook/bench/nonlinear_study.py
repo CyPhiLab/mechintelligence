@@ -54,7 +54,7 @@ def arm_capacities(alpha: float = 1e3, amp: float = 0.05, batch: int = 3000,
     """Uniform i.i.d. tip-force samples u in [-amp, amp], each held for `period`; the readout
     is a snapshot of every node's position after `history` samples. Returns the degree-1 and
     degree-2 capacities (sums of held-out R^2 over lags and lag pairs)."""
-    arm = make("soft_arm", alpha=alpha, b_spring=b_spring)
+    arm = make("ladder_arm", alpha=alpha, b_spring=b_spring)
     rng = np.random.default_rng(seed)
     sub = int(round(period / dt))
     U = rng.uniform(-1.0, 1.0, (history, batch))

@@ -312,6 +312,25 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   bird need the most care.
 - Then: compute the measures on chosen benchmarks and test the draft axes against the
   results.
+- **Benchmark standard (agreed 2026-11-27).** Each benchmark (1) follows a published model,
+  cited in its code; (2) reproduces a published result, or a textbook result where the
+  model is a standard one, as a test; (3) passes a video check by the author. Bodies that
+  meet none of these are kept only as labelled test bodies. Audit, 2026-11-27:
+  - *Meets the standard:* legs (the book's own model, regression tests); hopper (Haeufle et
+    al. 2010 with the legs of Ghazi-Zahedi et al. 2016; reproduces the 1.070 m apex);
+    swarmalators (O'Keeffe, Ceron and Petersen 2017; the five states).
+  - *Partly:* soft arm (Cosserat rod in PyElastica, Gazzola et al. 2018; geometry after
+    Nakajima et al. 2014, radii and modulus assumed; passes the cantilever and first-mode
+    textbook checks and a grasp check, no published result reproduced yet); many-legged
+    robot (physical side-view model, kinematic speed check; to be rebuilt in MuJoCo after
+    Chong et al. 2023).
+  - *Owed:* network (rebuild after Hauser et al. 2011); bird (glider after Harvey et al.
+    2019, 2022; the specimen data for AvInertia are in hand); whisker, rimless wheel,
+    pendulum, walker, foil, bistable chain (textbook or published checks); gripper (ground
+    it in a published model or drop it).
+  - *Test bodies, not from the literature:* `ladder_arm`, `agents`.
+  The soft arm and the tentacle are one benchmark. Order: soft arm, hopper, many-legged
+  robot, network.
 
 ## Findings log
 

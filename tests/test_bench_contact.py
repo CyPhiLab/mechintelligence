@@ -40,16 +40,6 @@ def test_walker_rolls_steadily_and_faster_downhill():
     assert fast["speed"].mean() > slow["speed"].mean()
 
 
-def test_tentacle_wraps_the_object():
-    rng = np.random.default_rng(4)
-    tn = bench.make("tentacle")
-    _, (q, _) = tn.simulate(6000, 2e-4, 10, u=tn.grasp_input(1.0), rng=rng, parts=())
-    assert tn.in_contact(q).sum(axis=0).mean() >= 1
-    free = bench.make("tentacle", r_obj=1e-4)
-    _, (q, _) = free.simulate(6000, 2e-4, 10, u=free.grasp_input(1.0), rng=rng, parts=())
-    assert free.in_contact(q).sum() == 0
-
-
 def test_legged_robot_walks_at_the_kinematic_speed_on_flat_ground():
     from mibook.bench.bodies.contact import kinematic_speed
     robot = bench.make("many_legged", n_legs=12)
