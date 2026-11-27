@@ -33,6 +33,12 @@ def _rows(rng):
                               n_learn=30001, washout=10000, n_test=5000)
     yield "hauser_network", "Volterra task, normalized test MSE: spring-length readout, raw input", (
         hr["mse"], hr["mse_lr"])
+    from .bodies.glider import sweep_grid, paper_selection
+    gg = sweep_grid()
+    st = paper_selection(gg) & gg["static_stable"]
+    yield "gull_glider", "short-period / phugoid frequency range, stable gull (rad/s; published 8.9-41.0 / 0.45-1.10)", (
+        float(np.nanmin(gg["modes"]["omega_sp"][st])), float(np.nanmax(gg["modes"]["omega_sp"][st])),
+        float(np.nanmin(gg["modes"]["omega_ph"][st])), float(np.nanmax(gg["modes"]["omega_ph"][st])))
     w = make("whisker")
     I = L.fisher_rate(w, "contact", "follicle", log=False, channel="force", level=1e-8, band_hz=200)
     yield "whisker", "contact-point error after 1 s, from the follicle (mm)", 1e3 / np.sqrt(I)

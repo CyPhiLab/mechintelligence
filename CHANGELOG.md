@@ -4,6 +4,10 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- New benchmark body `gull_glider`: the gliding gull of Harvey and Inman (2022, PNAS),
+  ported from the authors' code and fitted coefficients, with a video demo. It reproduces
+  the paper's counts of trimmed and stable wing configurations, its trim and mode ranges,
+  and its gust decay times. The earlier `bird` body is relabelled a test body.
 - New benchmark body `hauser_network`: a random recurrent network of cubic springs and
   masses, ported from the Matlab toolbox of Hauser et al. (2011), with their Volterra and
   NARMA tasks and a video demo. It reproduces the paper's qualitative result: a linear

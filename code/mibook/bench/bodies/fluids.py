@@ -134,7 +134,8 @@ def karman_gust(n_t: int, dt: float, batch: int, U: float = 6.0, d: float = 0.05
 def bird(m_b: float = 0.5, m_w: float = 0.05, k_s: float = 50.0, b_s: float = 0.3,
          U: float = 10.0, rho: float = 1.225, S: float = 0.1, cla: float = 5.0,
          chord: float = 0.1, L_turb: float = 2.0, sigma_T2: float = 1e-6) -> StateSpaceBody:
-    """Vertical motion only. The wings (effective mass m_w) move relative to the body (m_b)
+    """Test body, not from the literature (the benchmark bird is `gull_glider`). Kept for the
+    provisional regimes note until it is redone. Vertical motion only. The wings (effective mass m_w) move relative to the body (m_b)
     on a shoulder spring k_s and damper b_s; quasi-steady lift on the wings
     c (w_g - y_w') with c = rho U S cla / 2, the gust reaching the lift through Kussner's lag
     (reduced time with semi-chord chord/2). The body's height is a free drift, so the state

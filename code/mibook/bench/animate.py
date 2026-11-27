@@ -747,10 +747,75 @@ def hauser_network(path):
     return _write(fig, update, path)
 
 
+def gull_glider(path):
+    """Harvey and Inman (2022) gull, side view, after the paper's transverse gust (a 2 deg
+    offset in angle of attack): a stable wrist angle and an unstable one, elbow 130 deg,
+    15 deg forward sweep."""
+    from scipy.linalg import expm
+    cases = [(126, C1, "wrist 126 deg (stable)"), (166, C2, "wrist 166 deg (unstable)")]
+    T, n = 3.0, N_FRAMES
+    t = np.linspace(0, T, n)
+    runs = []
+    for w, col, lab in cases:
+        b = make("gull_glider", elbow=130, wrist=w, sweep=-15, dihedral=20)
+        x0 = np.array([0.0, np.radians(2.0), 0.0, 0.0])
+        X = np.array([expm(b.A * tk) @ x0 for tk in t])
+        p = b.params
+        U = p["U0"] * (1 + X[:, 0])
+        gam = p["gamma0"] + X[:, 3] - X[:, 1]
+        dt = t[1] - t[0]
+        # Position relative to a point moving along the trim glide path.
+        xs = np.cumsum(U * np.cos(gam) - p["U0"] * np.cos(p["gamma0"])) * dt
+        zs = np.cumsum(U * np.sin(gam) - p["U0"] * np.sin(p["gamma0"])) * dt
+        theta = p["gamma0"] + np.radians(p["alpha0"]) + X[:, 3]
+        runs.append(dict(X=X, xs=xs, zs=zs, theta=theta, col=col, lab=lab, p=p))
+    fig = plt.figure(figsize=(7.2, 6.0))
+    axes = [fig.add_axes([0.03 + 0.49 * k, 0.42, 0.46, 0.55]) for k in range(2)]
+    ax2 = fig.add_axes([0.10, 0.08, 0.86, 0.27])
+    body = np.array([[0.22, 0.0], [0.12, 0.035], [-0.05, 0.04], [-0.2, 0.012], [-0.32, 0.02],
+                     [-0.3, -0.005], [-0.05, -0.035], [0.12, -0.03]])
+    patches, trails = [], []
+    for ax, r in zip(axes, runs):
+        ax.set_xlim(-3, 3)
+        ax.set_ylim(-3, 3)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        g0 = r["p"]["gamma0"]
+        ax.plot([-3 * np.cos(g0), 3 * np.cos(g0)], [-3 * np.sin(g0), 3 * np.sin(g0)],
+                color=GRID, lw=1, ls="--")
+        patches.append(ax.fill([], [], color=r["col"])[0])
+        trails.append(ax.plot([], [], color=r["col"], lw=1)[0])
+        ax.text(0.5, 0.02, f"{r['lab']}\nU0 = {r['p']['U0']:.1f} m/s, glide {np.degrees(-g0):.0f} deg",
+                transform=ax.transAxes, ha="center", va="bottom", fontsize=8, color=INK2)
+    _label(axes[0], "Harvey and Inman 2022 gull: 2 deg angle-of-attack gust at t = 0\n"
+                    "dashed: trim glide path; path deviation to scale, bird drawn x3")
+    for r in runs:
+        ax2.plot(t, np.degrees(r["X"][:, 1]), color=r["col"], lw=1.2, label=r["lab"] + ": angle of attack")
+        ax2.plot(t, np.degrees(r["X"][:, 3]), color=r["col"], lw=1.0, ls="--", label="pitch angle")
+    ax2.set_ylim(-6, 6)
+    ax2.set_xlim(0, T)
+    ax2.set_xlabel("time (s)", fontsize=8)
+    ax2.set_ylabel("perturbation (deg)", fontsize=8)
+    ax2.tick_params(labelsize=7)
+    ax2.legend(fontsize=6.5, loc="lower left", frameon=False, ncol=2)
+    cursor = ax2.axvline(0, color=INK, lw=0.8)
+
+    def update(k):
+        for r, pa, tr in zip(runs, patches, trails):
+            th = r["theta"][k]
+            R = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
+            P = 3 * body @ R.T + [r["xs"][k], r["zs"][k]]
+            pa.set_xy(P)
+            tr.set_data(r["xs"][:k + 1], r["zs"][:k + 1])
+        cursor.set_xdata([t[k], t[k]])
+    return _write(fig, update, path)
+
+
 DEMOS = dict(legs=legs, network=network, whisker=whisker, agents=agents, soft_arm=soft_arm,
              bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
              walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum,
-             swarmalators=swarmalators, hauser_network=hauser_network)
+             swarmalators=swarmalators, hauser_network=hauser_network,
+             gull_glider=gull_glider)
 
 
 def render(outdir, names=None):

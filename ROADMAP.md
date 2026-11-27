@@ -325,9 +325,14 @@ Order is chosen together at the start of a session. Status is one of *active*, *
     published result reproduced yet); many-legged
     robot (physical side-view model, kinematic speed check; to be rebuilt in MuJoCo after
     Chong et al. 2023).
-  - *Inputs ready:* bird. AvInertia (Harvey et al. 2022) is ported to Python
-    (`mibook.bench.avinertia`) and reproduces the paper's published inertia, centre-of-
-    gravity and stability results; the glider built on it is still owed.
+  - *Bird, awaiting the video check:* `gull_glider` ports the longitudinal gliding model
+    of Harvey and Inman (2022, PNAS) from their code (AvianDynStab) and fitted coefficients
+    (figshare c.5895032), with the alpha hull of the gull's measured joint angles. It
+    reproduces the paper's counts and ranges exactly: 1,457 trimmed and 1,331 stable
+    configurations, trim speed 11.8-29.8 m/s, shallowest glide 12.2 deg, short period
+    8.9-41.0 rad/s, phugoid 0.45-1.10 rad/s, and the Fig. 6 decay times. Inputs:
+    streamwise and vertical gusts. The old `bird` body (invented suspension model) is now
+    a test body; it backs the provisional regimes note until that note is redone.
   - *Network, awaiting the video check:* `hauser_network` is ported from the authors'
     Matlab toolbox (Hauser et al. 2011; github.com/helmuthauser/Matlab_Morphological_
     Computation_Simulation, commit 1e7a17f): construction, time stepping, and the Volterra
