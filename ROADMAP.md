@@ -325,13 +325,19 @@ Order is chosen together at the start of a session. Status is one of *active*, *
     published result reproduced yet); many-legged
     robot (physical side-view model, kinematic speed check; to be rebuilt in MuJoCo after
     Chong et al. 2023).
-  - *Owed:* network (rebuild after Hauser et al. 2011); bird (glider after Harvey et al.
-    2019, 2022; the specimen data for AvInertia are in hand); whisker, rimless wheel,
+  - *Inputs ready:* bird. AvInertia (Harvey et al. 2022) is ported to Python
+    (`mibook.bench.avinertia`) and reproduces the paper's published inertia, centre-of-
+    gravity and stability results; the glider built on it is still owed.
+  - *Owed:* network (rebuild after Hauser et al. 2011); whisker, rimless wheel,
     pendulum, walker, foil, bistable chain (textbook or published checks); gripper (ground
     it in a published model or drop it).
   - *Test bodies, not from the literature:* `ladder_arm`, `agents`.
   The soft arm and the tentacle are one benchmark. Order: soft arm, hopper, many-legged
   robot, network.
+- **Licences to settle before a release.** The AvInertia port is a derivative of GPL-3
+  code and carries GPL-3.0-or-later headers; the repository has no licence file yet, so
+  how the subpackage fits needs deciding. The shipped specimen-data subset is from figshare
+  item 14935659 (collection c.5503989); its licence could not be confirmed from here.
 - **Simulator speeds (2026-11-27, this container, 4 cores).** Soft arm, simulated seconds
   per wall second: PyElastica Cosserat rod about 0.5 to 0.7, no gain from batching; SoRoMoX
   planar PCS, 5 segments, bending only, about 50 single and 65 batched with vmap (about 4

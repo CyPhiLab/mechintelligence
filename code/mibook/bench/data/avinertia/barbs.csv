@@ -1,0 +1,23 @@
+species,species_fullname,barb_radius_um,barb_distance_um,Notes
+tyt_alb,Barn owl,27.5,125.0,Pap et al 2015 - correct species
+meg_alc,Belted kingfisher,15.0,95.0,Pap et al 2015 - Common kingfisher
+fal_col,Merlin,11.7,164.35,Pap et al 2015 - Common kestrel
+ana_pla,Mallard,31.5,119.5,Pap et al 2015 - correct species
+cho_min,Common nighthawk,13.0,89.7,Rijke 2011 - correct family
+acc_str,Shap shinned hawk,21.5,162.5,Pap et al 2015 - Eurasian sparrowhawk based on weight
+aec_occ,Western grebe,11.25,62.92,Elowsan 1984 - Pied-billed Grebe; outer vane proximal primary
+chr_amh,Amhest phesant,30.7,145.65,Pap et al 2015 - Common pheasant
+cor_cor,Common raven,10.5,195.0,Pap et al 2015 - Rook
+cya_ste,Stellars jay,21.3,164.75,Pap et al 2015 - Eurasian jay
+cyp_nig,Black swift,13.5,91.8,Rijke 2011 - correct family
+fal_per,Peregrine falcon,25.0,152.0,Pap et al 2015 - correct species
+lop_imp,Himalayan monal,30.7,145.65,Pap et al 2015 - Common pheasant
+lop_nyc,Silver pheasant,30.7,145.65,Pap et al 2015 - Common pheasant
+pel_ery,American white pelican,25.63,87.64,Elowsan 1984 - correct species; outer vane proximal primary
+oce_leu,Leach's storm petrel,17.5,107.625,Rijke 2011 - correct family
+ard_her,Great blue heron,27.0,164.7,Rijke 2011 - correct family
+lar_gla,Glaucous winged gull,26.5,151.05,Rijke 2011 - correct family
+col_liv,Rock dove,15.0,136.5,Pap et al 2015 - correct species
+col_aur,Northern flicker,23.0,183.0,Pap et al 2015 - Black woodpecker
+acc_coo,Cooper's hawk,21.5,162.5,Pap et al 2015 - Eurasian sparrowhawk based on weight
+bra_can,Canada Goose,20.0,172.0,Pap et al 2015 - Red-breasted goose

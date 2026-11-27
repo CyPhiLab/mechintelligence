@@ -4,6 +4,12 @@ Newest first. Each release is tagged in the repository.
 
 ## Unreleased
 
+- AvInertia (Harvey et al. 2022) ported to Python as `mibook.bench.avinertia`: the inertia
+  of a bird as a composite of simple solids, for every wing shape at once, with the
+  neutral point and static margin of the paper. It reproduces the paper's published
+  results (pigeon wing inertia, centre-of-gravity shifts, inertia ratios, and the count of
+  stable, unstable and switching species). A small subset of the specimen data ships with
+  it; the full dataset is read from a path.
 - The soft arm is now a chain of rigid links with elastic joints in MuJoCo (the
   pseudo-rigid-body discretization of a beam), anchored to the silicone arm of Nakajima et
   al.; it absorbs the tentacle benchmark and can grasp a cylinder. It passes textbook checks
