@@ -368,6 +368,17 @@ Order is chosen together at the start of a session. Status is one of *active*, *
 Newest first. Each entry gives the finding, the test that pins it, and where it is
 written up.
 
+- **2026-11-27.** Many-legged robot (MuJoCo, after Chong et al. 2023): flat-ground speed
+  grows with the number of modules N (0.18 m/cycle at N = 3 to 0.37 at N = 8), against the
+  Science paper's Prop. 2 and text. Not caused by friction, mass, band stiffness, hip height
+  or period (all tried), nor by yaw recoil (holding the head's heading leaves the trend),
+  nor by the shorter body wave alone (the SM thrust model given the amplitude a short
+  chain reaches drops only 13% at N = 3). The cause is roll: with xi = N/6 a robot shorter
+  than six modules holds less than one wave of the contact pattern, so for long stretches
+  most stance legs are on one side; the body rolls (sd 11 deg at N = 3, 2 deg at N = 8),
+  30% of stance feet lose contact and the belly touches down. The size of the effect
+  depends on the robot's lateral geometry (hip offset, leg sprawl, body width), which the
+  papers do not give. Scratch diagnostics; `bodies/myriapod.py` stays unregistered.
 - **2026-11-26.** Unstable bodies handled generally: window measures from a declared prior;
   steady-state rates from the Riccati equation (no stationary law needed); the canonical
   least-energy stabilization (unstable eigenvalues reflected) with its control power and

@@ -1,5 +1,7 @@
 """Work in progress, not yet registered in mibook.bench: the flat-ground speed still grows
-with the number of modules, against the paper.
+with the number of modules, against the paper. Cause (ROADMAP findings log, 2026-11-27):
+robots shorter than one gait wave (N < 6 with xi = N/6) roll toward the lifted side and
+lose stance contacts; the size depends on lateral geometry the papers do not give.
 
 A many-legged robot on rugose terrain in MuJoCo, after Chong et al. (2023), "Multilegged
 matter transport: a framework for locomotion on noisy landscapes", Science 380: 509-515,
