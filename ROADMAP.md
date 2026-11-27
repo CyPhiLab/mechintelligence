@@ -328,14 +328,15 @@ Order is chosen together at the start of a session. Status is one of *active*, *
   - *Inputs ready:* bird. AvInertia (Harvey et al. 2022) is ported to Python
     (`mibook.bench.avinertia`) and reproduces the paper's published inertia, centre-of-
     gravity and stability results; the glider built on it is still owed.
-  - *Started:* network. `hauser_network` follows Hauser et al. (2011), Sect. 4: cubic
-    springs and dampers on a Delaunay graph, two fixed nodes, 20% input nodes, RK4 at 1 ms,
-    linear readout of spring lengths. Tested: the construction, rest as an equilibrium,
-    fading memory, and the qualitative result of their Fig. 9c (a readout of the spring
-    lengths emulates the Volterra operator, regression on the raw input does not). Not yet
-    reproducible: their placement area and input scale are in the paper's supplementary
-    material, which is needed; without the scale, their Eqs. 7 and 8 diverge. The linear
-    `network` stays for the comparison note until then.
+  - *Network, awaiting the video check:* `hauser_network` is ported from the authors'
+    Matlab toolbox (Hauser et al. 2011; github.com/helmuthauser/Matlab_Morphological_
+    Computation_Simulation, commit 1e7a17f): construction, time stepping, and the Volterra
+    and NARMA task data, which our generators reproduce to 1e-11. Tested: the paper's Fig. 9
+    result that a linear readout of the spring lengths emulates both systems while a linear
+    model on the raw input does not (normalized test errors 0.04-0.28 against 2.0 and
+    1.03). The paper prints no errors for the recurrent networks, so this is the
+    reproduction available. The paper's numerical results (feedforward filter bank, robot
+    arm) are not ported. The linear `network` stays for the comparison note.
   - *Owed:* whisker, rimless wheel, pendulum, walker, foil, bistable chain (textbook or
     published checks); gripper (ground it in a published model or drop it).
   - *Test bodies, not from the literature:* `ladder_arm`, `agents`.

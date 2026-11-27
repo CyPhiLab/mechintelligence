@@ -686,10 +686,71 @@ def pendulum(path):
     return _write(fig, update, path)
 
 
+def hauser_network(path):
+    """Hauser et al. (2011) network on the toolbox's Volterra task: learn a linear readout
+    of the spring lengths, then run on new input and compare with the target."""
+    from .bodies import hauser as H
+    net = H.build(seed=0, ranges=H.VOLTERRA)
+    d = H.volterra_data(120.0)
+    s, n_learn, wash, n_show = 20000, 50001, 20000, 4000
+    U, Y = d["u"][s:s + n_learn], d["y"][s:s + n_learn]
+    Ut, Yt = d["u"][s + n_learn:s + n_learn + n_show], d["yn"][s + n_learn:s + n_learn + n_show]
+    Lr, st = H.simulate(net, U)
+    w = np.linalg.lstsq(Lr[wash:], Y[wash:], rcond=None)[0]
+    # Test run, recording node positions for the drawing.
+    P_hist = []
+    state = st
+    Lt = np.empty((n_show, net.n_springs))
+    for k0 in range(0, n_show, 50):
+        seg, state = H.simulate(net, Ut[k0:k0 + 50], state)
+        Lt[k0:k0 + 50] = seg
+        P_hist.append(state.P[0].copy())
+    P_hist = np.array(P_hist)
+    out = H.mapstd(Lt @ w)
+    t = np.arange(n_show) * H.DT
+    disp = P_hist - net.pos0[None]
+    A = _mag(0.6, np.abs(disp).max())
+    fig = plt.figure(figsize=(6.4, 6.4))
+    ax = fig.add_axes([0.02, 0.36, 0.96, 0.62])
+    ax2 = fig.add_axes([0.08, 0.07, 0.88, 0.22])
+    ax.set_xlim(-0.8, 10.8)
+    ax.set_ylim(-0.8, 10.8)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    lines = [ax.plot([], [], color=INK2, lw=0.8)[0] for _ in net.edges]
+    nodes = ax.scatter(net.pos0[:, 0], net.pos0[:, 1], s=22, color=C1, zorder=3)
+    fx = net.fixed
+    ax.scatter(net.pos0[fx, 0], net.pos0[fx, 1], s=60, marker="s", color=INK, zorder=4)
+    inp = np.flatnonzero(net.w_in)
+    arrows = [ax.plot([], [], color=C2, lw=2)[0] for _ in inp]
+    _label(ax, f"Hauser et al. 2011 network, Volterra task; displacements {_fmt(A)}\n"
+               "squares fixed, orange arrows: input forces")
+    ax2.plot(t, Yt, color=C2, lw=1.2, label="target (Volterra operator)")
+    ax2.plot(t, out, color=C1, lw=1.0, ls="--", label="linear readout of spring lengths")
+    cursor = ax2.axvline(0, color=INK, lw=0.8)
+    ax2.legend(fontsize=7, loc="upper right", frameon=False)
+    ax2.set_xlabel("time (s)", fontsize=8)
+    ax2.tick_params(labelsize=7)
+    ax2.set_xlim(0, t[-1])
+
+    def update(k):
+        i = min(int(k * (len(P_hist) - 1) / (N_FRAMES - 1)), len(P_hist) - 1)
+        P = net.pos0 + A * disp[i]
+        for ln, (a, c) in zip(lines, net.edges):
+            ln.set_data([P[a, 0], P[c, 0]], [P[a, 1], P[c, 1]])
+        nodes.set_offsets(P)
+        ti = i * 50
+        for ar, j in zip(arrows, inp):
+            f = net.w_in[j] * Ut[ti] / 0.2
+            ar.set_data([P[j, 0], P[j, 0] + 1.2 * f], [P[j, 1], P[j, 1]])
+        cursor.set_xdata([t[ti], t[ti]])
+    return _write(fig, update, path)
+
+
 DEMOS = dict(legs=legs, network=network, whisker=whisker, agents=agents, soft_arm=soft_arm,
              bistable_chain=bistable_chain, hopper=hopper, gripper=gripper,
              walker=walker, many_legged=many_legged, foil=foil, bird=bird, pendulum=pendulum,
-             swarmalators=swarmalators)
+             swarmalators=swarmalators, hauser_network=hauser_network)
 
 
 def render(outdir, names=None):

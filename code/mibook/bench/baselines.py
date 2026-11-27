@@ -29,10 +29,10 @@ def _rows(rng):
     yield "network", "bits about the input force, node 0 / whole", (
         L.profile_bits(net, "node0", sigma_a=1.0, eps=1e-12), L.profile_bits(net, sigma_a=1.0))
     from .bodies import hauser
-    hr = hauser.multitask(hauser.build(seed=1), washout=20.0, learn=20.0, test=5.0,
-                          tasks=("volterra",))["volterra"]
-    yield "hauser_network", "Volterra task, test MSE / variance: spring-length readout, raw input", (
-        hr["mse"] / hr["var"], hr["mse_lr"] / hr["var"])
+    hr = hauser.volterra_task(hauser.build(seed=0, ranges=hauser.VOLTERRA),
+                              n_learn=30001, washout=10000, n_test=5000)
+    yield "hauser_network", "Volterra task, normalized test MSE: spring-length readout, raw input", (
+        hr["mse"], hr["mse_lr"])
     w = make("whisker")
     I = L.fisher_rate(w, "contact", "follicle", log=False, channel="force", level=1e-8, band_hz=200)
     yield "whisker", "contact-point error after 1 s, from the follicle (mm)", 1e3 / np.sqrt(I)
